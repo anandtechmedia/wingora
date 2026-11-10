@@ -7,7 +7,7 @@ import type { Page } from './employees';
 export type OpeningStatus = 'draft' | 'published' | 'closed';
 export type Workplace = 'onsite' | 'hybrid' | 'remote';
 export type ApplicationStatus = 'active' | 'rejected' | 'withdrawn' | 'hired';
-export type StageKind = 'open' | 'hired' | 'rejected';
+export type StageKind = 'active' | 'hired' | 'rejected';
 export type DocumentKind = 'resume' | 'cover_letter' | 'portfolio' | 'certificate' | 'offer_letter' | 'other';
 export type InterviewMode = 'video' | 'phone' | 'onsite';
 export type Recommendation = 'strong_yes' | 'yes' | 'no' | 'strong_no';

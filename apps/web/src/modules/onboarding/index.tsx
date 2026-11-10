@@ -47,7 +47,7 @@ function MyTasks() {
   return (
     <Card title={ot('myTasks')} headingLevel={2} description={ot('myTasksHint')}>
       {tasks.error instanceof ApiNotConnectedError ? <RecruitmentNotConnected /> : (
-        <ResourceView resource={tasks} empty={ot('noTasks')} isEmpty={(d) => d.length === 0}>
+        <ResourceView errorLabel={ot('loadError')} resource={tasks} empty={ot('noTasks')} isEmpty={(d) => d.length === 0}>
           {(list) => <ul className="divide-y divide-line">{list.map((task) => <li key={task.id} className="py-3"><TaskRow task={task} onChanged={tasks.reload} showEmployee /></li>)}</ul>}
         </ResourceView>
       )}
@@ -77,7 +77,9 @@ function TaskRow({ task, onChanged, showEmployee = false }: { task: OnboardingTa
           <TaskStatusBadge status={task.status} overdue={task.overdue} />
         </div>
         {task.description && <p className="mt-1 text-sm text-fg-muted">{task.description}</p>}
-        {task.review_note && <p className="mt-1 text-sm text-danger-fg">{ot('returnedNote', { note: task.review_note })}</p>}
+        {task.review_note && (task.status === 'skipped'
+          ? <p className="mt-1 text-sm text-fg-muted">{ot('skipNote', { note: task.review_note })}</p>
+          : <p className="mt-1 text-sm text-danger-fg">{ot('returnedNote', { note: task.review_note })}</p>)}
         {task.document && <p className="mt-1 text-sm text-fg">{ot('documentRequested', { name: task.document.name })}{task.document.file && ` · ${task.document.file.name}`}</p>}
       </div>
       <div className="flex shrink-0 flex-wrap items-center gap-2">
@@ -148,7 +150,7 @@ function PlanDrawer({ id, onClose }: { id: string; onClose: () => void }) {
   return (
     <Drawer open onClose={onClose} size="lg" title={p ? p.employee.name : ot('plan')} description={p ? ot('planHint', { date: p.start_date, template: p.template?.name ?? '—' }) : undefined}
       footer={p?.can.manage && p.status === 'in_progress' ? <Button variant="danger" loading={busy === 'cancel'} onClick={() => run('cancel', () => source.cancelPlan(id), ot('cancelled')).then((ok) => ok && plan.reload())}>{ot('cancelPlan')}</Button> : undefined}>
-      <ResourceView resource={plan} empty={ot('noTasks')}>
+      <ResourceView errorLabel={ot('loadError')} resource={plan} empty={ot('noTasks')}>
         {(d) => <div className="space-y-6">
           <ProgressBar percent={d.progress.percent} label={ot('progressOf', { name: d.employee.name })} />
           <p className="text-sm text-fg-muted">{ot('progressSummary', { done: d.progress.done, total: d.progress.total })}</p>
@@ -198,7 +200,7 @@ function Templates() {
     <div className="space-y-4">
       <div className="flex justify-end"><Button size="sm" onClick={() => setCreating(true)}>{ot('newTemplate')}</Button></div>
       {templates.error instanceof ApiNotConnectedError ? <RecruitmentNotConnected /> : (
-        <ResourceView resource={templates} empty={ot('noTemplates')} isEmpty={(d) => d.length === 0}>
+        <ResourceView errorLabel={ot('loadError')} resource={templates} empty={ot('noTemplates')} isEmpty={(d) => d.length === 0}>
           {(list) => <div className="space-y-4">{list.map((tpl) => <TemplateCard key={tpl.id} template={tpl} onChanged={templates.reload} />)}</div>}
         </ResourceView>
       )}

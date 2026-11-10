@@ -19,7 +19,7 @@ configure({ asyncUtilTimeout: 5000 });
 
 /** Test doubles shaped like the Recruitment and Onboarding API (backend feature tests assert the real payloads). */
 const page = <T,>(data: T[]) => ({ data, meta: { current_page: 1, last_page: 1, per_page: 25, total: data.length } });
-const stage = (id: string, name: string, kind: 'open' | 'hired' | 'rejected' = 'open', sort_order = 1) => ({ id, key: id, name, kind, sort_order });
+const stage = (id: string, name: string, kind: 'active' | 'hired' | 'rejected' = 'active', sort_order = 1) => ({ id, key: id, name, kind, sort_order });
 const card: Application = {
   id: 'app1', status: 'active', version: 4, position: 0, stage: stage('s1', 'Applied'), opening: { id: 'op1', title: 'Payroll Specialist', status: 'published' },
   candidate: { id: 'c1', name: 'Ana Diaz', first_name: 'Ana', last_name: 'Diaz', email: 'ana@example.test', phone: null, location: null, linkedin_url: null, source: 'careers', on_hold: false, anonymized: false },
@@ -27,7 +27,7 @@ const card: Application = {
   latest_offer_status: null, documents: null, can: { act: true, manage: true, offers: true },
 };
 const board: BoardColumn[] = [
-  { ...stage('s1', 'Applied'), cards: [card] }, { ...stage('s2', 'Interview', 'open', 2), cards: [] },
+  { ...stage('s1', 'Applied'), cards: [card] }, { ...stage('s2', 'Interview', 'active', 2), cards: [] },
   { ...stage('s3', 'Hired', 'hired', 3), cards: [] }, { ...stage('s4', 'Rejected', 'rejected', 4), cards: [] },
 ];
 const task: OnboardingTask = {

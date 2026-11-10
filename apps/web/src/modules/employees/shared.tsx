@@ -65,13 +65,13 @@ export const displayName = (e: Pick<EmployeeSummary, 'first_name' | 'last_name' 
   `${e.preferred_name || e.first_name} ${e.last_name}`;
 
 /** Loading / not-connected / error / empty handling shared by every tab. */
-export function ResourceView<T>({ resource, empty, isEmpty, children }: {
-  resource: Resource<T>; empty: string; isEmpty?: (data: T) => boolean; children: (data: T) => React.ReactNode;
+export function ResourceView<T>({ resource, empty, isEmpty, errorLabel, children }: {
+  resource: Resource<T>; empty: string; isEmpty?: (data: T) => boolean; errorLabel?: string; children: (data: T) => React.ReactNode;
 }) {
   const { t } = useI18n();
   if (resource.loading && resource.data === undefined) return <LoadingState variant="skeleton" rows={3} />;
   if (resource.error instanceof ApiNotConnectedError) return <EmptyState title={t('employees.notConnectedTitle')} description={t('employees.notConnectedDescription')} />;
-  if (resource.error) return <ErrorState description={errorMessage(resource.error, t('employees.loadError'))} onRetry={resource.reload} />;
+  if (resource.error) return <ErrorState description={errorMessage(resource.error, errorLabel ?? t('employees.loadError'))} onRetry={resource.reload} />;
   if (resource.data === undefined) return null;
   if (isEmpty?.(resource.data)) return <EmptyState icon={<InboxIcon size={20} />} title={empty} />;
   return <>{children(resource.data)}</>;

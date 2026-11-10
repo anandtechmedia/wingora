@@ -47,7 +47,7 @@ function Pipeline() {
   const [adding, setAdding] = useState(false);
   const openings = useResource(useCallback((signal: AbortSignal) => source.openings({ status: 'published', page: 1 }, signal), [source]));
   const board = useResource(useCallback((signal: AbortSignal) => source.board({ opening_id: opening || undefined, q: q || undefined }, signal), [source, opening, q]));
-  const movable = (board.data ?? []).filter((s) => s.kind === 'open');
+  const movable = (board.data ?? []).filter((s) => s.kind === 'active');
   const move = async (card: Application, stageId: string) => {
     if (!stageId || stageId === card.stage?.id) return;
     try {
@@ -67,7 +67,7 @@ function Pipeline() {
         {can(P.RecruitmentManage) && <Button onClick={() => setAdding(true)}>{rt('addCandidate')}</Button>}
       </div>
       {board.error instanceof ApiNotConnectedError ? <RecruitmentNotConnected /> : (
-        <ResourceView resource={board} empty={rt('noStages')} isEmpty={(d) => d.length === 0}>
+        <ResourceView errorLabel={rt('loadError')} resource={board} empty={rt('noStages')} isEmpty={(d) => d.length === 0}>
           {(columns) => (
             <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2" role="list" aria-label={rt('pipeline')}>
               {columns.map((col) => <StageColumn key={col.id} col={col} movable={movable} onOpen={setSelected} onMove={move} />)}
@@ -144,7 +144,7 @@ function ApplicationDrawer({ id, onClose }: { id: string; onClose: () => void })
   const a = app.data;
   return (
     <Drawer open onClose={onClose} size="lg" title={a?.candidate?.name ?? rt('candidate')} description={a ? `${a.opening?.title ?? ''} · ${a.stage?.name ?? ''}` : undefined}>
-      <ResourceView resource={app} empty={rt('notFound')}>
+      <ResourceView errorLabel={rt('loadError')} resource={app} empty={rt('notFound')}>
         {(d) => {
           const tabs = [
             { id: 'profile', label: rt('profile'), content: <Profile app={d} onChanged={app.reload} onErased={onClose} /> },
@@ -223,7 +223,7 @@ function ApplicationInterviews({ app }: { app: Application }) {
   return (
     <div className="space-y-4 pt-4">
       {app.can.act && app.status === 'active' && <Button size="sm" onClick={() => setScheduling(true)}>{rt('scheduleInterview')}</Button>}
-      <ResourceView resource={list} empty={rt('noInterviews')} isEmpty={(d) => d.length === 0}>
+      <ResourceView errorLabel={rt('loadError')} resource={list} empty={rt('noInterviews')} isEmpty={(d) => d.length === 0}>
         {(items) => <ul className="space-y-3">{items.map((i) => <li key={i.id}><InterviewCard interview={i} onChanged={list.reload} /></li>)}</ul>}
       </ResourceView>
       {scheduling && <ScheduleDialog app={app} onClose={() => setScheduling(false)} onDone={() => { setScheduling(false); list.reload(); }} />}
@@ -323,7 +323,7 @@ function Offers({ app, onChanged }: { app: Application; onChanged: () => void })
         {app.status === 'active' && !open && !accepted && <Button size="sm" onClick={() => setCreating(true)}>{rt('newOffer')}</Button>}
         {app.status === 'active' && accepted && app.can.manage && <Button size="sm" onClick={() => setHiring(true)}>{rt('hire')}</Button>}
       </div>
-      <ResourceView resource={offers} empty={rt('noOffers')} isEmpty={(d) => d.length === 0}>
+      <ResourceView errorLabel={rt('loadError')} resource={offers} empty={rt('noOffers')} isEmpty={(d) => d.length === 0}>
         {(list) => <ul className="space-y-3">{list.map((o) => (
           <li key={o.id}><Card padding="md" title={o.job_title} headingLevel={3} actions={<OfferStatusBadge status={o.status} />}
             description={`${new Intl.NumberFormat(undefined, { style: 'currency', currency: o.base_salary.currency }).format(Number(o.base_salary.amount))} · ${rt(`frequency.${o.pay_frequency}`)}${o.start_date ? ` · ${rt('startsOn', { date: o.start_date })}` : ''}`}>
@@ -395,7 +395,7 @@ function AiAssist({ app, onChanged }: { app: Application; onChanged: () => void 
         <Button size="sm" loading={busy === 'sum'} onClick={() => run('sum', () => source.summarize(app.id), rt('draftReady')).then((ok) => ok && drafts.reload())}>{rt('draftSummary')}</Button>
         <Button size="sm" variant="secondary" loading={busy === 'org'} onClick={() => run('org', () => source.organizeDocuments(app.id), rt('suggestionsReady')).then((ok) => ok && onChanged())}>{rt('suggestDocumentTypes')}</Button>
       </div>
-      <ResourceView resource={drafts} empty={rt('noDrafts')} isEmpty={(d) => d.length === 0}>
+      <ResourceView errorLabel={rt('loadError')} resource={drafts} empty={rt('noDrafts')} isEmpty={(d) => d.length === 0}>
         {(list) => <ul className="space-y-3">{list.map((d) => (
           <li key={d.id}><Card padding="md" title={rt('summaryDraft')} headingLevel={3} actions={<span className="flex gap-1"><AiBadge /><Badge size="sm" tone={d.status === 'accepted' ? 'success' : d.status === 'discarded' ? 'neutral' : 'warning'}>{rt(`draftStatus.${d.status}`)}</Badge></span>}
             description={d.created_at ? `${when(d.created_at)}${d.model ? ` · ${d.model}` : ''}` : undefined}>
@@ -456,7 +456,8 @@ function OpeningDialog({ opening, onClose, onSaved }: { opening: Opening | null;
   const [input, setInput] = useState<OpeningInput | null>(null);
   const value: OpeningInput = input ?? { title: base?.title ?? '', legal_entity_id: base?.legal_entity?.id ?? '', workplace: base?.workplace ?? 'onsite', openings: base?.openings ?? 1,
     summary: base?.summary ?? '', description: base?.description ?? '', requirements: base?.requirements ?? '', closes_on: base?.closes_on ?? '', employment_type: base?.employment_type ?? '' };
-  const set = (patch: Partial<OpeningInput>) => setInput({ ...value, ...patch });
+  const loadingFull = opening !== null && !full.data;
+  const set = (patch: Partial<OpeningInput>) => { if (!loadingFull) setInput({ ...value, ...patch }); };
   const { error, busy, save } = useSave();
   const fields = validationErrors(error);
   const payload = (): OpeningInput => ({ ...value, summary: value.summary || null, requirements: value.requirements || null, closes_on: value.closes_on || null, employment_type: value.employment_type || null,
@@ -464,8 +465,9 @@ function OpeningDialog({ opening, onClose, onSaved }: { opening: Opening | null;
   return (
     <Modal open onClose={onClose} size="lg" title={opening ? rt('editOpening') : rt('newOpening')} description={rt('openingHint')}
       footer={<><Button variant="secondary" onClick={onClose}>{t('ui.cancel')}</Button>
-        <Button loading={busy} disabled={opening !== null && !full.data} onClick={() => save(async () => { await source.saveOpening(payload(), opening?.id); onSaved(); })}>{rt('save')}</Button></>}>
-      <div className="grid gap-4 sm:grid-cols-2">
+        <Button loading={busy} disabled={loadingFull} onClick={() => save(async () => { await source.saveOpening(payload(), opening?.id); onSaved(); })}>{rt('save')}</Button></>}>
+      {full.error != null && <p role="alert" className="mb-3 text-sm text-danger-fg">{errorMessage(full.error, rt('loadError'))}</p>}
+      <fieldset disabled={loadingFull} className="grid gap-4 sm:grid-cols-2">
         <Input label={rt('jobTitle')} required value={value.title} onChange={(e) => set({ title: e.target.value })} error={fields.title} />
         <Select label={rt('legalEntity')} required disabled={opening !== null} value={value.legal_entity_id ?? ''} onChange={(e) => set({ legal_entity_id: e.target.value })} placeholder={rt('chooseEntity')} error={fields.legal_entity_id}
           options={(entities.data ?? []).map((e) => ({ value: e.id, label: `${e.name} (${e.country_code})` }))} />
@@ -477,7 +479,7 @@ function OpeningDialog({ opening, onClose, onSaved }: { opening: Opening | null;
         <TextArea label={rt('description')} required value={value.description} onChange={(v) => set({ description: v })} error={fields.description} />
         <TextArea label={rt('requirements')} value={value.requirements ?? ''} onChange={(v) => set({ requirements: v })} error={fields.requirements} />
         <FormError message={Object.keys(fields).length ? null : error ? formError(error, rt('actionFailed')) : null} />
-      </div>
+      </fieldset>
     </Modal>
   );
 }
@@ -489,7 +491,7 @@ function MyInterviews() {
   return (
     <Card title={rt('myInterviews')} headingLevel={2} description={rt('myInterviewsHint')}>
       {list.error instanceof ApiNotConnectedError ? <RecruitmentNotConnected /> : (
-        <ResourceView resource={list} empty={rt('noInterviews')} isEmpty={(d) => d.length === 0}>
+        <ResourceView errorLabel={rt('loadError')} resource={list} empty={rt('noInterviews')} isEmpty={(d) => d.length === 0}>
           {(items) => <ul className="space-y-3">{items.map((i) => <li key={i.id}><InterviewCard interview={i} onChanged={list.reload} /></li>)}</ul>}
         </ResourceView>
       )}
@@ -502,7 +504,7 @@ function Settings() {
   const source = useRecruitmentSource();
   const settings = useResource(useCallback((signal: AbortSignal) => source.settings(signal), [source]));
   return settings.error instanceof ApiNotConnectedError ? <RecruitmentNotConnected />
-    : <ResourceView resource={settings} empty={rt('loadError')}>{(s) => <SettingsForm key={s.consent_version + s.stages.length} settings={s} onSaved={settings.reload} />}</ResourceView>;
+    : <ResourceView errorLabel={rt('loadError')} resource={settings} empty={rt('loadError')}>{(s) => <SettingsForm key={s.consent_version + s.stages.length} settings={s} onSaved={settings.reload} />}</ResourceView>;
 }
 
 function SettingsForm({ settings, onSaved }: { settings: RecruitmentSettings; onSaved: () => void }) {
@@ -537,8 +539,8 @@ function SettingsForm({ settings, onSaved }: { settings: RecruitmentSettings; on
       </Card>
       <Card title={rt('stages')} headingLevel={2} description={rt('stagesHint')}>
         <ul className="divide-y divide-line">{settings.stages.map((s) => (
-          <li key={s.id} className="flex items-center justify-between gap-2 py-2"><span className="text-sm text-fg">{s.name}{s.kind !== 'open' && <Badge size="sm" variant="outline" className="ml-2">{rt(`stageKind.${s.kind}`)}</Badge>}</span>
-            {s.kind === 'open' && <Button size="sm" variant="tertiary" loading={busy === s.id} onClick={() => run(s.id, () => source.removeStage(s.id), rt('removed')).then((ok) => ok && onSaved())}>{rt('remove')}</Button>}</li>))}
+          <li key={s.id} className="flex items-center justify-between gap-2 py-2"><span className="text-sm text-fg">{s.name}{s.kind !== 'active' && <Badge size="sm" variant="outline" className="ml-2">{rt(`stageKind.${s.kind}`)}</Badge>}</span>
+            {s.kind === 'active' && <Button size="sm" variant="tertiary" loading={busy === s.id} onClick={() => run(s.id, () => source.removeStage(s.id), rt('removed')).then((ok) => ok && onSaved())}>{rt('remove')}</Button>}</li>))}
         </ul>
         <div className="mt-3 flex flex-wrap items-end gap-2">
           <Input label={rt('newStage')} value={stage} onChange={(e) => setStage(e.target.value)} />
