@@ -104,7 +104,7 @@ describe('employee profile', () => {
     expect(await screen.findByRole('heading', { name: /Ana Ruiz/ })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Omar Haddad' })).toHaveAttribute('href', '/employees/emp_omar');
     await userEvent.click(screen.getByRole('tab', { name: 'History' }));
-    expect(await screen.findByText('department: Sales → Finance')).toBeInTheDocument();
+    expect(await screen.findByText('Department: Sales → Finance')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('tab', { name: 'Notes and disciplinary' }));
     expect(await screen.findByText('Repeated lateness')).toBeInTheDocument();
   });
@@ -117,6 +117,19 @@ describe('employee profile', () => {
     expect(screen.queryByRole('tab', { name: 'Personal' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
     expect(source.records).not.toHaveBeenCalled();
+  });
+
+  it('shows a form-level error when the server rejects a sixth emergency contact', async () => {
+    const addContact = vi.fn(async () => { throw new ApiError(422, { detail: 'An employee may have at most 5 emergency contacts.' }); });
+    setup(fakeSource({ contacts: vi.fn(async () => []), addContact }), '/employees/emp_ana');
+    await userEvent.click(await screen.findByRole('tab', { name: 'Emergency contacts' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Add contact' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Add contact' });
+    await userEvent.type(within(dialog).getByRole('textbox', { name: /Name/ }), 'Sam');
+    await userEvent.type(within(dialog).getByRole('textbox', { name: /Phone/ }), '+15550100');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('An employee may have at most 5 emergency contacts.');
+    expect(within(dialog).getByRole('option', { name: 'Spouse' })).toBeInTheDocument();
   });
 
   it('shows not found for an employee outside the user\'s scope', async () => {

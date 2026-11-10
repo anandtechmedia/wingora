@@ -3,7 +3,7 @@ import type { DirectoryOptions, EmployeeDetail, EmployeeInput, EmployeeStatus } 
 import { useEmployeeSource } from '@/api/employees';
 import { Button, DatePicker, Input, Modal, Select, useToast } from '@/components/ui';
 import { useI18n } from '@/i18n/i18n';
-import { errorMessage, validationErrors } from './shared';
+import { formError, FormError, validationErrors } from './shared';
 
 const STATUSES: EmployeeStatus[] = ['active', 'on_leave', 'suspended', 'terminated'];
 
@@ -24,6 +24,7 @@ export function EmployeeForm({ open, onClose, onSaved, employee, options }: {
   const [values, setValues] = useState(initial);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
   const set = (key: keyof EmployeeInput) => (value: string) => setValues((v) => ({ ...v, [key]: value }));
   const field = (key: keyof EmployeeInput) => ({ value: (values[key] as string) ?? '', error: errors[key], onChange: (e: { target: { value: string } }) => set(key)(e.target.value) });
   const locations = options.workLocations.filter((l) => !values.legal_entity_id || l.legal_entity_id === values.legal_entity_id);
@@ -32,6 +33,7 @@ export function EmployeeForm({ open, onClose, onSaved, employee, options }: {
     event.preventDefault();
     setSaving(true);
     setErrors({});
+    setMessage(null);
     const payload = Object.fromEntries(Object.entries(values)
       .filter(([k, v]) => !employee || v !== (initial as Record<string, unknown>)[k] || k === 'effective_date')
       .map(([k, v]) => [k, v === '' ? null : v])
@@ -42,7 +44,7 @@ export function EmployeeForm({ open, onClose, onSaved, employee, options }: {
       onSaved(saved);
     } catch (error) {
       setErrors(validationErrors(error));
-      toast({ title: errorMessage(error, t('employees.saveFailed')), tone: 'danger' });
+      setMessage(formError(error, t('employees.saveFailed')) ?? t('employees.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -53,6 +55,7 @@ export function EmployeeForm({ open, onClose, onSaved, employee, options }: {
     <Modal open={open} onClose={onClose} size="lg" title={t(employee ? 'employees.editTitle' : 'employees.createTitle')}
       footer={<><Button variant="secondary" onClick={onClose}>{t('ui.cancel')}</Button><Button type="submit" form="employee-form" loading={saving}>{t('employees.save')}</Button></>}>
       <form id="employee-form" onSubmit={submit} noValidate className="grid gap-4 sm:grid-cols-2">
+        <FormError message={message} />
         <Input label={t('employees.number')} required {...field('employee_number')} />
         <Input label={t('employees.workEmail')} type="email" {...field('work_email')} />
         <Input label={t('employees.firstName')} required {...field('first_name')} />

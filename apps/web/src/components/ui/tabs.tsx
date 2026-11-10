@@ -1,4 +1,4 @@
-import { useId, useRef, type KeyboardEvent, type ReactNode } from 'react';
+import { useId, useLayoutEffect, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 import { useControllable } from '@/lib/use-controllable';
 
@@ -25,6 +25,19 @@ export function Tabs({ label, tabs, value, defaultValue, onChange, className }: 
   const baseId = useId();
   const [active, setActive] = useControllable(value, defaultValue ?? tabs.find((t) => !t.disabled)?.id ?? '', onChange);
   const refs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const revealPending = useRef(false);
+  useLayoutEffect(() => {
+    if (!revealPending.current) return;
+    revealPending.current = false;
+    const tab = refs.current[active];
+    const list = tab?.parentElement;
+    if (!tab || !list) return;
+    const t = tab.getBoundingClientRect();
+    const l = list.getBoundingClientRect();
+    const gap = 4;
+    if (t.right > l.right) list.scrollLeft += t.right - l.right + gap;
+    else if (t.left < l.left) list.scrollLeft -= l.left - t.left + gap;
+  }, [active]);
   const enabled = tabs.filter((t) => !t.disabled);
 
   const onKeyDown = (event: KeyboardEvent) => {
@@ -39,7 +52,7 @@ export function Tabs({ label, tabs, value, defaultValue, onChange, className }: 
       event.preventDefault();
       setActive(target.id);
       refs.current[target.id]?.focus();
-      refs.current[target.id]?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+      revealPending.current = true;
     }
   };
 

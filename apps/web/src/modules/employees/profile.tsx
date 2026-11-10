@@ -8,7 +8,7 @@ import { useSession } from '@/auth/session';
 import { useI18n } from '@/i18n/i18n';
 import { PageHeader } from '@/shell/page-header';
 import { EmployeeForm } from './employee-form';
-import { DefinitionList, displayName, errorMessage, ResourceView, StatusBadge, useResource, validationErrors } from './shared';
+import { DefinitionList, displayName, errorMessage, formError, FormError, ResourceView, StatusBadge, useResource, useValueLabel, validationErrors } from './shared';
 
 const noOptions: DirectoryOptions = { departments: [], designations: [], legalEntities: [], workLocations: [] };
 
@@ -74,6 +74,7 @@ function Personal({ e }: { e: EmployeeDetail }) {
   const personal = useResource(useCallback((signal: AbortSignal) => source.personal(e.id, signal), [source, e.id]));
   const [form, setForm] = useState<PersonalDetails | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [message, setMessage] = useState<string | null>(null);
   const [sensitive, setSensitive] = useState<SensitiveDetails | null>(null);
 
   async function save(event: FormEvent) {
@@ -86,6 +87,7 @@ function Personal({ e }: { e: EmployeeDetail }) {
       personal.reload();
     } catch (error) {
       setErrors(validationErrors(error));
+      setMessage(formError(error, t('employees.saveFailed')));
     }
   }
 
@@ -113,9 +115,10 @@ function Personal({ e }: { e: EmployeeDetail }) {
         </section>
       )}
       {form && (
-        <Modal open onClose={() => setForm(null)} title={t('employees.tab.personal')}
+        <Modal open onClose={() => { setForm(null); setMessage(null); }} title={t('employees.tab.personal')}
           footer={<><Button variant="secondary" onClick={() => setForm(null)}>{t('ui.cancel')}</Button><Button type="submit" form="personal-form">{t('employees.save')}</Button></>}>
           <form id="personal-form" onSubmit={save} noValidate className="grid gap-4">
+            <FormError message={message} />
             <Input label={t('employees.personalEmail')} type="email" value={form.personal_email ?? ''} error={errors.personal_email} onChange={(ev) => setForm({ ...form, personal_email: ev.target.value })} />
             <Input label={t('employees.mobilePhone')} type="tel" value={form.mobile_phone ?? ''} error={errors.mobile_phone} onChange={(ev) => setForm({ ...form, mobile_phone: ev.target.value })} />
             <Input label={t('employees.nationality')} maxLength={2} value={form.nationality ?? ''} error={errors.nationality} onChange={(ev) => setForm({ ...form, nationality: ev.target.value.toUpperCase() })} />
@@ -128,6 +131,7 @@ function Personal({ e }: { e: EmployeeDetail }) {
 
 function History({ id }: { id: string }) {
   const { t } = useI18n();
+  const label = useValueLabel();
   const source = useEmployeeSource();
   const history = useResource(useCallback((signal: AbortSignal) => source.history(id, signal), [source, id]));
   return (
@@ -142,7 +146,7 @@ function History({ id }: { id: string }) {
                   <time className="text-fg-muted" dateTime={entry.effective_date}>{entry.effective_date}</time>
                 </div>
                 <ul className="mt-1 text-sm text-fg-secondary">
-                  {Object.entries(entry.changes).map(([field, c]) => <li key={field}>{t('employees.changeLine', { field, from: c.from ?? '—', to: c.to ?? '—' })}</li>)}
+                  {Object.entries(entry.changes).map(([field, c]) => <li key={field}>{t('employees.changeLine', { field: label('field', field), from: field === 'status' && c.from ? label('status', c.from) : c.from ?? '—', to: field === 'status' && c.to ? label('status', c.to) : c.to ?? '—' })}</li>)}
                 </ul>
                 {entry.note && <p className="mt-1 text-sm text-fg">{entry.note}</p>}
                 {entry.recorded_by && <p className="mt-1 text-xs text-fg-muted">{t('employees.recordedBy', { name: entry.recorded_by })}</p>}
@@ -157,6 +161,7 @@ function History({ id }: { id: string }) {
 
 function Documents({ id }: { id: string }) {
   const { t } = useI18n();
+  const label = useValueLabel();
   const source = useEmployeeSource();
   const { toast } = useToast();
   const docs = useResource(useCallback((signal: AbortSignal) => source.documents(id, signal), [source, id]));
@@ -184,7 +189,7 @@ function Documents({ id }: { id: string }) {
           <ul className="divide-y divide-line">
             {d.data.map((doc) => (
               <li key={doc.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
-                <span className="min-w-0 truncate">{doc.name} <Badge size="sm">{doc.category}</Badge></span>
+                <span className="min-w-0 truncate">{doc.name} <Badge size="sm">{label('category', doc.category)}</Badge></span>
                 <Button variant="link" onClick={() => source.download(doc.id, doc.name)} aria-label={t('employees.download', { name: doc.name })}>{t('employees.tab.documents')}</Button>
               </li>
             ))}
@@ -196,7 +201,7 @@ function Documents({ id }: { id: string }) {
           <label className="text-sm font-medium text-fg">{t('employees.file')}
             <input type="file" className="mt-1 block text-sm" accept=".pdf,.png,.jpg,.jpeg,.docx,.xlsx,.csv,.txt" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
           </label>
-          <Select label={t('employees.category')} value={category} onChange={(e) => setCategory(e.target.value)} options={categories.map((c) => ({ value: c, label: c }))} />
+          <Select label={t('employees.category')} value={category} onChange={(e) => setCategory(e.target.value)} options={categories.map((c) => ({ value: c, label: label('category', c) }))} />
           <Button type="submit" disabled={!file}>{t('employees.upload')}</Button>
         </form>
       )}
@@ -206,10 +211,12 @@ function Documents({ id }: { id: string }) {
 
 function Contacts({ e }: { e: EmployeeDetail }) {
   const { t } = useI18n();
+  const label = useValueLabel();
   const source = useEmployeeSource();
   const contacts = useResource(useCallback((signal: AbortSignal) => source.contacts(e.id, signal), [source, e.id]));
   const [form, setForm] = useState<{ name: string; relationship: string; phone: string; email: string; is_primary: boolean } | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [message, setMessage] = useState<string | null>(null);
   const relationships = ['spouse', 'partner', 'parent', 'child', 'sibling', 'relative', 'friend', 'other'];
 
   async function save(event: FormEvent) {
@@ -221,6 +228,7 @@ function Contacts({ e }: { e: EmployeeDetail }) {
       contacts.reload();
     } catch (error) {
       setErrors(validationErrors(error));
+      setMessage(formError(error, t('employees.saveFailed')));
     }
   }
 
@@ -233,7 +241,7 @@ function Contacts({ e }: { e: EmployeeDetail }) {
               <li key={c.id} className="flex items-start justify-between gap-2 rounded-md border border-line p-3 text-sm">
                 <div className="min-w-0">
                   <div className="font-medium text-fg">{c.name} {c.is_primary && <Badge tone="accent" size="sm">{t('employees.primary')}</Badge>}</div>
-                  <div className="text-fg-muted">{c.relationship} · {c.phone}{c.email ? ` · ${c.email}` : ''}</div>
+                  <div className="text-fg-muted">{label('relationship', c.relationship)} · {c.phone}{c.email ? ` · ${c.email}` : ''}</div>
                 </div>
                 {e.abilities.update_personal && <IconButton variant="tertiary" size="sm" icon={<XIcon size={16} />} label={t('employees.remove', { name: c.name })}
                   onClick={() => source.removeContact(e.id, c.id).then(contacts.reload)} />}
@@ -244,11 +252,12 @@ function Contacts({ e }: { e: EmployeeDetail }) {
       </ResourceView>
       {e.abilities.update_personal && <Button variant="secondary" onClick={() => setForm({ name: '', relationship: 'spouse', phone: '', email: '', is_primary: false })}>{t('employees.addContact')}</Button>}
       {form && (
-        <Modal open onClose={() => setForm(null)} title={t('employees.addContact')}
+        <Modal open onClose={() => { setForm(null); setMessage(null); }} title={t('employees.addContact')}
           footer={<><Button variant="secondary" onClick={() => setForm(null)}>{t('ui.cancel')}</Button><Button type="submit" form="contact-form">{t('employees.save')}</Button></>}>
           <form id="contact-form" onSubmit={save} noValidate className="grid gap-4">
+            <FormError message={message} />
             <Input label={t('employees.name')} required value={form.name} error={errors.name} onChange={(ev) => setForm({ ...form, name: ev.target.value })} />
-            <Select label={t('employees.relationship')} value={form.relationship} error={errors.relationship} onChange={(ev) => setForm({ ...form, relationship: ev.target.value })} options={relationships.map((r) => ({ value: r, label: r }))} />
+            <Select label={t('employees.relationship')} value={form.relationship} error={errors.relationship} onChange={(ev) => setForm({ ...form, relationship: ev.target.value })} options={relationships.map((r) => ({ value: r, label: label('relationship', r) }))} />
             <Input label={t('employees.phone')} type="tel" required value={form.phone} error={errors.phone} onChange={(ev) => setForm({ ...form, phone: ev.target.value })} />
             <Input label={t('employees.email')} type="email" value={form.email} error={errors.email} onChange={(ev) => setForm({ ...form, email: ev.target.value })} />
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.is_primary} onChange={(ev) => setForm({ ...form, is_primary: ev.target.checked })} />{t('employees.primary')}</label>
@@ -289,11 +298,13 @@ function Policies({ id }: { id: string }) {
 const SEVERITIES = ['verbal_warning', 'written_warning', 'final_warning', 'suspension', 'other'];
 function Records({ e }: { e: EmployeeDetail }) {
   const { t } = useI18n();
+  const label = useValueLabel();
   const source = useEmployeeSource();
   const records = useResource(useCallback((signal: AbortSignal) => source.records(e.id, signal), [source, e.id]));
   const blank = { type: 'note' as HrRecord['type'], severity: '', title: '', body: '', occurred_on: '' };
   const [form, setForm] = useState<typeof blank | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [message, setMessage] = useState<string | null>(null);
 
   async function save(event: FormEvent) {
     event.preventDefault();
@@ -304,6 +315,7 @@ function Records({ e }: { e: EmployeeDetail }) {
       records.reload();
     } catch (error) {
       setErrors(validationErrors(error));
+      setMessage(formError(error, t('employees.saveFailed')));
     }
   }
 
@@ -319,7 +331,7 @@ function Records({ e }: { e: EmployeeDetail }) {
                   <Badge tone={r.type === 'disciplinary' ? 'danger' : 'neutral'} size="sm">{t(`employees.record.${r.type}`)}</Badge>
                   <span className="font-medium text-fg">{r.title}</span>
                   <time className="text-fg-muted" dateTime={r.occurred_on}>{r.occurred_on}</time>
-                  {r.severity && <span className="text-fg-muted">{r.severity.replace('_', ' ')}</span>}
+                  {r.severity && <span className="text-fg-muted">{label('severity', r.severity)}</span>}
                 </div>
                 <p className="mt-1 whitespace-pre-line text-fg-secondary">{r.body}</p>
                 {r.author && <p className="mt-1 text-xs text-fg-muted">{t('employees.recordedBy', { name: r.author })}</p>}
@@ -330,13 +342,14 @@ function Records({ e }: { e: EmployeeDetail }) {
       </ResourceView>
       {e.abilities.manage_records && <Button variant="secondary" onClick={() => setForm(blank)}>{t('employees.addRecord')}</Button>}
       {form && (
-        <Modal open onClose={() => setForm(null)} title={t('employees.addRecord')}
+        <Modal open onClose={() => { setForm(null); setMessage(null); }} title={t('employees.addRecord')}
           footer={<><Button variant="secondary" onClick={() => setForm(null)}>{t('ui.cancel')}</Button><Button type="submit" form="record-form">{t('employees.save')}</Button></>}>
           <form id="record-form" onSubmit={save} noValidate className="grid gap-4">
+            <FormError message={message} />
             <Select label={t('employees.recordType')} value={form.type} onChange={(ev) => setForm({ ...form, type: ev.target.value as HrRecord['type'] })}
               options={(['note', 'disciplinary'] as const).map((v) => ({ value: v, label: t(`employees.record.${v}`) }))} />
             {form.type === 'disciplinary' && <Select label={t('employees.severity')} required placeholder={t('employees.none')} value={form.severity} error={errors.severity}
-              onChange={(ev) => setForm({ ...form, severity: ev.target.value })} options={SEVERITIES.map((s) => ({ value: s, label: s.replace('_', ' ') }))} />}
+              onChange={(ev) => setForm({ ...form, severity: ev.target.value })} options={SEVERITIES.map((s) => ({ value: s, label: label('severity', s) }))} />}
             <Input label={t('employees.recordTitle')} required value={form.title} error={errors.title} onChange={(ev) => setForm({ ...form, title: ev.target.value })} />
             <Input label={t('employees.recordBody')} required value={form.body} error={errors.body} onChange={(ev) => setForm({ ...form, body: ev.target.value })} />
             <DatePicker label={t('employees.occurredOn')} required value={form.occurred_on} error={errors.occurred_on} onChange={(v) => setForm({ ...form, occurred_on: v })} />

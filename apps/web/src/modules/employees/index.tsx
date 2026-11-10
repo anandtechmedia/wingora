@@ -36,7 +36,10 @@ function Directory() {
   const can = (p: string) => permissions.has(p);
   const opts = options.data ?? noOptions;
   const filtered = JSON.stringify({ ...query, page: 1, sort: 'name' }) !== JSON.stringify(emptyEmployeeQuery);
-  const update = (patch: Partial<EmployeeQuery>) => setQuery((q) => ({ ...q, page: 1, ...patch }));
+  const update = (patch: Partial<EmployeeQuery>) => setQuery((q) => {
+    const next = { ...q, page: 1, ...patch };
+    return (Object.keys(next) as (keyof EmployeeQuery)[]).every((k) => next[k] === q[k]) ? q : next;
+  });
 
   const columns = useMemo<DataTableColumn<EmployeeSummary>[]>(() => [
     { id: 'name', header: t('employees.name'), sortable: true, primary: true, cell: (e) => (

@@ -31,6 +31,25 @@ export function validationErrors(error: unknown): Record<string, string> {
   return Object.fromEntries(Object.entries(errors).map(([k, v]) => [k, v[0] ?? '']));
 }
 
+/** Message for the form as a whole, shown inline so it never covers the dialog's buttons. */
+export function formError(error: unknown, fallback: string): string | null {
+  return Object.keys(validationErrors(error)).length > 0 ? null : errorMessage(error, fallback);
+}
+
+export function FormError({ message }: { message: string | null }) {
+  return message ? <p role="alert" className="text-sm text-danger-fg sm:col-span-2">{message}</p> : null;
+}
+
+/** Translates a fixed API value (`employees.<group>.<value>`), falling back to the raw value. */
+export function useValueLabel() {
+  const { t } = useI18n();
+  return (group: string, value: string) => {
+    const key = `employees.${group}.${value}` as MessageKey;
+    const label = t(key);
+    return label === key ? value.replace(/_/g, ' ') : label;
+  };
+}
+
 export function errorMessage(error: unknown, fallback: string): string {
   const body = error instanceof ApiError ? (error.body as { message?: string; detail?: string } | null) : null;
   return body?.detail ?? body?.message ?? fallback;
