@@ -46,9 +46,11 @@ final class RoleCatalog
                 P::OrganizationView, P::UsersView, P::UsersManage, P::RolesAssign, P::DepartmentsView, P::DepartmentsManage,
                 P::EmployeesViewAll, P::EmployeesManage, P::EmployeesSensitiveView, P::FilesUpload, P::AuditView,
                 P::LegalEntitiesManage, P::HolidaysManage,
+                P::EmployeesDisciplinaryView, P::EmployeesDisciplinaryManage, P::EmployeesImport, P::EmployeesExport, P::PoliciesManage,
             ]],
             self::HR_MANAGER => ['name' => 'HR Manager', 'scope' => 'tenant', 'privileged' => true, 'permissions' => [
                 P::OrganizationView, P::UsersView, P::DepartmentsView, P::EmployeesViewAll, P::EmployeesManage, P::FilesUpload, P::HolidaysManage,
+                P::EmployeesDisciplinaryView, P::EmployeesDisciplinaryManage, P::EmployeesExport,
             ]],
             self::DEPARTMENT_MANAGER => ['name' => 'Department Manager', 'scope' => 'tenant', 'privileged' => false, 'permissions' => [
                 P::OrganizationView, P::EmployeesViewDepartment, P::EmployeesViewSelf, P::FilesUpload,

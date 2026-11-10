@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -13,9 +14,17 @@ class Employee extends TenantModel
 
     protected $attributes = ['status' => 'active'];
 
-    protected $fillable = ['employee_number', 'first_name', 'last_name', 'work_email', 'job_title'];
+    public const STATUSES = ['active', 'on_leave', 'suspended', 'terminated'];
 
-    protected $hidden = ['id', 'tenant_id', 'user_id', 'department_id', 'manager_id', 'legal_entity_id', 'work_location_id', 'national_id', 'bank_account_number', 'date_of_birth', 'birthday_md', 'hire_md'];
+    /** Fields whose change is recorded in employment history. */
+    public const EMPLOYMENT_FIELDS = ['department_id', 'designation_id', 'job_title', 'manager_id', 'legal_entity_id', 'work_location_id', 'employment_type', 'status', 'hire_date', 'termination_date'];
+
+    protected $fillable = ['employee_number', 'first_name', 'last_name', 'preferred_name', 'work_email', 'job_title'];
+
+    protected $hidden = [
+        'id', 'tenant_id', 'user_id', 'department_id', 'designation_id', 'manager_id', 'legal_entity_id', 'work_location_id',
+        'national_id', 'bank_account_number', 'date_of_birth', 'birthday_md', 'hire_md', 'personal_email', 'mobile_phone', 'home_address',
+    ];
 
     protected function casts(): array
     {
@@ -23,6 +32,9 @@ class Employee extends TenantModel
             'national_id' => 'encrypted',
             'bank_account_number' => 'encrypted',
             'date_of_birth' => 'encrypted',
+            'personal_email' => 'encrypted',
+            'mobile_phone' => 'encrypted',
+            'home_address' => 'encrypted:array',
             'hire_date' => 'date',
             'termination_date' => 'date',
         ];
@@ -54,6 +66,36 @@ class Employee extends TenantModel
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);
+    }
+
+    public function designation(): BelongsTo
+    {
+        return $this->belongsTo(Designation::class);
+    }
+
+    public function history(): HasMany
+    {
+        return $this->hasMany(EmploymentHistory::class);
+    }
+
+    public function emergencyContacts(): HasMany
+    {
+        return $this->hasMany(EmergencyContact::class);
+    }
+
+    public function records(): HasMany
+    {
+        return $this->hasMany(EmployeeRecord::class);
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(StoredFile::class);
+    }
+
+    public function policyAcknowledgements(): HasMany
+    {
+        return $this->hasMany(PolicyAcknowledgement::class);
     }
 
     public function manager(): BelongsTo

@@ -27,6 +27,11 @@ enum Permission: string
     case EmployeesViewSelf = 'employees.view.self';
     case EmployeesManage = 'employees.manage';
     case EmployeesSensitiveView = 'employees.sensitive.view';
+    case EmployeesDisciplinaryView = 'employees.disciplinary.view';
+    case EmployeesDisciplinaryManage = 'employees.disciplinary.manage';
+    case EmployeesImport = 'employees.import';
+    case EmployeesExport = 'employees.export';
+    case PoliciesManage = 'policies.manage';
     case PayrollView = 'payroll.view';
     case PayrollManage = 'payroll.manage';
     case FilesUpload = 'files.upload';

@@ -10,8 +10,13 @@ use App\Http\Controllers\Api\V1\Auth\SessionController;
 use App\Http\Controllers\Api\V1\Auth\TokenController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DepartmentController;
+use App\Http\Controllers\Api\V1\DesignationController;
+use App\Http\Controllers\Api\V1\EmergencyContactController;
 use App\Http\Controllers\Api\V1\EmployeeAssignmentController;
 use App\Http\Controllers\Api\V1\EmployeeController;
+use App\Http\Controllers\Api\V1\EmployeeDocumentController;
+use App\Http\Controllers\Api\V1\EmployeeImporter;
+use App\Http\Controllers\Api\V1\EmployeeRecordController;
 use App\Http\Controllers\Api\V1\FileController;
 use App\Http\Controllers\Api\V1\HolidayCalendarController;
 use App\Http\Controllers\Api\V1\LegalEntityController;
@@ -21,6 +26,7 @@ use App\Http\Controllers\Api\V1\Platform\AuditLogController as PlatformAuditLogC
 use App\Http\Controllers\Api\V1\Platform\RuleSetController;
 use App\Http\Controllers\Api\V1\Platform\RuleVersionController;
 use App\Http\Controllers\Api\V1\Platform\TenantController;
+use App\Http\Controllers\Api\V1\PolicyController;
 use App\Http\Controllers\Api\V1\ReferenceController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\WorkLocationController;
@@ -79,11 +85,41 @@ Route::prefix('v1')->name('v1.')->group(function () {
                 Route::get('dashboard', DashboardController::class);
 
                 Route::get('departments', [DepartmentController::class, 'index']);
+                Route::post('departments', [DepartmentController::class, 'store']);
                 Route::get('departments/{department}', [DepartmentController::class, 'show']);
+                Route::patch('departments/{department}', [DepartmentController::class, 'update']);
+
+                Route::get('designations', [DesignationController::class, 'index']);
+                Route::post('designations', [DesignationController::class, 'store']);
+                Route::patch('designations/{designation}', [DesignationController::class, 'update']);
 
                 Route::get('employees', [EmployeeController::class, 'index']);
+                Route::post('employees', [EmployeeController::class, 'store']);
+                Route::get('employees/export', [EmployeeController::class, 'export'])->middleware('throttle:exports');
+                Route::get('employees/import', [EmployeeImporter::class, 'template']);
+                Route::post('employees/import', EmployeeImporter::class)->middleware('throttle:uploads');
                 Route::get('employees/{employee}', [EmployeeController::class, 'show']);
+                Route::patch('employees/{employee}', [EmployeeController::class, 'update']);
+                Route::get('employees/{employee}/history', [EmployeeController::class, 'history']);
+                Route::get('employees/{employee}/personal', [EmployeeController::class, 'personal']);
+                Route::patch('employees/{employee}/personal', [EmployeeController::class, 'updatePersonal']);
                 Route::get('employees/{employee}/sensitive', [EmployeeController::class, 'sensitive']);
+                Route::patch('employees/{employee}/sensitive', [EmployeeController::class, 'updateSensitive']);
+                Route::get('employees/{employee}/emergency-contacts', [EmergencyContactController::class, 'index']);
+                Route::post('employees/{employee}/emergency-contacts', [EmergencyContactController::class, 'store']);
+                Route::patch('employees/{employee}/emergency-contacts/{contact}', [EmergencyContactController::class, 'update']);
+                Route::delete('employees/{employee}/emergency-contacts/{contact}', [EmergencyContactController::class, 'destroy']);
+                Route::get('employees/{employee}/records', [EmployeeRecordController::class, 'index']);
+                Route::post('employees/{employee}/records', [EmployeeRecordController::class, 'store']);
+                Route::delete('employees/{employee}/records/{record}', [EmployeeRecordController::class, 'destroy']);
+                Route::get('employees/{employee}/documents', [EmployeeDocumentController::class, 'index']);
+                Route::get('employees/{employee}/policies', [PolicyController::class, 'forEmployee']);
+
+                Route::get('policies', [PolicyController::class, 'index']);
+                Route::post('policies', [PolicyController::class, 'store']);
+                Route::post('policies/{policy}/publish', [PolicyController::class, 'publish']);
+                Route::post('policies/{policy}/retire', [PolicyController::class, 'retire']);
+                Route::post('policies/{policy}/acknowledge', [PolicyController::class, 'acknowledge']);
                 Route::get('employees/{employee}/compensation', [EmployeeController::class, 'compensation']);
                 Route::put('employees/{employee}/assignment', [EmployeeAssignmentController::class, 'update']);
 
