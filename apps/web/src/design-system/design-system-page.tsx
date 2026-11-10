@@ -4,7 +4,7 @@ import {
   Avatar, Badge, Button, Card, Checkbox, ConfirmationDialog, DataTable, DatePicker, Drawer, Dropdown, EmptyState, ErrorState, IconButton,
   Input, LoadingState, Modal, MoreIcon, Pagination, RadioGroup, SearchIcon, Select, Tabs, useToast, type SortState,
 } from '@/components/ui';
-import { PageHeader } from '@/layouts/app-shell';
+import { PageHeader } from '@/shell/page-header';
 
 /**
  * Living reference for the design system. Internal developer documentation: its copy is intentionally
@@ -273,7 +273,7 @@ export function DesignSystemPage({ locale, onLocaleChange }: { locale: string; o
       </Section>
 
       <Section id="navigation" title="Navigation" description="Sidebar grouped by product area; icon rail on tablet; drawer on mobile. Resize the window to see each layout.">
-        <p className="text-sm text-fg-secondary">The application frame around this page is the production <code className="rounded-sm bg-surface-muted px-1 font-mono text-xs">AppShell</code>.</p>
+        <p className="text-sm text-fg-secondary">The application frame around this page is the production <code className="rounded-sm bg-surface-muted px-1 font-mono text-xs">AppLayout</code>.</p>
       </Section>
     </>
   );

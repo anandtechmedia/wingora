@@ -13,8 +13,10 @@
   "dependencies": {
     "@wingora/design-tokens": "workspace:*",
     "@wingora/localization": "workspace:*",
+    "@wingora/permissions": "workspace:*",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "react-router": "^7.18.5"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.0",

@@ -9,7 +9,7 @@ Premium enterprise SaaS: minimalist, light, sharp type, clear hierarchy, white a
 | `packages/design-tokens` | Platform-agnostic tokens (TypeScript), WCAG contrast checks, generated Tailwind v4 theme (`css/tokens.css`) |
 | `packages/localization` | `en`/`es` catalogs (Arabic and French planned), translator, text direction |
 | `apps/web/src/components/ui` | React components (web only, per AGENTS.md section 17) |
-| `apps/web/src/layouts` | `AppShell` (responsive frame) and `PageHeader` |
+| `apps/web/src/shell` | Application layout and `PageHeader` (see [web-shell.md](web-shell.md)) |
 | `apps/web/src/design-system` | Live reference page (`pnpm dev`, then open http://localhost:5173) |
 
 | Desktop (≥ 1024px) | Tablet (768–1023px) | Mobile web (< 768px) |
@@ -87,9 +87,9 @@ All components live in `apps/web/src/components/ui`, one kebab-case file per com
 
 ## Layouts
 
-`AppShell` provides:
-- A skip link and a labelled main navigation grouped by the 13 product areas, with `aria-current` on the active page.
-- A header with search, notifications and an account menu.
+The application layout (`AppLayout`, documented in [web-shell.md](web-shell.md)) provides:
+- A skip link and a labelled main navigation of the modules the user may open, with `aria-current` on the active page.
+- A header with workspace selectors, search, notifications and an account menu.
 - `<main id="main-content">`.
 
 | Viewport | Navigation | Content padding |
