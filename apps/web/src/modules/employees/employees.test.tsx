@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { configure, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
@@ -11,6 +11,9 @@ import { createMockGateway } from '@/mocks/mock-gateway';
 import { personas } from '@/mocks/fixtures';
 import { WorkspaceProvider } from '@/shell/workspace';
 import { createRoutes } from '@/app/routes';
+
+// The first test also pays for the lazy route chunk; CI runners can exceed the 1 s default.
+configure({ asyncUtilTimeout: 5000 });
 
 /** Test doubles shaped like the Employee Management API (backend feature tests assert the real payloads). */
 const ana: EmployeeSummary = {
