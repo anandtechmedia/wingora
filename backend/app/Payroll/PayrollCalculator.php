@@ -75,7 +75,7 @@ final class PayrollCalculator
             $windowTo = min($to, $employee->termination_date?->toDateString() ?? $to);
             $base = 0;
             $daysPaid = 0;
-            $last = null;
+            $groups = [];
 
             // Off-cycle runs carry only entered/provider lines (bonuses, corrections), never a second base salary.
             foreach ($offCycle ? [] : $employee->compensationRecords as $record) {
@@ -99,31 +99,36 @@ final class PayrollCalculator
                 ]);
                 $base += $amount;
                 $daysPaid += $segDays;
-                $last = $record;
+                // Structure components apply only to the days (and base) covered by records carrying that structure.
+                if ($record->structure) {
+                    $sid = $record->salary_structure_id;
+                    $groups[$sid] ??= ['structure' => $record->structure, 'days' => 0, 'base' => 0, 'to' => $segTo];
+                    $groups[$sid]['days'] += $segDays;
+                    $groups[$sid]['base'] += $amount;
+                    $groups[$sid]['to'] = max($groups[$sid]['to'], $segTo);
+                }
             }
 
-            if ($last?->structure) {
-                $components = SalaryComponent::query()->where('salary_structure_id', $last->salary_structure_id)->effectiveOn($windowTo)->orderBy('sort_order')->get();
-                $existingCodes = $slip->lines()->whereIn('source', ['manual', 'provider'])->pluck('code')->all();
+            $awaiting = [];
+            foreach ($groups as $sid => $g) {
+                $components = SalaryComponent::query()->where('salary_structure_id', $sid)->effectiveOn($g['to'])->orderBy('sort_order')->get();
                 foreach ($components as $c) {
                     $amount = match ($c->method) {
-                        'fixed' => $daysPaid < $periodDays ? Money::mulDiv((int) $c->amount_minor, $daysPaid, $periodDays) : (int) $c->amount_minor,
-                        'percent_of_base' => Money::percent($base, (int) $c->rate_basis_points),
+                        'fixed' => $g['days'] < $periodDays ? Money::mulDiv((int) $c->amount_minor, $g['days'], $periodDays) : (int) $c->amount_minor,
+                        'percent_of_base' => Money::percent($g['base'], (int) $c->rate_basis_points),
                         default => null,
                     };
                     if ($amount === null) {
-                        if (! in_array($c->code, $existingCodes, true)) {
-                            $issues[] = ['code' => 'awaiting_input', 'message' => __(':name needs an entered or provider value.', ['name' => $c->name]), 'component' => $c->code, 'method' => $c->method];
-                        }
+                        $awaiting[strtoupper($c->code)] = ['component' => strtoupper($c->code), 'name' => $c->name, 'method' => $c->method];
 
                         continue;
                     }
                     $this->line($slip, $c->code, $c->name, $c->kind, $amount, array_filter([
-                        'method' => $c->method, 'structure' => $last->structure->code,
+                        'method' => $c->method, 'structure' => $g['structure']->code,
                         'fixed_amount' => $c->method === 'fixed' ? Money::toDecimal((int) $c->amount_minor, $run->currency) : null,
                         'rate_percent' => $c->method === 'percent_of_base' ? number_format($c->rate_basis_points / 100, 2, '.', '') : null,
-                        'of' => $c->method === 'percent_of_base' ? Money::toDecimal($base, $run->currency) : null,
-                        'prorated_days' => $c->method === 'fixed' && $daysPaid < $periodDays ? "{$daysPaid}/{$periodDays}" : null,
+                        'of' => $c->method === 'percent_of_base' ? Money::toDecimal($g['base'], $run->currency) : null,
+                        'prorated_days' => $c->method === 'fixed' && $g['days'] < $periodDays ? "{$g['days']}/{$periodDays}" : null,
                     ], fn ($v) => $v !== null));
                 }
             }
@@ -132,7 +137,7 @@ final class PayrollCalculator
                 $this->loans($run, $slip, $employee, $to, $issues);
             }
             $this->reimbursements($run, $slip, $employee);
-            $slip->forceFill(['days_paid' => $daysPaid, 'issues' => $issues ?: null])->save();
+            $slip->forceFill(['days_paid' => $daysPaid, 'issues' => $issues ?: null, 'snapshot' => ['awaiting_inputs' => array_values($awaiting)] + $slip->snapshot])->save();
             self::refreshPayslip($slip);
         }
 
@@ -193,7 +198,13 @@ final class PayrollCalculator
         $sums = $slip->lines()->toBase()->selectRaw("sum(case when kind = 'earning' then amount_minor else 0 end) as gross, sum(case when kind = 'deduction' then amount_minor else 0 end) as ded")->first();
         $gross = (int) ($sums->gross ?? 0);
         $ded = (int) ($sums->ded ?? 0);
-        $issues = array_values(array_filter($slip->issues ?? [], fn ($i) => $i['code'] !== 'negative_net'));
+        $issues = array_values(array_filter($slip->issues ?? [], fn ($i) => ! in_array($i['code'], ['negative_net', 'awaiting_input'], true)));
+        $filled = array_map('strtoupper', $slip->lines()->whereIn('source', ['manual', 'provider'])->pluck('code')->all());
+        foreach ($slip->snapshot['awaiting_inputs'] ?? [] as $a) {
+            if (! in_array($a['component'], $filled, true)) {
+                $issues[] = ['code' => 'awaiting_input', 'message' => __(':name needs an entered or provider value.', ['name' => $a['name']]), 'component' => $a['component'], 'method' => $a['method']];
+            }
+        }
         if ($gross - $ded < 0) {
             $issues[] = ['code' => 'negative_net', 'message' => __('Deductions exceed earnings.')];
         }

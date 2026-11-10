@@ -32,9 +32,11 @@ These are arithmetic conventions, not legal rules.
 2. **Proration by calendar days:** each compensation record overlapping the period and the employment window
    (`hire_date`–`termination_date`) gives one `BASE` line: full-period amount × days covered ÷ days in period.
    A mid-period raise gives two lines.
-3. **Structure components** (from the latest record's structure, effective on the last day paid): `fixed` is prorated
-   by days paid; `percent_of_base` is the rate × total base. `manual`/`provider` components raise an `awaiting_input`
-   issue until a line with that code exists.
+3. **Structure components** apply per structure, only to the days covered by records that carry it (components
+   effective on the last such day): `fixed` is prorated by those days; `percent_of_base` is the rate × the base of those
+   days. A structure assigned on the 17th of a 31-day month pays a 500.00 fixed allowance as 241.94 (15/31).
+   `manual`/`provider` components raise an `awaiting_input` issue while no entered or provider line with that code
+   exists; removing that line brings the issue back.
 4. **Loans:** `min(instalment, outstanding)`, no interest. The repayment is recorded on final approval; the loan
    closes at zero.
 5. **Reimbursements:** approved, unpaid items in the run currency become earnings and are marked `paid` on final

@@ -50,7 +50,7 @@ trait PresentsPayroll
     protected function presentPayslip(Payslip $slip, bool $withLines = false): array
     {
         $c = $slip->currency;
-        $data = ['id' => $slip->public_id, 'employee' => $slip->snapshot, 'currency' => $c, 'days_paid' => $slip->days_paid, 'period_days' => $slip->period_days,
+        $data = ['id' => $slip->public_id, 'employee' => array_diff_key($slip->snapshot ?? [], ['awaiting_inputs' => true]), 'currency' => $c, 'days_paid' => $slip->days_paid, 'period_days' => $slip->period_days,
             'gross' => $this->money($slip->gross_minor, $c), 'deductions' => $this->money($slip->deductions_minor, $c), 'net' => $this->money($slip->net_minor, $c),
             'issues' => $slip->issues ?? []];
         if ($withLines) {

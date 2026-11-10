@@ -250,6 +250,32 @@ class PayrollTest extends CountryTestCase
         $this->assertNull($this->line($this->slips($this->startRun($periods[1]))[0], 'REIMB'));
     }
 
+    public function test_structure_components_cover_only_the_structure_days_and_entered_inputs_clear_issues(): void
+    {
+        [, $e] = $this->staff();
+        [, $periods] = $this->calendar(1);
+        $structure = $this->structure();
+        $this->pay($e);
+        $this->pay($e, '60000.00', '2027-01-17', $structure);
+        $run = $this->startRun($periods[0]);
+        $slip = fn () => collect($this->slips($run))->firstWhere('employee.employee_number', $e->employee_number);
+        $s = $slip();
+        // Structure covers 15 of 31 days: HOUSING 500.00 × 15/31 = 241.935 → 241.94; PENSION 5% of 2419.35 = 120.9675 → 120.97.
+        $this->assertSame('241.94', $this->line($s, 'HOUSING')['amount']['amount']);
+        $this->assertSame('15/31', $this->line($s, 'HOUSING')['basis']['prorated_days']);
+        $this->assertSame('120.97', $this->line($s, 'PENSION')['amount']['amount']);
+        $this->assertSame(['awaiting_input'], array_column($s['issues'], 'code'));
+        $this->assertArrayNotHasKey('awaiting_inputs', $s['employee']);
+
+        $line = $this->apiAs($this->preparer, 'POST', "/api/v1/payroll/runs/{$run}/payslips/{$s['id']}/lines", ['code' => 'fica', 'name' => 'FICA', 'kind' => 'deduction',
+            'amount' => '100.00', 'reason' => 'From provider worksheet'])->assertSuccessful()->json('data.id');
+        $this->assertSame([], $slip()['issues']);
+        $this->apiAs($this->preparer, 'DELETE', "/api/v1/payroll/runs/{$run}/lines/{$line}")->assertSuccessful();
+        $this->assertSame(['awaiting_input'], array_column($slip()['issues'], 'code'));
+        $this->apiAs($this->preparer, 'POST', "/api/v1/payroll/runs/{$run}/prepare")->assertOk();
+        $this->assertSame(['awaiting_input'], array_column($slip()['issues'], 'code'));
+    }
+
     public function test_country_rules_bound_configuration_and_statutory_items_are_never_calculated(): void
     {
         $this->apiAs($this->owner, 'POST', '/api/v1/payroll/calendars', ['legal_entity' => $this->us->public_id, 'name' => 'Weekly', 'pay_frequency' => 'weekly',
