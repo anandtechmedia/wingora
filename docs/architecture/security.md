@@ -36,6 +36,8 @@ System role permissions are always resolved from `app/Security/RoleCatalog.php`,
 | Payroll Administrator | tenant | yes | Compensation and sensitive pay fields. |
 | Auditor | tenant | yes | Read audit log and security events; users list. No HR records. |
 
+Country configuration adds `platform.country-rules.manage` / `platform.country-rules.approve` (both platform roles; approval is maker-checker), `organization.entities.manage` (Organization Owner, HR Administrator) and `holidays.manage` (Organization Owner, HR Administrator, HR Manager). See `country-configuration.md`.
+
 Role assignment (`app/Security/RoleAssigner.php`) blocks privilege escalation: an actor can only grant roles whose permissions they already hold, only an Organization Owner can grant Organization Owner, and users cannot change their own roles.
 
 Row-level employee/department visibility is defined once in `app/Security/EmployeeAccess.php` and used by both list queries and single-record policies.

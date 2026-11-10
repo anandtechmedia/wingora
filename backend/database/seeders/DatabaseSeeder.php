@@ -11,5 +11,6 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         RoleCatalog::syncPlatformRoles();
+        $this->call([ReferenceDataSeeder::class, CountryRuleTemplateSeeder::class]);
     }
 }

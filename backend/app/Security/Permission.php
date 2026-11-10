@@ -8,10 +8,14 @@ enum Permission: string
     case PlatformTenantsManage = 'platform.tenants.manage';
     case PlatformStaffManage = 'platform.staff.manage';
     case PlatformAuditView = 'platform.audit.view';
+    case PlatformCountryRulesManage = 'platform.country-rules.manage';
+    case PlatformCountryRulesApprove = 'platform.country-rules.approve';
 
     case OrganizationView = 'organization.view';
     case OrganizationManage = 'organization.manage';
     case OrganizationSecurityManage = 'organization.security.manage';
+    case LegalEntitiesManage = 'organization.entities.manage';
+    case HolidaysManage = 'holidays.manage';
     case UsersView = 'users.view';
     case UsersManage = 'users.manage';
     case RolesAssign = 'roles.assign';

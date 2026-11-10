@@ -36,17 +36,19 @@ final class RoleCatalog
         return [
             self::PLATFORM_OWNER => ['name' => 'Platform Owner', 'scope' => 'platform', 'privileged' => true, 'permissions' => [
                 P::PlatformTenantsView, P::PlatformTenantsManage, P::PlatformStaffManage, P::PlatformAuditView,
+                P::PlatformCountryRulesManage, P::PlatformCountryRulesApprove,
             ]],
             self::PLATFORM_ADMIN => ['name' => 'Platform Administrator', 'scope' => 'platform', 'privileged' => true, 'permissions' => [
-                P::PlatformTenantsView, P::PlatformTenantsManage, P::PlatformAuditView,
+                P::PlatformTenantsView, P::PlatformTenantsManage, P::PlatformAuditView, P::PlatformCountryRulesManage, P::PlatformCountryRulesApprove,
             ]],
             self::ORGANIZATION_OWNER => ['name' => 'Organization Owner', 'scope' => 'tenant', 'privileged' => true, 'permissions' => P::tenantPermissions()],
             self::HR_ADMIN => ['name' => 'HR Administrator', 'scope' => 'tenant', 'privileged' => true, 'permissions' => [
                 P::OrganizationView, P::UsersView, P::UsersManage, P::RolesAssign, P::DepartmentsView, P::DepartmentsManage,
                 P::EmployeesViewAll, P::EmployeesManage, P::EmployeesSensitiveView, P::FilesUpload, P::AuditView,
+                P::LegalEntitiesManage, P::HolidaysManage,
             ]],
             self::HR_MANAGER => ['name' => 'HR Manager', 'scope' => 'tenant', 'privileged' => true, 'permissions' => [
-                P::OrganizationView, P::UsersView, P::DepartmentsView, P::EmployeesViewAll, P::EmployeesManage, P::FilesUpload,
+                P::OrganizationView, P::UsersView, P::DepartmentsView, P::EmployeesViewAll, P::EmployeesManage, P::FilesUpload, P::HolidaysManage,
             ]],
             self::DEPARTMENT_MANAGER => ['name' => 'Department Manager', 'scope' => 'tenant', 'privileged' => false, 'permissions' => [
                 P::OrganizationView, P::EmployeesViewDepartment, P::EmployeesViewSelf, P::FilesUpload,

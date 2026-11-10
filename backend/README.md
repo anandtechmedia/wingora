@@ -2,7 +2,7 @@
 
 Laravel 13 / PHP 8.4 / MySQL 8 API for Wingora (App Wings LLC). Currently contains the security foundation only; HR modules are not implemented yet.
 
-Security architecture: [`docs/architecture/security.md`](../docs/architecture/security.md).
+Security architecture: [`docs/architecture/security.md`](../docs/architecture/security.md). Country configuration: [`docs/architecture/country-configuration.md`](../docs/architecture/country-configuration.md).
 
 ## Local setup (no Docker)
 
@@ -10,7 +10,7 @@ Security architecture: [`docs/architecture/security.md`](../docs/architecture/se
 cp .env.example .env          # fill DB_* for your local MySQL 8 database
 composer install
 php artisan key:generate
-php artisan migrate --seed    # seeds platform roles only
+php artisan migrate --seed    # platform roles, country reference data, draft rule templates
 php artisan wingora:platform-user you@example.com "Your Name" --role=platform-owner
 php artisan serve
 ```

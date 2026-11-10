@@ -25,6 +25,12 @@ class EmployeePolicy
         return EmployeeAccess::canViewEmployee($user, $employee);
     }
 
+    /** Assigning legal entity, work location and employment type. */
+    public function assign(User $user, Employee $employee): bool
+    {
+        return $this->sameTenant($user, $employee) && $user->hasPermission(P::EmployeesManage);
+    }
+
     public function viewSensitive(User $user, Employee $employee): bool
     {
         return $this->sameTenant($user, $employee) && $user->hasPermission(P::EmployeesSensitiveView);

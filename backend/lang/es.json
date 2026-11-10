@@ -1,0 +1,16 @@
+{
+    "Validation failed": "Error de validación",
+    "The given data was invalid.": "Los datos proporcionados no son válidos.",
+    "Unauthenticated": "No autenticado",
+    "Authentication is required.": "Se requiere autenticación.",
+    "Forbidden": "Prohibido",
+    "You are not allowed to perform this action.": "No tiene permiso para realizar esta acción.",
+    "Not found": "No encontrado",
+    "The requested resource was not found.": "No se encontró el recurso solicitado.",
+    "CSRF token mismatch": "El token CSRF no coincide",
+    "Refresh the CSRF cookie and retry.": "Actualice la cookie CSRF e inténtelo de nuevo.",
+    "Too many requests": "Demasiadas solicitudes",
+    "Slow down and retry later.": "Espere un momento e inténtelo más tarde.",
+    "Server error": "Error del servidor",
+    "The selected :attribute is invalid.": "El campo :attribute seleccionado no es válido."
+}

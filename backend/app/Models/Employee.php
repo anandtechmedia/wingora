@@ -15,7 +15,7 @@ class Employee extends TenantModel
 
     protected $fillable = ['employee_number', 'first_name', 'last_name', 'work_email', 'job_title'];
 
-    protected $hidden = ['id', 'tenant_id', 'user_id', 'department_id', 'manager_id', 'national_id', 'bank_account_number', 'date_of_birth'];
+    protected $hidden = ['id', 'tenant_id', 'user_id', 'department_id', 'manager_id', 'legal_entity_id', 'work_location_id', 'national_id', 'bank_account_number', 'date_of_birth'];
 
     protected function casts(): array
     {
@@ -39,6 +39,16 @@ class Employee extends TenantModel
     public function manager(): BelongsTo
     {
         return $this->belongsTo(self::class, 'manager_id');
+    }
+
+    public function legalEntity(): BelongsTo
+    {
+        return $this->belongsTo(LegalEntity::class);
+    }
+
+    public function workLocation(): BelongsTo
+    {
+        return $this->belongsTo(WorkLocation::class);
     }
 
     public function compensation(): HasOne
