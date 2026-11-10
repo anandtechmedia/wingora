@@ -25,11 +25,12 @@ export async function apiRequest<T>(method: 'GET' | 'POST' | 'PUT' | 'PATCH' | '
     if (value != null && value !== '') url.searchParams.set(key, value);
   }
   const headers: Record<string, string> = { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' };
-  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  const multipart = body instanceof FormData;
+  if (body !== undefined && !multipart) headers['Content-Type'] = 'application/json';
   const token = method === 'GET' ? undefined : xsrfToken();
   if (token) headers['X-XSRF-TOKEN'] = token;
 
-  const response = await fetch(url, { method, headers, body: body === undefined ? undefined : JSON.stringify(body), credentials: 'include', signal });
+  const response = await fetch(url, { method, headers, body: body === undefined ? undefined : multipart ? body : JSON.stringify(body), credentials: 'include', signal });
   const text = await response.text();
   let data: unknown = null;
   try {
@@ -39,6 +40,23 @@ export async function apiRequest<T>(method: 'GET' | 'POST' | 'PUT' | 'PATCH' | '
   }
   if (!response.ok) throw new ApiError(response.status, data);
   return data as T;
+}
+
+/** Fetches a file response (e.g. CSV export) and hands it to the browser as a download. */
+export async function apiDownload(path: string, query: Record<string, string | null | undefined>, fallbackName: string): Promise<void> {
+  const url = new URL(baseUrl + path, window.location.origin);
+  for (const [key, value] of Object.entries(query)) {
+    if (value != null && value !== '') url.searchParams.set(key, value);
+  }
+  const response = await fetch(url, { headers: { Accept: 'text/csv, application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'include' });
+  if (!response.ok) throw new ApiError(response.status, null);
+  const name = /filename="?([^";]+)"?/.exec(response.headers.get('Content-Disposition') ?? '')?.[1] ?? fallbackName;
+  const href = URL.createObjectURL(await response.blob());
+  const link = document.createElement('a');
+  link.href = href;
+  link.download = name;
+  link.click();
+  URL.revokeObjectURL(href);
 }
 
 /** Sanctum sets the XSRF-TOKEN cookie before the first state-changing request. */

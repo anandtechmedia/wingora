@@ -38,6 +38,7 @@ export function createRoutes({ prototypeHint = false }: { prototypeHint?: boolea
       children: [
         { index: true, element: <Navigate to="/dashboard" replace /> },
         ...modules.map((m) => ({ path: m.path, element: <ModuleRoute module={m} /> })),
+        ...modules.filter((m) => m.id === 'employees').map((m) => ({ path: `${m.path}/:recordId`, element: <ModuleRoute module={m} /> })),
         { path: 'design-system', element: <DesignSystem /> },
         { path: 'access-denied', element: <AccessDeniedPage /> },
         { path: '*', element: <NotFoundPage /> },

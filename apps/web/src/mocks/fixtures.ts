@@ -22,6 +22,7 @@ export const personas: Record<string, MeResponse> = {
   'owner@wingora.test': persona('usr_owner', 'Alex Morgan', 'owner@wingora.test', ['organization-owner'], [...tenantPermissions, ...Object.values(PP)], true),
   'hr@wingora.test': persona('usr_hr', 'Priya Nair', 'hr@wingora.test', ['hr-manager'], [
     P.OrganizationView, P.UsersView, P.DepartmentsView, P.EmployeesViewAll, P.EmployeesManage, P.FilesUpload,
+    P.EmployeesDisciplinaryView, P.EmployeesDisciplinaryManage, P.EmployeesExport,
     PP.AttendanceView, PP.LeaveView, PP.RecruitmentView, PP.OnboardingView, PP.OffboardingView, PP.PerformanceView, PP.DocumentsView, PP.ReportsView,
   ], true),
   'employee@wingora.test': persona('usr_employee', 'Jordan Lee', 'employee@wingora.test', ['employee'], [

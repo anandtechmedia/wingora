@@ -4,6 +4,7 @@ import { ToastProvider } from '@/components/ui';
 import { SessionProvider } from '@/auth/session';
 import { I18nProvider } from '@/i18n/i18n';
 import { DashboardSourceProvider, disconnectedDashboardSource, httpDashboardSource } from '@/api/dashboard';
+import { disconnectedEmployeeSource, EmployeeSourceProvider, httpEmployeeSource } from '@/api/employees';
 import { createLiveGateway } from '@/auth/live-gateway';
 import { createMockGateway } from '@/mocks/mock-gateway';
 import { WorkspaceProvider } from '@/shell/workspace';
@@ -16,6 +17,7 @@ import { createRoutes } from './app/routes';
 const live = import.meta.env.VITE_API_MODE === 'live';
 const gateway = live ? createLiveGateway() : createMockGateway();
 const dashboardSource = live ? httpDashboardSource : disconnectedDashboardSource;
+const employeeSource = live ? httpEmployeeSource : disconnectedEmployeeSource;
 
 export function App() {
   const router = useMemo(() => createBrowserRouter(createRoutes({ prototypeHint: !live })), []);
@@ -25,9 +27,11 @@ export function App() {
       <ToastProvider>
         <SessionProvider gateway={gateway}>
           <DashboardSourceProvider value={dashboardSource}>
-            <WorkspaceProvider live={live}>
-              <RouterProvider router={router} />
-            </WorkspaceProvider>
+            <EmployeeSourceProvider value={employeeSource}>
+              <WorkspaceProvider live={live}>
+                <RouterProvider router={router} />
+              </WorkspaceProvider>
+            </EmployeeSourceProvider>
           </DashboardSourceProvider>
         </SessionProvider>
       </ToastProvider>
