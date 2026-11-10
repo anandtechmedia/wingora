@@ -87,7 +87,7 @@ function Personal({ e }: { e: EmployeeDetail }) {
       personal.reload();
     } catch (error) {
       setErrors(validationErrors(error));
-      setMessage(formError(error, t('employees.saveFailed')));
+      setMessage(formError(error, t('employees.saveFailed')) ?? t('employees.saveFailed'));
     }
   }
 
@@ -228,7 +228,7 @@ function Contacts({ e }: { e: EmployeeDetail }) {
       contacts.reload();
     } catch (error) {
       setErrors(validationErrors(error));
-      setMessage(formError(error, t('employees.saveFailed')));
+      setMessage(formError(error, t('employees.saveFailed')) ?? t('employees.saveFailed'));
     }
   }
 
@@ -315,7 +315,7 @@ function Records({ e }: { e: EmployeeDetail }) {
       records.reload();
     } catch (error) {
       setErrors(validationErrors(error));
-      setMessage(formError(error, t('employees.saveFailed')));
+      setMessage(formError(error, t('employees.saveFailed')) ?? t('employees.saveFailed'));
     }
   }
 

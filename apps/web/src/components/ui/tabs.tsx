@@ -1,4 +1,4 @@
-import { useId, useLayoutEffect, useRef, type KeyboardEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 import { useControllable } from '@/lib/use-controllable';
 
@@ -25,12 +25,11 @@ export function Tabs({ label, tabs, value, defaultValue, onChange, className }: 
   const baseId = useId();
   const [active, setActive] = useControllable(value, defaultValue ?? tabs.find((t) => !t.disabled)?.id ?? '', onChange);
   const refs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const listRef = useRef<HTMLDivElement>(null);
   const revealPending = useRef(false);
-  useLayoutEffect(() => {
-    if (!revealPending.current) return;
-    revealPending.current = false;
+  const reveal = useCallback(() => {
     const tab = refs.current[active];
-    const list = tab?.parentElement;
+    const list = listRef.current;
     if (!tab || !list) return;
     const t = tab.getBoundingClientRect();
     const l = list.getBoundingClientRect();
@@ -38,6 +37,19 @@ export function Tabs({ label, tabs, value, defaultValue, onChange, className }: 
     if (t.right > l.right) list.scrollLeft += t.right - l.right + gap;
     else if (t.left < l.left) list.scrollLeft -= l.left - t.left + gap;
   }, [active]);
+  useLayoutEffect(() => {
+    if (!revealPending.current) return;
+    revealPending.current = false;
+    reveal();
+  }, [active, reveal]);
+  // Panel content can change the page width later (e.g. a scrollbar appears); keep the focused tab visible.
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => { if (list.contains(document.activeElement)) reveal(); });
+    observer.observe(list);
+    return () => observer.disconnect();
+  }, [reveal]);
   const enabled = tabs.filter((t) => !t.disabled);
 
   const onKeyDown = (event: KeyboardEvent) => {
@@ -58,7 +70,7 @@ export function Tabs({ label, tabs, value, defaultValue, onChange, className }: 
 
   return (
     <div className={className}>
-      <div role="tablist" aria-label={label} className="flex gap-1 overflow-x-auto overflow-y-hidden border-b border-line">
+      <div ref={listRef} role="tablist" aria-label={label} className="flex gap-1 overflow-x-auto overflow-y-hidden border-b border-line">
         {tabs.map((tab) => {
           const selected = tab.id === active;
           return (
