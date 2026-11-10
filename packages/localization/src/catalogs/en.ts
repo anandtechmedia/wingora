@@ -1,0 +1,70 @@
+/** English source catalog. Keys are stable identifiers; every other catalog must provide the same keys. */
+export const en = {
+  'app.name': 'Wingora',
+  'app.tagline': 'People. Progress. Performance.',
+  'app.positioning': 'Global HR. Local Intelligence.',
+
+  'ui.close': 'Close',
+  'ui.cancel': 'Cancel',
+  'ui.confirm': 'Confirm',
+  'ui.delete': 'Delete',
+  'ui.dismiss': 'Dismiss notification',
+  'ui.retry': 'Try again',
+  'ui.loading': 'Loading…',
+  'ui.optional': 'Optional',
+  'ui.required': 'Required',
+  'ui.selectPlaceholder': 'Select an option',
+  'ui.moreActions': 'More actions',
+  'ui.notifications': 'Notifications',
+  'ui.search': 'Search',
+
+  'ui.pagination': 'Pagination',
+  'ui.previousPage': 'Previous page',
+  'ui.nextPage': 'Next page',
+  'ui.goToPage': 'Page {page}',
+  'ui.pageSummary': '{from}–{to} of {total}',
+
+  'ui.table.selectAll': 'Select all rows',
+  'ui.table.selectRow': 'Select row',
+  'ui.table.selected': '{count} selected',
+  'ui.table.sortedAscending': 'sorted ascending',
+  'ui.table.sortedDescending': 'sorted descending',
+
+  'ui.empty.title': 'Nothing here yet',
+  'ui.error.title': 'Something went wrong',
+  'ui.error.description': 'We could not load this content. Check your connection and try again.',
+
+  'ui.date.choose': 'Choose date',
+  'ui.date.previousMonth': 'Previous month',
+  'ui.date.nextMonth': 'Next month',
+  'ui.date.today': 'Today',
+  'ui.date.format': 'Format: {format}',
+  'ui.date.invalid': 'Enter a valid date',
+
+  'shell.skipToContent': 'Skip to main content',
+  'shell.mainNavigation': 'Main navigation',
+  'shell.openNavigation': 'Open navigation',
+  'shell.collapseSidebar': 'Collapse sidebar',
+  'shell.expandSidebar': 'Expand sidebar',
+  'shell.account': 'Account',
+
+  'nav.group.workspace': 'Workspace',
+  'nav.group.insights': 'Insights',
+  'nav.group.administration': 'Administration',
+  'nav.coreHr': 'Core HR',
+  'nav.workforce': 'Workforce',
+  'nav.timeOff': 'Time Off',
+  'nav.compensation': 'Compensation',
+  'nav.talent': 'Talent',
+  'nav.lifecycle': 'Lifecycle',
+  'nav.performance': 'Performance',
+  'nav.operations': 'Operations',
+  'nav.intelligence': 'Intelligence',
+  'nav.travel': 'Travel',
+  'nav.reports': 'Reports',
+  'nav.platform': 'Platform',
+  'nav.ai': 'AI',
+} as const;
+
+export type MessageKey = keyof typeof en;
+export type Messages = Record<MessageKey, string>;
