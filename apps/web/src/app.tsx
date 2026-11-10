@@ -7,6 +7,7 @@ import { DashboardSourceProvider, disconnectedDashboardSource, httpDashboardSour
 import { disconnectedEmployeeSource, EmployeeSourceProvider, httpEmployeeSource } from '@/api/employees';
 import { disconnectedTimeSource, httpTimeSource, TimeSourceProvider } from '@/api/time';
 import { disconnectedPayrollSource, httpPayrollSource, PayrollSourceProvider } from '@/api/payroll';
+import { CareersSourceProvider, disconnectedCareersSource, disconnectedRecruitmentSource, httpCareersSource, httpRecruitmentSource, RecruitmentSourceProvider } from '@/api/recruitment';
 import { createLiveGateway } from '@/auth/live-gateway';
 import { createMockGateway } from '@/mocks/mock-gateway';
 import { WorkspaceProvider } from '@/shell/workspace';
@@ -22,6 +23,8 @@ const dashboardSource = live ? httpDashboardSource : disconnectedDashboardSource
 const employeeSource = live ? httpEmployeeSource : disconnectedEmployeeSource;
 const timeSource = live ? httpTimeSource : disconnectedTimeSource;
 const payrollSource = live ? httpPayrollSource : disconnectedPayrollSource;
+const recruitmentSource = live ? httpRecruitmentSource : disconnectedRecruitmentSource;
+const careersSource = live ? httpCareersSource : disconnectedCareersSource;
 
 export function App() {
   const router = useMemo(() => createBrowserRouter(createRoutes({ prototypeHint: !live })), []);
@@ -34,9 +37,13 @@ export function App() {
             <EmployeeSourceProvider value={employeeSource}>
               <TimeSourceProvider value={timeSource}>
                 <PayrollSourceProvider value={payrollSource}>
-                  <WorkspaceProvider live={live}>
-                    <RouterProvider router={router} />
-                  </WorkspaceProvider>
+                  <RecruitmentSourceProvider value={recruitmentSource}>
+                    <CareersSourceProvider value={careersSource}>
+                      <WorkspaceProvider live={live}>
+                        <RouterProvider router={router} />
+                      </WorkspaceProvider>
+                    </CareersSourceProvider>
+                  </RecruitmentSourceProvider>
                 </PayrollSourceProvider>
               </TimeSourceProvider>
             </EmployeeSourceProvider>

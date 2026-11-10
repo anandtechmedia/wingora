@@ -78,7 +78,7 @@ describe('permission-based navigation', () => {
   it('an Employee sees only permitted modules and gets 403 on others', async () => {
     setup('/dashboard', 'employee@wingora.test');
     expect(await screen.findByRole('heading', { name: /Welcome back, Jordan/ })).toBeInTheDocument();
-    expect(navLinks()).toEqual(['Dashboard', 'Employees', 'Attendance', 'Leave', 'Payroll', 'Helpdesk', 'Documents']);
+    expect(navLinks()).toEqual(['Dashboard', 'Employees', 'Attendance', 'Leave', 'Payroll', 'Recruitment', 'Onboarding', 'Helpdesk', 'Documents']);
     expect(navLinks()).not.toContain('Settings');
   });
 
@@ -116,7 +116,7 @@ describe('permission-based navigation', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Notifications, 1 unread' }));
     const drawer = screen.getByRole('dialog', { name: 'Notifications' });
     expect(within(drawer).getByText('Leave request awaiting approval')).toBeInTheDocument();
-    expect(within(drawer).queryByText('Onboarding checklist due')).not.toBeInTheDocument();
+    expect(within(drawer).queryByText('Review cycle opens Monday')).not.toBeInTheDocument();
     await userEvent.click(within(drawer).getByRole('button', { name: 'Mark all as read' }));
     expect(within(drawer).queryByText('New')).not.toBeInTheDocument();
   });

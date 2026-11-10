@@ -43,6 +43,15 @@ export const Permission = {
   PayslipsViewSelf: 'payslips.view.self',
   ReimbursementsSubmit: 'reimbursements.submit',
   ReimbursementsApprove: 'reimbursements.approve',
+  RecruitmentView: 'recruitment.view',
+  RecruitmentManage: 'recruitment.manage',
+  RecruitmentConfigure: 'recruitment.configure',
+  RecruitmentOffers: 'recruitment.offers',
+  RecruitmentInterview: 'recruitment.interview',
+  OnboardingView: 'onboarding.view',
+  OnboardingManage: 'onboarding.manage',
+  OnboardingConfigure: 'onboarding.configure',
+  OnboardingTasksSelf: 'onboarding.tasks.self',
   FilesUpload: 'files.upload',
   AuditView: 'audit.view',
   SecurityEventsView: 'security-events.view',
@@ -53,8 +62,6 @@ export const Permission = {
  * role catalog, with the same value, when its module is built. Until then no real user holds them.
  */
 export const PendingPermission = {
-  RecruitmentView: 'recruitment.view',
-  OnboardingView: 'onboarding.view',
   OffboardingView: 'offboarding.view',
   PerformanceView: 'performance.view',
   AssetsView: 'assets.view',
