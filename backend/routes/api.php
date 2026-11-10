@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\V1\Auth\PasswordController;
 use App\Http\Controllers\Api\V1\Auth\PreferenceController;
 use App\Http\Controllers\Api\V1\Auth\SessionController;
 use App\Http\Controllers\Api\V1\Auth\TokenController;
+use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DepartmentController;
 use App\Http\Controllers\Api\V1\EmployeeAssignmentController;
 use App\Http\Controllers\Api\V1\EmployeeController;
@@ -74,6 +75,8 @@ Route::prefix('v1')->name('v1.')->group(function () {
                 Route::get('users/{user}', [UserController::class, 'show']);
                 Route::put('users/{user}/roles', [UserController::class, 'updateRoles']);
                 Route::patch('users/{user}/status', [UserController::class, 'updateStatus']);
+
+                Route::get('dashboard', DashboardController::class);
 
                 Route::get('departments', [DepartmentController::class, 'index']);
                 Route::get('departments/{department}', [DepartmentController::class, 'show']);
