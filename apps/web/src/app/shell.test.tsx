@@ -112,7 +112,8 @@ describe('permission-based navigation', () => {
   it('notification center hides items for modules the user cannot open', async () => {
     setup('/dashboard', 'employee@wingora.test');
     await screen.findByRole('heading', { name: /Welcome back/ });
-    await userEvent.click(screen.getByRole('button', { name: /^Notifications, \d+ unread/ }));
+    // Only the Leave item is visible to an Employee, so the count must not include hidden items.
+    await userEvent.click(screen.getByRole('button', { name: 'Notifications, 1 unread' }));
     const drawer = screen.getByRole('dialog', { name: 'Notifications' });
     expect(within(drawer).getByText('Leave request awaiting approval')).toBeInTheDocument();
     expect(within(drawer).queryByText('Onboarding checklist due')).not.toBeInTheDocument();

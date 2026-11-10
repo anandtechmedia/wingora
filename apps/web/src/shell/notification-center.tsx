@@ -1,14 +1,19 @@
 import { useState } from 'react';
 import { Link } from 'react-router';
-import { findModule } from '@wingora/permissions';
+import { canAccessModule, findModule } from '@wingora/permissions';
 import { Badge, Button, Drawer, EmptyState, InboxIcon, Tabs } from '@/components/ui';
 import { useSession } from '@/auth/session';
 import { useI18n } from '@/i18n/i18n';
 import { notifications as fixtures, type NotificationItem } from '@/mocks/fixtures';
-import { canAccessModule } from '@wingora/permissions';
 
+/** Notifications are filtered to modules the user can open before anything (including counts) uses them. */
 export function useNotifications() {
-  const [items, setItems] = useState<NotificationItem[]>(fixtures);
+  const { permissions } = useSession();
+  const [all, setItems] = useState<NotificationItem[]>(fixtures);
+  const items = all.filter((n) => {
+    const module = findModule(n.moduleId);
+    return module ? canAccessModule(permissions, module) : false;
+  });
   return {
     items,
     unread: items.filter((n) => !n.read).length,
@@ -19,14 +24,9 @@ export function useNotifications() {
 
 export function NotificationCenter({ open, onClose, state }: { open: boolean; onClose: () => void; state: ReturnType<typeof useNotifications> }) {
   const { t, locale } = useI18n();
-  const { permissions } = useSession();
   const relative = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
   const when = (minutes: number) => (minutes < 60 ? relative.format(-minutes, 'minute') : minutes < 1440 ? relative.format(-Math.round(minutes / 60), 'hour') : relative.format(-Math.round(minutes / 1440), 'day'));
-  // Never show notifications that point into a module the user cannot open.
-  const visible = state.items.filter((n) => {
-    const module = findModule(n.moduleId);
-    return module ? canAccessModule(permissions, module) : false;
-  });
+  const visible = state.items;
 
   const list = (items: NotificationItem[]) => items.length === 0
     ? <EmptyState icon={<InboxIcon size={22} />} title={t('notifications.emptyTitle')} description={t('notifications.emptyDescription')} />

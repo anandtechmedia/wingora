@@ -1,4 +1,4 @@
-import { useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router';
 import type { ModuleDefinition } from '@wingora/permissions';
 import { Modal, SearchIcon } from '@/components/ui';
@@ -19,6 +19,10 @@ export function GlobalSearch({ open, onClose, modules }: { open: boolean; onClos
     const q = query.trim().toLocaleLowerCase(locale);
     return modules.filter((m) => !q || t(moduleLabel(m.id)).toLocaleLowerCase(locale).includes(q));
   }, [modules, query, t, locale]);
+
+  useEffect(() => {
+    if (open) document.getElementById(`${listId}-${active}`)?.scrollIntoView?.({ block: 'nearest' });
+  }, [open, active, listId, results]);
 
   const close = () => {
     setQuery('');
