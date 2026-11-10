@@ -24,11 +24,11 @@ export function App() {
     <I18nProvider locale={locale}>
       <ToastProvider>
         <SessionProvider gateway={gateway}>
-          <WorkspaceProvider>
-            <DashboardSourceProvider value={dashboardSource}>
+          <DashboardSourceProvider value={dashboardSource}>
+            <WorkspaceProvider live={live}>
               <RouterProvider router={router} />
-            </DashboardSourceProvider>
-          </WorkspaceProvider>
+            </WorkspaceProvider>
+          </DashboardSourceProvider>
         </SessionProvider>
       </ToastProvider>
     </I18nProvider>

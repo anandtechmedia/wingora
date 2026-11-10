@@ -33,7 +33,7 @@ export interface DashboardData {
 }
 
 export interface DashboardQuery { country: string; legalEntity: string; from: string; to: string }
-export interface LegalEntitySummary { id: string; name: string; country_code: string }
+export interface LegalEntitySummary { id: string; name: string; country_code: string; currency_code?: string }
 
 export interface DashboardSource {
   load(query: DashboardQuery, signal: AbortSignal): Promise<DashboardData>;

@@ -39,11 +39,13 @@ function fakeSource(load: DashboardSource['load']): DashboardSource {
   };
 }
 
-function setup(source: DashboardSource, persona: keyof typeof personas = 'hr@wingora.test') {
+function setup(source: DashboardSource, persona: keyof typeof personas = 'hr@wingora.test', live = false) {
   const router = createMemoryRouter(createRoutes(), { initialEntries: ['/dashboard'] });
+  const base = personas[persona]!;
+  const me = live ? { ...base, organization: { id: 'org_live', name: 'Atlas Holdings', country_code: 'US' } } : base;
   return renderUi(
-    <SessionProvider gateway={createMockGateway(0)} initial={personas[persona]}>
-      <WorkspaceProvider>
+    <SessionProvider gateway={createMockGateway(0)} initial={me}>
+      <WorkspaceProvider live={live}>
         <DashboardSourceProvider value={source}><RouterProvider router={router} /></DashboardSourceProvider>
       </WorkspaceProvider>
     </SessionProvider>,
@@ -83,6 +85,29 @@ describe('organization dashboard', () => {
     await waitFor(() => expect(source.load).toHaveBeenLastCalledWith({ country: 'MX', legalEntity: 'le_mx', from: '', to: '' }, expect.any(AbortSignal)));
     await userEvent.click(screen.getByRole('button', { name: 'Reset filters' }));
     await waitFor(() => expect(source.load).toHaveBeenLastCalledWith({ country: '', legalEntity: '', from: '', to: '' }, expect.any(AbortSignal)));
+  });
+
+  it('clears a stale date error on reset', async () => {
+    setup(fakeSource(async () => organizationData));
+    await screen.findByRole('heading', { name: 'Total employees' });
+    const from = screen.getByRole('textbox', { name: 'From' });
+    await userEvent.clear(from);
+    await userEvent.type(from, '2026-01-01{Enter}');
+    const to = screen.getByRole('textbox', { name: 'To' });
+    await userEvent.clear(to);
+    await userEvent.type(to, '2025-01-01');
+    await userEvent.tab();
+    expect(await screen.findByText('Enter a valid date')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Reset filters' }));
+    await waitFor(() => expect(screen.queryByText('Enter a valid date')).not.toBeInTheDocument());
+    expect(screen.getByRole('textbox', { name: 'To' })).toHaveValue('2026-06-15');
+  });
+
+  it('in live mode labels the signed-in organization and its API legal entities', async () => {
+    setup(fakeSource(async () => organizationData), 'hr@wingora.test', true);
+    await screen.findByRole('heading', { name: 'Total employees' });
+    expect(screen.getAllByText(/Atlas Holdings/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/App Wings LLC ·/)).not.toBeInTheDocument();
   });
 
   it('renders only what the server returned for a role without headcount access', async () => {

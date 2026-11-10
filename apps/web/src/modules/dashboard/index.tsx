@@ -25,6 +25,7 @@ export default function Dashboard() {
 
   const [query, setQuery] = useState<DashboardQuery>(EMPTY_QUERY);
   const [attempt, setAttempt] = useState(0);
+  const [resets, setResets] = useState(0);
   const [result, setResult] = useState<Result | null>(null);
   const [entities, setEntities] = useState<LegalEntitySummary[]>([]);
   const key = JSON.stringify([query, attempt]);
@@ -78,9 +79,9 @@ export default function Dashboard() {
           placeholder={t('dashboard.allCountries')} options={COUNTRIES.map((c) => ({ value: c, label: regionName(locale, c) }))} />
         <Select label={t('dashboard.legalEntity')} value={query.legalEntity} onChange={(e) => update({ legalEntity: e.target.value })} disabled={entityOptions.length === 0}
           placeholder={t('dashboard.allEntities')} options={entityOptions.map((e) => ({ value: e.id, label: e.name }))} />
-        <DatePicker label={t('dashboard.from')} value={query.from || shown?.data?.filters.from || ''} max={query.to || undefined} onChange={(from) => update({ from })} />
-        <DatePicker label={t('dashboard.to')} value={query.to || shown?.data?.filters.to || ''} min={query.from || undefined} onChange={(to) => update({ to })} />
-        <Button variant="tertiary" onClick={() => setQuery(EMPTY_QUERY)} disabled={query === EMPTY_QUERY}>{t('dashboard.resetFilters')}</Button>
+        <DatePicker key={`from-${resets}`} label={t('dashboard.from')} value={query.from || shown?.data?.filters.from || ''} max={query.to || undefined} onChange={(from) => update({ from })} />
+        <DatePicker key={`to-${resets}`} label={t('dashboard.to')} value={query.to || shown?.data?.filters.to || ''} min={query.from || undefined} onChange={(to) => update({ to })} />
+        <Button variant="tertiary" onClick={() => { setQuery(EMPTY_QUERY); setResets((n) => n + 1); }}>{t('dashboard.resetFilters')}</Button>
       </section>
 
       <div aria-busy={loading} className="relative">

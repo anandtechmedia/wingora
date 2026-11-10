@@ -72,6 +72,7 @@ export function DatePicker({ value, defaultValue = '', onChange, min, max, size 
   if (synced !== current) {
     setSynced(current);
     setText(current);
+    setInvalid(false);
   }
 
   const close = useCallback(() => {
