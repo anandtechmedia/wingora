@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { MessageKey } from '@wingora/localization';
 import { ApiNotConnectedError } from '@/api/dashboard';
 import { ApiError } from '@/api/http';
@@ -8,22 +8,20 @@ import { useI18n } from '@/i18n/i18n';
 
 export interface Resource<T> { data?: T; error?: unknown; loading: boolean; reload: () => void }
 
-/** Loads on mount and whenever `deps` change; cancels the previous request. */
-export function useResource<T>(load: (signal: AbortSignal) => Promise<T>, deps: unknown[]): Resource<T> {
-  const [state, setState] = useState<{ data?: T; error?: unknown; loading: boolean }>({ loading: true });
+/** Runs `load` (memoize it with useCallback) whenever it changes or on reload; cancels the previous request and keeps stale data while loading. */
+export function useResource<T>(load: (signal: AbortSignal) => Promise<T>): Resource<T> {
   const [attempt, setAttempt] = useState(0);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const run = useCallback(load, deps);
+  const [settled, setSettled] = useState<{ load?: unknown; attempt: number; data?: T; error?: unknown }>({ attempt: -1 });
   useEffect(() => {
     const controller = new AbortController();
-    setState((s) => ({ ...s, loading: true }));
-    run(controller.signal).then(
-      (data) => setState({ data, loading: false }),
-      (error: unknown) => { if (!controller.signal.aborted) setState({ error, loading: false }); },
+    load(controller.signal).then(
+      (data) => setSettled({ load, attempt, data }),
+      (error: unknown) => { if (!controller.signal.aborted) setSettled((s) => ({ load, attempt, data: s.data, error })); },
     );
     return () => controller.abort();
-  }, [run, attempt]);
-  return { ...state, reload: () => setAttempt((a) => a + 1) };
+  }, [load, attempt]);
+  const loading = settled.load !== load || settled.attempt !== attempt;
+  return { data: settled.data, error: loading ? undefined : settled.error, loading, reload: () => setAttempt((a) => a + 1) };
 }
 
 /** Field-level messages from a Laravel 422 response. */

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useCallback, useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import type { MessageKey } from '@wingora/localization';
 import { ApiError } from '@/api/http';
@@ -17,8 +17,8 @@ export function EmployeeProfile({ id }: { id: string }) {
   const { t } = useI18n();
   const source = useEmployeeSource();
   const [editing, setEditing] = useState(false);
-  const employee = useResource((signal) => source.get(id, signal), [source, id]);
-  const options = useResource((signal) => (editing ? source.options(signal) : Promise.resolve(noOptions)), [source, editing]);
+  const employee = useResource(useCallback((signal: AbortSignal) => source.get(id, signal), [source, id]));
+  const options = useResource(useCallback((signal: AbortSignal) => (editing ? source.options(signal) : Promise.resolve(noOptions)), [source, editing]));
 
   if (employee.error instanceof ApiError && [403, 404].includes(employee.error.status)) {
     return <Card padding="none"><EmptyState headingLevel={2} title={t('employees.notFound')} action={<Link className="text-fg-link" to="/employees">{t('employees.back')}</Link>} /></Card>;
@@ -71,7 +71,7 @@ function Personal({ e }: { e: EmployeeDetail }) {
   const { t } = useI18n();
   const source = useEmployeeSource();
   const { toast } = useToast();
-  const personal = useResource((signal) => source.personal(e.id, signal), [source, e.id]);
+  const personal = useResource(useCallback((signal: AbortSignal) => source.personal(e.id, signal), [source, e.id]));
   const [form, setForm] = useState<PersonalDetails | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [sensitive, setSensitive] = useState<SensitiveDetails | null>(null);
@@ -129,7 +129,7 @@ function Personal({ e }: { e: EmployeeDetail }) {
 function History({ id }: { id: string }) {
   const { t } = useI18n();
   const source = useEmployeeSource();
-  const history = useResource((signal) => source.history(id, signal), [source, id]);
+  const history = useResource(useCallback((signal: AbortSignal) => source.history(id, signal), [source, id]));
   return (
     <div className="p-(--card-padding)">
       <ResourceView resource={history} empty={t('employees.historyEmpty')} isEmpty={(h) => h.data.length === 0}>
@@ -159,7 +159,7 @@ function Documents({ id }: { id: string }) {
   const { t } = useI18n();
   const source = useEmployeeSource();
   const { toast } = useToast();
-  const docs = useResource((signal) => source.documents(id, signal), [source, id]);
+  const docs = useResource(useCallback((signal: AbortSignal) => source.documents(id, signal), [source, id]));
   const [file, setFile] = useState<File | null>(null);
   const [category, setCategory] = useState('general');
   const categories = docs.data?.meta.upload_categories ?? [];
@@ -207,7 +207,7 @@ function Documents({ id }: { id: string }) {
 function Contacts({ e }: { e: EmployeeDetail }) {
   const { t } = useI18n();
   const source = useEmployeeSource();
-  const contacts = useResource((signal) => source.contacts(e.id, signal), [source, e.id]);
+  const contacts = useResource(useCallback((signal: AbortSignal) => source.contacts(e.id, signal), [source, e.id]));
   const [form, setForm] = useState<{ name: string; relationship: string; phone: string; email: string; is_primary: boolean } | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const relationships = ['spouse', 'partner', 'parent', 'child', 'sibling', 'relative', 'friend', 'other'];
@@ -263,9 +263,9 @@ function Policies({ id }: { id: string }) {
   const { t } = useI18n();
   const { me } = useSession();
   const source = useEmployeeSource();
-  const policies = useResource((signal) => source.policies(id, signal), [source, id]);
-  const self = useResource((signal) => source.list({ search: '', status: '', department: '', designation: '', country: '', legal_entity: '', employment_type: '', sort: 'name', page: 1 }, signal)
-    .then((page) => page.data.length === 1 && page.data[0]!.id === id && !me?.permissions.some((p) => p === 'employees.view.all' || p === 'employees.view.department')), [source, id, me]);
+  const policies = useResource(useCallback((signal: AbortSignal) => source.policies(id, signal), [source, id]));
+  const self = useResource(useCallback((signal: AbortSignal) => source.list({ search: '', status: '', department: '', designation: '', country: '', legal_entity: '', employment_type: '', sort: 'name', page: 1 }, signal)
+    .then((page) => page.data.length === 1 && page.data[0]!.id === id && !me?.permissions.some((p) => p === 'employees.view.all' || p === 'employees.view.department')), [source, id, me]));
   return (
     <div className="p-(--card-padding)">
       <ResourceView resource={policies} empty={t('employees.policiesEmpty')} isEmpty={(p) => p.length === 0}>
@@ -290,7 +290,7 @@ const SEVERITIES = ['verbal_warning', 'written_warning', 'final_warning', 'suspe
 function Records({ e }: { e: EmployeeDetail }) {
   const { t } = useI18n();
   const source = useEmployeeSource();
-  const records = useResource((signal) => source.records(e.id, signal), [source, e.id]);
+  const records = useResource(useCallback((signal: AbortSignal) => source.records(e.id, signal), [source, e.id]));
   const blank = { type: 'note' as HrRecord['type'], severity: '', title: '', body: '', occurred_on: '' };
   const [form, setForm] = useState<typeof blank | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});

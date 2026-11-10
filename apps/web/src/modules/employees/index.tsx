@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { Permission as P } from '@wingora/permissions';
 import { ApiNotConnectedError } from '@/api/dashboard';
@@ -31,8 +31,8 @@ function Directory() {
   const [query, setQuery] = useState<EmployeeQuery>(emptyEmployeeQuery);
   const [search, setSearch] = useState('');
   const [dialog, setDialog] = useState<'create' | 'import' | null>(null);
-  const list = useResource((signal) => source.list(query, signal), [source, query]);
-  const options = useResource((signal) => source.options(signal), [source]);
+  const list = useResource(useCallback((signal: AbortSignal) => source.list(query, signal), [source, query]));
+  const options = useResource(useCallback((signal: AbortSignal) => source.options(signal), [source]));
   const can = (p: string) => permissions.has(p);
   const opts = options.data ?? noOptions;
   const filtered = JSON.stringify({ ...query, page: 1, sort: 'name' }) !== JSON.stringify(emptyEmployeeQuery);
