@@ -13,7 +13,10 @@ return new class extends Migration
     public function up(): void
     {
         $tenantFk = function (Blueprint $table, string $column, string $on, bool $cascade = false) {
-            $fk = $table->foreign([$column, 'tenant_id'])->references(['id', 'tenant_id'])->on($on);
+            $name = $table->getTable().'_'.$column.'_tenant_fk';
+            // MySQL caps identifiers at 64 characters.
+            $name = strlen($name) > 64 ? substr($name, 0, 55).'_'.substr(md5($name), 0, 8) : $name;
+            $fk = $table->foreign([$column, 'tenant_id'], $name)->references(['id', 'tenant_id'])->on($on);
             $cascade ? $fk->cascadeOnDelete() : $fk->restrictOnDelete();
         };
         $base = function (Blueprint $table) {
@@ -80,9 +83,9 @@ return new class extends Migration
             $base($table);
             $table->string('first_name', 100);
             $table->string('last_name', 100);
-            $table->string('email', 190);
+            $table->text('email');
             $table->string('email_hash', 64);
-            $table->string('phone', 40)->nullable();
+            $table->text('phone')->nullable();
             $table->string('location', 120)->nullable();
             $table->string('linkedin_url', 255)->nullable();
             $table->string('source', 30)->default('careers');
