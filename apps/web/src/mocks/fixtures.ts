@@ -24,10 +24,10 @@ export const personas: Record<string, MeResponse> = {
     P.OrganizationView, P.UsersView, P.DepartmentsView, P.EmployeesViewAll, P.EmployeesManage, P.FilesUpload,
     P.EmployeesDisciplinaryView, P.EmployeesDisciplinaryManage, P.EmployeesExport,
     P.AttendanceView, P.AttendanceClock, P.AttendanceApprove, P.AttendanceManage, P.LeaveView, P.LeaveApply, P.LeaveApprove, P.LeaveManage,
-    PP.RecruitmentView, PP.OnboardingView, PP.OffboardingView, PP.PerformanceView, PP.DocumentsView, PP.ReportsView,
+    P.RecruitmentView, P.RecruitmentManage, P.RecruitmentInterview, P.OnboardingView, P.OnboardingManage, P.OnboardingTasksSelf, PP.OffboardingView, PP.PerformanceView, PP.DocumentsView, PP.ReportsView,
   ], true),
   'employee@wingora.test': persona('usr_employee', 'Jordan Lee', 'employee@wingora.test', ['employee'], [
-    P.OrganizationView, P.EmployeesViewSelf, P.FilesUpload, P.AttendanceView, P.AttendanceClock, P.LeaveView, P.LeaveApply, P.PayslipsViewSelf, P.ReimbursementsSubmit, PP.HelpdeskView, PP.DocumentsView,
+    P.OrganizationView, P.EmployeesViewSelf, P.FilesUpload, P.AttendanceView, P.AttendanceClock, P.LeaveView, P.LeaveApply, P.PayslipsViewSelf, P.ReimbursementsSubmit, P.RecruitmentInterview, P.OnboardingTasksSelf, PP.HelpdeskView, PP.DocumentsView,
   ], false),
 };
 
@@ -53,6 +53,6 @@ export interface NotificationItem { id: string; title: string; body: string; min
 
 export const notifications: NotificationItem[] = [
   { id: 'n1', title: 'Leave request awaiting approval', body: 'Ana Ruiz · 2 days · Guadalajara', minutesAgo: 12, read: false, moduleId: 'leave' },
-  { id: 'n2', title: 'Onboarding checklist due', body: 'Jordan Lee starts Monday in Austin', minutesAgo: 95, read: false, moduleId: 'onboarding' },
+  { id: 'n2', title: 'Review cycle opens Monday', body: 'Q1 performance reviews for Austin', minutesAgo: 95, read: false, moduleId: 'performance' },
   { id: 'n3', title: 'Policy document updated', body: 'UAE annual leave policy v2 is ready for review', minutesAgo: 60 * 26, read: true, moduleId: 'documents' },
 ];
