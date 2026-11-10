@@ -79,7 +79,7 @@ class EmployeeManagementTest extends CountryTestCase
         $mx = $this->entity($this->tenant, 'MX');
         foreach (['Zed', 'Amy', 'Bob'] as $i => $name) {
             $e = $this->makeEmployee($this->tenant, $i === 0 ? $dept : null);
-            $e->forceFill(['last_name' => $name, 'legal_entity_id' => $i === 1 ? $mx->id : null, 'status' => $i === 2 ? 'terminated' : 'active'])->saveQuietly();
+            $e->forceFill(['first_name' => 'Test', 'preferred_name' => null, 'work_email' => "person{$i}@example.com", 'employee_number' => "N-{$i}", 'last_name' => $name, 'legal_entity_id' => $i === 1 ? $mx->id : null, 'status' => $i === 2 ? 'terminated' : 'active'])->saveQuietly();
         }
         $this->makeEmployee($this->makeTenant());
 
