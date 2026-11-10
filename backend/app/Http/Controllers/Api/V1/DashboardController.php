@@ -34,6 +34,9 @@ class DashboardController extends Controller
         $today = CarbonImmutable::today($user->tenant?->timezone ?? config('app.timezone'));
         $to = isset($data['to']) ? CarbonImmutable::parse($data['to']) : $today;
         $from = isset($data['from']) ? CarbonImmutable::parse($data['from']) : $to->subMonths(11)->startOfMonth();
+        if ($from->gt($to)) {
+            throw ValidationException::withMessages(['from' => __('The start date must be on or before the end date.')]);
+        }
         if ($from->startOfMonth()->diffInMonths($to->startOfMonth()) >= self::MAX_RANGE_MONTHS) {
             throw ValidationException::withMessages(['from' => __('The date range may not exceed :months months.', ['months' => self::MAX_RANGE_MONTHS])]);
         }

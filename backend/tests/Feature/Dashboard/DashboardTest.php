@@ -136,6 +136,7 @@ class DashboardTest extends CountryTestCase
 
         $this->apiAs($hr, 'GET', '/api/v1/dashboard?from=2026-06-01&to=2026-05-01')->assertUnprocessable()->assertJsonValidationErrors('to');
         $this->apiAs($hr, 'GET', '/api/v1/dashboard?from=2023-01-01&to=2026-06-01')->assertUnprocessable()->assertJsonValidationErrors('from');
+        $this->apiAs($hr, 'GET', '/api/v1/dashboard?from=2027-01-01')->assertUnprocessable()->assertJsonValidationErrors('from');
         $this->apiAs($hr, 'GET', '/api/v1/dashboard?country=ZZ')->assertUnprocessable()->assertJsonValidationErrors('country');
         $this->apiAs($hr, 'GET', '/api/v1/dashboard')->assertOk()
             ->assertJsonPath('data.filters.from', '2025-07-01')->assertJsonPath('data.filters.to', '2026-06-15')
