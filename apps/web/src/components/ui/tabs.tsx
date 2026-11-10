@@ -39,19 +39,20 @@ export function Tabs({ label, tabs, value, defaultValue, onChange, className }: 
       event.preventDefault();
       setActive(target.id);
       refs.current[target.id]?.focus();
+      refs.current[target.id]?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
     }
   };
 
   return (
     <div className={className}>
-      <div role="tablist" aria-label={label} className="flex gap-1 overflow-x-auto border-b border-line">
+      <div role="tablist" aria-label={label} className="flex gap-1 overflow-x-auto overflow-y-hidden border-b border-line">
         {tabs.map((tab) => {
           const selected = tab.id === active;
           return (
             <button key={tab.id} ref={(el) => { refs.current[tab.id] = el; }} type="button" role="tab" id={`${baseId}-tab-${tab.id}`}
               aria-selected={selected} aria-controls={`${baseId}-panel-${tab.id}`} tabIndex={selected ? 0 : -1} disabled={tab.disabled}
               onClick={() => setActive(tab.id)} onKeyDown={onKeyDown}
-              className={cn('-mb-px inline-flex h-10 items-center gap-2 border-b-2 px-3 text-sm font-medium whitespace-nowrap transition-colors duration-(--duration-fast)',
+              className={cn('-mb-px inline-flex h-10 shrink-0 items-center focus-visible:outline-offset-[-2px] gap-2 border-b-2 px-3 text-sm font-medium whitespace-nowrap transition-colors duration-(--duration-fast)',
                 selected ? 'border-accent text-fg' : 'border-transparent text-fg-secondary hover:border-line-strong hover:text-fg',
                 'disabled:cursor-not-allowed disabled:opacity-50')}>
               {tab.label}

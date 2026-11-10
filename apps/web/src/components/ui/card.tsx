@@ -12,7 +12,7 @@ export interface CardProps extends Omit<HTMLAttributes<HTMLElement>, 'title'> {
 export function Card({ title, description, actions, footer, padding = 'md', className, children, ...props }: CardProps) {
   const pad = { md: 'p-(--card-padding)', lg: 'p-(--card-padding-lg)', none: '' }[padding];
   return (
-    <section className={cn('rounded-(--card-radius) border border-line bg-surface shadow-(--card-shadow)', className)} {...props}>
+    <section className={cn('min-w-0 rounded-(--card-radius) border border-line bg-surface shadow-(--card-shadow)', className)} {...props}>
       {(title || actions) && (
         <header className={cn('flex flex-wrap items-start justify-between gap-3', pad, children && padding !== 'none' && 'pb-0')}>
           <div className="flex flex-col gap-1">

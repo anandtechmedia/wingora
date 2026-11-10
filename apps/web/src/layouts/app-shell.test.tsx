@@ -35,3 +35,14 @@ describe('AppShell', () => {
     expect(await axeViolations(container)).toEqual([]);
   }, 30000);
 });
+
+describe('AppShell sidebar collapse', () => {
+  it('keeps navigation available in the collapsed rail', async () => {
+    renderUi(<AppShell><p>Content</p></AppShell>);
+    await userEvent.click(screen.getByRole('button', { name: 'Collapse sidebar' }));
+    const rail = screen.getAllByRole('navigation', { name: 'Main navigation' })[0]!;
+    const visible = [...rail.children].filter((el) => !el.className.split(' ').includes('hidden'));
+    expect(visible).toHaveLength(1);
+    expect(within(visible[0] as HTMLElement).getAllByRole('link')).toHaveLength(13);
+  });
+});

@@ -106,12 +106,12 @@ export function AppShell({ children, active = '#core-hr', userName = 'Alex Morga
       <aside className={cn('fixed inset-y-0 start-0 z-(--z-sticky) hidden flex-col bg-nav-bg md:flex',
         'w-(--container-sidebar-collapsed)', !collapsed && 'lg:w-(--container-sidebar)')}>
         <div className={cn('flex h-(--container-header) items-center px-5', 'justify-center lg:justify-start', collapsed && 'lg:justify-center')}>
-          <span className={cn('hidden', !collapsed && 'lg:block')}><Brand /></span>
-          <span className={cn('lg:hidden', collapsed && 'lg:block')}><Brand compact /></span>
+          <span className={collapsed ? 'hidden' : 'hidden lg:block'}><Brand /></span>
+          <span className={collapsed ? undefined : 'lg:hidden'}><Brand compact /></span>
         </div>
         <nav aria-label={t('shell.mainNavigation')} className="flex-1 overflow-y-auto px-3 py-4">
-          <div className={cn('hidden', !collapsed && 'lg:block')}><NavList active={active} collapsed={false} /></div>
-          <div className={cn('lg:hidden', collapsed && 'lg:block')}><NavList active={active} collapsed /></div>
+          <div className={collapsed ? 'hidden' : 'hidden lg:block'}><NavList active={active} collapsed={false} /></div>
+          <div className={collapsed ? undefined : 'lg:hidden'}><NavList active={active} collapsed /></div>
         </nav>
         <div className="hidden border-t border-nav-hover-bg p-3 lg:block">
           <button type="button" onClick={() => setCollapsed((c) => !c)} aria-pressed={collapsed}
