@@ -5,6 +5,7 @@ import { SessionProvider } from '@/auth/session';
 import { I18nProvider } from '@/i18n/i18n';
 import { DashboardSourceProvider, disconnectedDashboardSource, httpDashboardSource } from '@/api/dashboard';
 import { disconnectedEmployeeSource, EmployeeSourceProvider, httpEmployeeSource } from '@/api/employees';
+import { disconnectedTimeSource, httpTimeSource, TimeSourceProvider } from '@/api/time';
 import { createLiveGateway } from '@/auth/live-gateway';
 import { createMockGateway } from '@/mocks/mock-gateway';
 import { WorkspaceProvider } from '@/shell/workspace';
@@ -18,6 +19,7 @@ const live = import.meta.env.VITE_API_MODE === 'live';
 const gateway = live ? createLiveGateway() : createMockGateway();
 const dashboardSource = live ? httpDashboardSource : disconnectedDashboardSource;
 const employeeSource = live ? httpEmployeeSource : disconnectedEmployeeSource;
+const timeSource = live ? httpTimeSource : disconnectedTimeSource;
 
 export function App() {
   const router = useMemo(() => createBrowserRouter(createRoutes({ prototypeHint: !live })), []);
@@ -28,9 +30,11 @@ export function App() {
         <SessionProvider gateway={gateway}>
           <DashboardSourceProvider value={dashboardSource}>
             <EmployeeSourceProvider value={employeeSource}>
-              <WorkspaceProvider live={live}>
-                <RouterProvider router={router} />
-              </WorkspaceProvider>
+              <TimeSourceProvider value={timeSource}>
+                <WorkspaceProvider live={live}>
+                  <RouterProvider router={router} />
+                </WorkspaceProvider>
+              </TimeSourceProvider>
             </EmployeeSourceProvider>
           </DashboardSourceProvider>
         </SessionProvider>

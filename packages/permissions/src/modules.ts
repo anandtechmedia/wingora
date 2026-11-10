@@ -19,8 +19,8 @@ export const moduleGroups: readonly ModuleGroup[] = ['overview', 'people', 'tale
 export const modules: readonly ModuleDefinition[] = [
   { id: 'dashboard', path: 'dashboard', group: 'overview', requires: { anyOf: [P.OrganizationView] } },
   { id: 'employees', path: 'employees', group: 'people', requires: { anyOf: [P.EmployeesViewAll, P.EmployeesViewDepartment, P.EmployeesViewSelf] } },
-  { id: 'attendance', path: 'attendance', group: 'people', requires: { anyOf: [PP.AttendanceView] } },
-  { id: 'leave', path: 'leave', group: 'people', requires: { anyOf: [PP.LeaveView] } },
+  { id: 'attendance', path: 'attendance', group: 'people', requires: { anyOf: [P.AttendanceView, P.AttendanceApprove, P.AttendanceManage, P.AttendanceConfigure] } },
+  { id: 'leave', path: 'leave', group: 'people', requires: { anyOf: [P.LeaveView, P.LeaveApprove, P.LeaveManage, P.LeaveConfigure] } },
   { id: 'payroll', path: 'payroll', group: 'people', requires: { anyOf: [P.PayrollView] } },
   { id: 'recruitment', path: 'recruitment', group: 'talent', requires: { anyOf: [PP.RecruitmentView] } },
   { id: 'onboarding', path: 'onboarding', group: 'talent', requires: { anyOf: [PP.OnboardingView] } },

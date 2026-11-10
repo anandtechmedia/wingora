@@ -15,6 +15,8 @@ const comingSoon: ModuleComponent = lazy(() => import('@/modules/coming-soon'));
 const screens: Partial<Record<ModuleId, ModuleComponent>> = {
   dashboard: lazy(() => import('@/modules/dashboard')),
   employees: lazy(() => import('@/modules/employees')),
+  attendance: lazy(() => import('@/modules/attendance')),
+  leave: lazy(() => import('@/modules/leave')),
 };
 const DesignSystem = lazy(() => import('@/design-system/design-system-route'));
 

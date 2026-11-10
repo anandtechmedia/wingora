@@ -25,6 +25,16 @@ export const Permission = {
   EmployeesImport: 'employees.import',
   EmployeesExport: 'employees.export',
   PoliciesManage: 'policies.manage',
+  AttendanceView: 'attendance.view',
+  AttendanceClock: 'attendance.clock',
+  AttendanceApprove: 'attendance.approve',
+  AttendanceManage: 'attendance.manage',
+  AttendanceConfigure: 'attendance.configure',
+  LeaveView: 'leave.view',
+  LeaveApply: 'leave.apply',
+  LeaveApprove: 'leave.approve',
+  LeaveManage: 'leave.manage',
+  LeaveConfigure: 'leave.configure',
   PayrollView: 'payroll.view',
   PayrollManage: 'payroll.manage',
   FilesUpload: 'files.upload',
@@ -37,8 +47,6 @@ export const Permission = {
  * role catalog, with the same value, when its module is built. Until then no real user holds them.
  */
 export const PendingPermission = {
-  AttendanceView: 'attendance.view',
-  LeaveView: 'leave.view',
   RecruitmentView: 'recruitment.view',
   OnboardingView: 'onboarding.view',
   OffboardingView: 'offboarding.view',

@@ -105,7 +105,7 @@ describe('permission-based navigation', () => {
     expect(within(dialog).getAllByRole('option')).toHaveLength(1);
     await userEvent.keyboard('{Enter}');
     expect(router.state.location.pathname).toBe('/leave');
-    expect(await screen.findByRole('heading', { name: 'Leave is not available yet' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Leave' })).toBeInTheDocument();
     expect(within(screen.getByRole('navigation', { name: 'Breadcrumb' })).getByText('Leave')).toHaveAttribute('aria-current', 'page');
   });
 

@@ -23,10 +23,11 @@ export const personas: Record<string, MeResponse> = {
   'hr@wingora.test': persona('usr_hr', 'Priya Nair', 'hr@wingora.test', ['hr-manager'], [
     P.OrganizationView, P.UsersView, P.DepartmentsView, P.EmployeesViewAll, P.EmployeesManage, P.FilesUpload,
     P.EmployeesDisciplinaryView, P.EmployeesDisciplinaryManage, P.EmployeesExport,
-    PP.AttendanceView, PP.LeaveView, PP.RecruitmentView, PP.OnboardingView, PP.OffboardingView, PP.PerformanceView, PP.DocumentsView, PP.ReportsView,
+    P.AttendanceView, P.AttendanceClock, P.AttendanceApprove, P.AttendanceManage, P.LeaveView, P.LeaveApply, P.LeaveApprove, P.LeaveManage,
+    PP.RecruitmentView, PP.OnboardingView, PP.OffboardingView, PP.PerformanceView, PP.DocumentsView, PP.ReportsView,
   ], true),
   'employee@wingora.test': persona('usr_employee', 'Jordan Lee', 'employee@wingora.test', ['employee'], [
-    P.OrganizationView, P.EmployeesViewSelf, P.FilesUpload, PP.AttendanceView, PP.LeaveView, PP.HelpdeskView, PP.DocumentsView,
+    P.OrganizationView, P.EmployeesViewSelf, P.FilesUpload, P.AttendanceView, P.AttendanceClock, P.LeaveView, P.LeaveApply, PP.HelpdeskView, PP.DocumentsView,
   ], false),
 };
 

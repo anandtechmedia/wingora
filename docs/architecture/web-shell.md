@@ -118,3 +118,6 @@ Set `VITE_API_MODE=live` (see `apps/web/.env.example`). The app then uses `creat
 - Multi-organization accounts (the backend has one organization per user).
 - Backend permissions for the pending modules.
 - Record-level search, real notifications and the module screens themselves.
+
+## Attendance and leave
+`modules/attendance` and `modules/leave` use `api/time.ts` (`TimeSource`, provided in `app.tsx`; disconnected unless `VITE_API_MODE=live`). Tabs appear only for the permissions the server grants. Approve and cancel buttons follow the `can_decide`/`can_cancel` flags the API sends with each request. Times are shown in the employee's zone exactly as the API returns them; the browser never converts them. Leave days are always counted by the server (`/leave/requests/preview`). See `attendance-leave.md`.
