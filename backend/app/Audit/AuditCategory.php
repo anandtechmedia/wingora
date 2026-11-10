@@ -18,6 +18,8 @@ enum AuditCategory: string
     case CountryRules = 'country_rules';
     case Administration = 'administration';
     case DataExport = 'data_export';
+    case Recruitment = 'recruitment';
+    case Onboarding = 'onboarding';
 
     public static function forEvent(string $event, ?Model $subject = null): self
     {
@@ -29,6 +31,8 @@ enum AuditCategory: string
             $starts('auth.') => self::Authentication,
             $starts('authz.denied') => self::Authorization,
             $starts('authz.', 'user.roles', 'role.') => self::Permissions,
+            $starts('recruitment.', 'candidate.', 'ai.') => self::Recruitment,
+            $starts('onboarding.') => self::Onboarding,
             $starts('leave.') => self::Leave,
             $starts('attendance.') => self::Attendance,
             $starts('payroll.', 'compensation.', 'employee_compensation.') => self::Payroll,
