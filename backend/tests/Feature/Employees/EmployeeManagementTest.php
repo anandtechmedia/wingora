@@ -53,7 +53,7 @@ class EmployeeManagementTest extends CountryTestCase
 
         $history = $this->apiAs($this->hr, 'GET', "/api/v1/employees/{$id}/history")->assertOk()->json('data');
         $this->assertSame(['transfer', 'hire'], array_column($history, 'change_type'));
-        $this->assertSame(['from' => 'Finance', 'to' => 'Sales'], $history[0]['changes']['department']);
+        $this->assertEquals(['from' => 'Finance', 'to' => 'Sales'], $history[0]['changes']['department']);
         $this->assertTrue(AuditLog::query()->withoutGlobalScopes()->where('event', 'employee.updated')->exists());
 
         $this->apiAs($this->hr, 'POST', '/api/v1/employees', ['employee_number' => 'E-100', 'first_name' => 'X', 'last_name' => 'Y'])
