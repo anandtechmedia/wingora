@@ -48,3 +48,5 @@ Artisan::command('wingora:platform-user {email} {name} {--role=platform-admin}',
 
     $this->info("Created {$role} {$user->email}; a password-reset link was sent. MFA enrolment is required at first sign-in.");
 })->purpose('Create a platform staff account (no password is ever printed)');
+Schedule::command('wingora:recruitment:purge')->dailyAt('03:00')->withoutOverlapping();
+Schedule::command('wingora:onboarding:reminders')->dailyAt('13:00')->withoutOverlapping();

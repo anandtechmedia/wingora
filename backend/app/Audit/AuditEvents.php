@@ -48,6 +48,48 @@ final class AuditEvents
 
     public const REIMBURSEMENT_DECIDED = 'payroll.reimbursement_decided';
 
+    public const RECRUITMENT_SETTINGS_CHANGED = 'recruitment.settings_changed';
+
+    public const JOB_OPENING_PUBLISHED = 'recruitment.opening_published';
+
+    public const JOB_OPENING_CLOSED = 'recruitment.opening_closed';
+
+    public const APPLICATION_RECEIVED = 'recruitment.application_received';
+
+    public const APPLICATION_MOVED = 'recruitment.application_moved';
+
+    public const APPLICATION_REJECTED = 'recruitment.application_rejected';
+
+    public const APPLICATION_WITHDRAWN = 'recruitment.application_withdrawn';
+
+    public const CANDIDATE_HIRED = 'recruitment.candidate_hired';
+
+    public const CANDIDATE_DOCUMENT_VIEWED = 'candidate.document_viewed';
+
+    public const CANDIDATE_ERASED = 'candidate.erased';
+
+    public const CANDIDATES_RETENTION_PURGED = 'candidate.retention_purged';
+
+    public const INTERVIEW_SCHEDULED = 'recruitment.interview_scheduled';
+
+    public const INTERVIEW_CANCELLED = 'recruitment.interview_cancelled';
+
+    public const INTERVIEW_FEEDBACK_SUBMITTED = 'recruitment.feedback_submitted';
+
+    public const OFFER_CHANGED = 'recruitment.offer_changed';
+
+    public const AI_DRAFT_GENERATED = 'ai.draft_generated';
+
+    public const AI_DRAFT_REVIEWED = 'ai.draft_reviewed';
+
+    public const ONBOARDING_STARTED = 'onboarding.started';
+
+    public const ONBOARDING_TASK_COMPLETED = 'onboarding.task_completed';
+
+    public const ONBOARDING_DOCUMENT_REVIEWED = 'onboarding.document_reviewed';
+
+    public const ONBOARDING_REMINDERS_SENT = 'onboarding.reminders_sent';
+
     public const DATA_EXPORTED = 'export.completed';
 
     public const AUDIT_EXPORTED = 'audit.exported';
