@@ -74,7 +74,7 @@ class TenantController extends Controller
         }
 
         AuditLog::record('platform.tenant_status_changed', $tenant, ['status' => $old], ['status' => $data['status']]);
-        SecurityEvent::record('platform.tenant_status_changed', 'warning', $request->user(), ['tenant' => $tenant->public_id, 'status' => $data['status']], $tenant->id);
+        SecurityEvent::record('platform.tenant_status_changed', 'warning', $request->user(), ['tenant' => $tenant->public_id, 'status' => $data['status']], $tenant->id, audit: false);
 
         return response()->json(['data' => $this->present($tenant)]);
     }

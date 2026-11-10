@@ -1,5 +1,7 @@
 <?php
 
+use App\Audit\AuditCategory;
+use App\Audit\AuditEvents;
 use App\Exceptions\TenantContextMissing;
 use App\Http\Middleware\AssignRequestId;
 use App\Http\Middleware\EnforceTokenAbilities;
@@ -10,6 +12,7 @@ use App\Http\Middleware\RequireMfa;
 use App\Http\Middleware\ResolveTenant;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetLocale;
+use App\Models\AuditLog;
 use App\Models\SecurityEvent;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
@@ -24,6 +27,7 @@ use Illuminate\Session\TokenMismatchException;
 use Illuminate\Support\Facades\Context;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -73,6 +77,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (Throwable $e, Request $request) {
             if (! ($request->is('api/*') || $request->expectsJson())) {
                 return null;
+            }
+
+            // Denied authorization decisions are part of the audit trail.
+            if (($e instanceof AuthorizationException || $e instanceof AccessDeniedHttpException) && $request->user()) {
+                rescue(fn () => AuditLog::record(AuditEvents::ACCESS_DENIED, null, [], [], ['path' => '/'.ltrim($request->path(), '/')],
+                    outcome: 'failure', category: AuditCategory::Authorization, tenantId: $request->user()->tenant_id));
             }
 
             [$status, $title, $detail, $extra] = match (true) {

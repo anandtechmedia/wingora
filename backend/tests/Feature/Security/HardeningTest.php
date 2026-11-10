@@ -125,7 +125,7 @@ class HardeningTest extends SecurityTestCase
         $rows = $this->apiAs($auditor, 'GET', '/api/v1/audit-logs?per_page=100')->assertOk()->json('data');
         $otherTenantRows = DB::table('audit_logs')->where('tenant_id', $other->id)->pluck('id')->all();
         $this->assertNotEmpty($otherTenantRows);
-        $this->assertEmpty(array_intersect($otherTenantRows, array_column($rows, 'id')));
+        $this->assertEmpty(array_intersect(DB::table('audit_logs')->where('tenant_id', $other->id)->pluck('public_id')->all(), array_column($rows, 'id')));
 
         $log = Tenancy::run($this->tenant, fn () => AuditLog::query()->first());
         $this->expectException(\LogicException::class);

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\AuditLog;
 use App\Models\SecurityEvent;
 use App\Security\Permission;
 use Illuminate\Http\JsonResponse;
@@ -12,13 +11,6 @@ use Illuminate\Support\Facades\Gate;
 
 class LogController extends Controller
 {
-    public function audit(Request $request): JsonResponse
-    {
-        Gate::authorize(Permission::AuditView->value);
-
-        return $this->paginate($request, AuditLog::query(), ['id', 'event', 'subject_type', 'old_values', 'new_values', 'ip_address', 'request_id', 'created_at']);
-    }
-
     public function security(Request $request): JsonResponse
     {
         Gate::authorize(Permission::SecurityEventsView->value);

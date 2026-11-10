@@ -37,6 +37,6 @@ class RoleAssigner
         $target->flushPermissions();
 
         AuditLog::record('user.roles_changed', $target, ['roles' => $before], ['roles' => $roles->pluck('key')->values()->all()]);
-        SecurityEvent::record('authz.roles_changed', 'warning', $actor, ['target' => $target->public_id, 'roles' => $roles->pluck('key')->all()]);
+        SecurityEvent::record('authz.roles_changed', 'warning', $actor, ['target' => $target->public_id, 'roles' => $roles->pluck('key')->all()], audit: false);
     }
 }

@@ -8,6 +8,7 @@ enum Permission: string
     case PlatformTenantsManage = 'platform.tenants.manage';
     case PlatformStaffManage = 'platform.staff.manage';
     case PlatformAuditView = 'platform.audit.view';
+    case PlatformAuditExport = 'platform.audit.export';
     case PlatformCountryRulesManage = 'platform.country-rules.manage';
     case PlatformCountryRulesApprove = 'platform.country-rules.approve';
 
@@ -30,6 +31,8 @@ enum Permission: string
     case PayrollManage = 'payroll.manage';
     case FilesUpload = 'files.upload';
     case AuditView = 'audit.view';
+    case AuditExport = 'audit.export';
+    case AuditRetentionManage = 'audit.retention.manage';
     case SecurityEventsView = 'security-events.view';
 
     public function isPlatform(): bool

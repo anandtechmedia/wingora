@@ -72,7 +72,7 @@ class FileController extends Controller
     public function download(StoredFile $file): StreamedResponse
     {
         Gate::authorize('view', $file);
-        AuditLog::record('file.downloaded', $file);
+        AuditLog::record('file.downloaded', $file, metadata: ['file_category' => $file->category, 'mime_type' => $file->mime_type, 'size' => $file->size]);
 
         return Storage::disk($file->disk)->download($file->path, $file->original_name, [
             'Content-Type' => $file->mime_type,

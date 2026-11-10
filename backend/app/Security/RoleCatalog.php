@@ -36,7 +36,7 @@ final class RoleCatalog
         return [
             self::PLATFORM_OWNER => ['name' => 'Platform Owner', 'scope' => 'platform', 'privileged' => true, 'permissions' => [
                 P::PlatformTenantsView, P::PlatformTenantsManage, P::PlatformStaffManage, P::PlatformAuditView,
-                P::PlatformCountryRulesManage, P::PlatformCountryRulesApprove,
+                P::PlatformCountryRulesManage, P::PlatformCountryRulesApprove, P::PlatformAuditExport,
             ]],
             self::PLATFORM_ADMIN => ['name' => 'Platform Administrator', 'scope' => 'platform', 'privileged' => true, 'permissions' => [
                 P::PlatformTenantsView, P::PlatformTenantsManage, P::PlatformAuditView, P::PlatformCountryRulesManage, P::PlatformCountryRulesApprove,
@@ -60,7 +60,7 @@ final class RoleCatalog
                 P::OrganizationView, P::EmployeesViewAll, P::EmployeesSensitiveView, P::PayrollView, P::PayrollManage, P::FilesUpload,
             ]],
             self::AUDITOR => ['name' => 'Auditor', 'scope' => 'tenant', 'privileged' => true, 'permissions' => [
-                P::OrganizationView, P::UsersView, P::AuditView, P::SecurityEventsView,
+                P::OrganizationView, P::UsersView, P::AuditView, P::AuditExport, P::SecurityEventsView,
             ]],
         ];
     }

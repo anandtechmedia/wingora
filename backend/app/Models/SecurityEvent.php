@@ -34,7 +34,8 @@ class SecurityEvent extends Model
         return true;
     }
 
-    public static function record(string $type, string $severity = 'info', ?User $user = null, array $metadata = [], ?int $tenantId = null): void
+    /** Also mirrored into the central audit trail unless $audit is false (when the caller writes its own audit entry). */
+    public static function record(string $type, string $severity = 'info', ?User $user = null, array $metadata = [], ?int $tenantId = null, bool $audit = true): void
     {
         $request = request();
         $row = [
@@ -50,6 +51,12 @@ class SecurityEvent extends Model
         ];
 
         static::query()->withoutGlobalScopes()->insert($row);
+        if ($audit) {
+            AuditLog::record($type, null, [], [], $metadata,
+                outcome: preg_match('/failed|blocked|denied|locked|missing/', $type) ? 'failure' : 'success',
+                tenantId: $row['tenant_id'], actor: $user);
+        }
+
         Log::channel('security')->log($severity === 'critical' ? 'critical' : ($severity === 'warning' ? 'warning' : 'info'), $type, array_merge($row, ['metadata' => $metadata]));
     }
 }

@@ -73,6 +73,7 @@ Private disk (`storage/app/private/secure` or a private S3 bucket); `serve` disa
 
 ## 6. Logging
 
+- Audit framework details (categories, hash chains, retention, reports): `audit.md`.
 - `audit_logs`: append-only (update/delete throw); records create/update/delete of auditable models with old/new values, and sensitive reads (sensitive fields, compensation, file downloads). Hidden, encrypted and salary values are redacted.
 - `security_events`: append-only; logins, failures, lockouts, MFA events, token issue/revoke, password events, role changes, blocked escalation, access denials, tenant status changes, tenancy violations. Mirrored as JSON to the `security` log channel (`storage/logs/security-*.log`, 90 days) for shipping to a SIEM.
 - Every response carries `X-Request-Id`, which is stored on both logs.

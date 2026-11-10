@@ -1,0 +1,43 @@
+<?php
+
+namespace App\Audit;
+
+use Illuminate\Database\Eloquent\Model;
+
+enum AuditCategory: string
+{
+    case Authentication = 'authentication';
+    case ApiTokens = 'api_tokens';
+    case Authorization = 'authorization';
+    case Permissions = 'permissions';
+    case EmployeeProfile = 'employee_profile';
+    case EmployeeDocuments = 'employee_documents';
+    case Leave = 'leave';
+    case Attendance = 'attendance';
+    case Payroll = 'payroll';
+    case CountryRules = 'country_rules';
+    case Administration = 'administration';
+    case DataExport = 'data_export';
+
+    public static function forEvent(string $event, ?Model $subject = null): self
+    {
+        $starts = fn (string ...$prefixes) => array_filter($prefixes, fn ($p) => str_starts_with($event, $p)) !== [];
+        $base = $subject ? class_basename($subject) : null;
+
+        return match (true) {
+            $starts('auth.token') => self::ApiTokens,
+            $starts('auth.') => self::Authentication,
+            $starts('authz.denied') => self::Authorization,
+            $starts('authz.', 'user.roles', 'role.') => self::Permissions,
+            $starts('leave.') => self::Leave,
+            $starts('attendance.') => self::Attendance,
+            $starts('payroll.', 'compensation.', 'employee_compensation.') => self::Payroll,
+            $starts('file.', 'stored_file.') => self::EmployeeDocuments,
+            $starts('employee.') => self::EmployeeProfile,
+            $starts('country_rules.', 'rule_set.', 'rule_version.') => self::CountryRules,
+            $starts('export.', 'audit.exported') => self::DataExport,
+            $base === 'Role' => self::Permissions,
+            default => self::Administration,
+        };
+    }
+}

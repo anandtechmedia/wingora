@@ -35,7 +35,7 @@ class OrganizationController extends Controller
         $data = $request->validate(['mfa_required' => ['required', 'boolean']]);
 
         $tenant->forceFill(['mfa_required' => $data['mfa_required']])->save();
-        SecurityEvent::record('organization.mfa_policy_changed', 'warning', $request->user(), $data);
+        SecurityEvent::record('organization.mfa_policy_changed', 'warning', $request->user(), $data, audit: false);
 
         return response()->json(['data' => $this->present($tenant)]);
     }

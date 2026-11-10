@@ -4,6 +4,7 @@ namespace App\Models\Concerns;
 
 use App\Models\AuditLog;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 trait Auditable
 {
@@ -25,7 +26,7 @@ trait Auditable
 
     public function auditEvent(string $action): string
     {
-        return $this->getMorphClass().'.'.$action;
+        return Str::snake(class_basename($this)).'.'.$action;
     }
 
     /** Hidden and encrypted attributes are never written to the audit trail. */

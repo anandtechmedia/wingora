@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AuditLogController;
+use App\Http\Controllers\Api\V1\AuditRetentionController;
 use App\Http\Controllers\Api\V1\Auth\MeController;
 use App\Http\Controllers\Api\V1\Auth\MfaController;
 use App\Http\Controllers\Api\V1\Auth\PasswordController;
@@ -14,6 +16,7 @@ use App\Http\Controllers\Api\V1\HolidayCalendarController;
 use App\Http\Controllers\Api\V1\LegalEntityController;
 use App\Http\Controllers\Api\V1\LogController;
 use App\Http\Controllers\Api\V1\OrganizationController;
+use App\Http\Controllers\Api\V1\Platform\AuditLogController as PlatformAuditLogController;
 use App\Http\Controllers\Api\V1\Platform\RuleSetController;
 use App\Http\Controllers\Api\V1\Platform\RuleVersionController;
 use App\Http\Controllers\Api\V1\Platform\TenantController;
@@ -105,7 +108,13 @@ Route::prefix('v1')->name('v1.')->group(function () {
                 Route::get('files/{file}/download', [FileController::class, 'download']);
                 Route::delete('files/{file}', [FileController::class, 'destroy']);
 
-                Route::get('audit-logs', [LogController::class, 'audit']);
+                Route::get('audit-logs', [AuditLogController::class, 'index']);
+                Route::get('audit-logs/summary', [AuditLogController::class, 'summary']);
+                Route::get('audit-logs/export', [AuditLogController::class, 'export'])->middleware('throttle:exports');
+                Route::get('audit-logs/integrity', [AuditLogController::class, 'integrity'])->middleware('throttle:exports');
+                Route::get('audit-logs/{auditLog}', [AuditLogController::class, 'show']);
+                Route::get('audit-retention', [AuditRetentionController::class, 'show']);
+                Route::put('audit-retention', [AuditRetentionController::class, 'update']);
                 Route::get('security-events', [LogController::class, 'security']);
             });
 
@@ -113,6 +122,11 @@ Route::prefix('v1')->name('v1.')->group(function () {
                 Route::get('tenants', [TenantController::class, 'index']);
                 Route::post('tenants', [TenantController::class, 'store']);
                 Route::patch('tenants/{tenant}/status', [TenantController::class, 'updateStatus']);
+
+                Route::get('audit-logs', [PlatformAuditLogController::class, 'index']);
+                Route::get('audit-logs/summary', [PlatformAuditLogController::class, 'summary']);
+                Route::get('audit-logs/export', [PlatformAuditLogController::class, 'export'])->middleware('throttle:exports');
+                Route::get('audit-logs/integrity', [PlatformAuditLogController::class, 'integrity'])->middleware('throttle:exports');
 
                 Route::get('rule-sets', [RuleSetController::class, 'index']);
                 Route::post('rule-sets', [RuleSetController::class, 'store']);
