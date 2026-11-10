@@ -121,3 +121,13 @@ Set `VITE_API_MODE=live` (see `apps/web/.env.example`). The app then uses `creat
 
 ## Attendance and leave
 `modules/attendance` and `modules/leave` use `api/time.ts` (`TimeSource`, provided in `app.tsx`; disconnected unless `VITE_API_MODE=live`). Tabs appear only for the permissions the server grants. Approve and cancel buttons follow the `can_decide`/`can_cancel` flags the API sends with each request. Times are shown in the employee's zone exactly as the API returns them; the browser never converts them. Leave days are always counted by the server (`/leave/requests/preview`). See `attendance-leave.md`.
+
+## Payroll preparation (web)
+
+`modules/payroll` is backed by `api/payroll.ts` (`PayrollSource`, HTTP and disconnected implementations). It never calculates money in the browser: every amount arrives from the API as `{ amount, minor, currency }` and is only formatted for display.
+
+- **Tabs** are chosen from permissions: My pay (`payslips.view.self`, `reimbursements.submit`), Payroll runs, Compensation and Loans (`payroll.view`), Reimbursements (`reimbursements.approve` or `payroll.manage`) and Setup (`payroll.configure`). Run actions (prepare, submit, approve, publish, export) are shown from the run's server-supplied `can` flags; the server enforces them regardless.
+- **Source labels:** every line, structure component and totals row shows `SourceBadge` — Calculated, Entered (manual) or Provider. A disclaimer states that runs are prepared for review and are not a statutory payroll calculation.
+- **Approvals:** the run detail shows the approval timeline per review cycle and level; approve/reject reuse `DecisionDialog`.
+- **Files:** payslip PDFs, receipts and CSV exports download through `apiDownload`; receipts upload through `/api/v1/files` first.
+- Without an API the module shows "Payroll needs the Wingora API" instead of sample data.

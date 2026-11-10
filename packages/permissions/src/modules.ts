@@ -21,7 +21,7 @@ export const modules: readonly ModuleDefinition[] = [
   { id: 'employees', path: 'employees', group: 'people', requires: { anyOf: [P.EmployeesViewAll, P.EmployeesViewDepartment, P.EmployeesViewSelf] } },
   { id: 'attendance', path: 'attendance', group: 'people', requires: { anyOf: [P.AttendanceView, P.AttendanceApprove, P.AttendanceManage, P.AttendanceConfigure] } },
   { id: 'leave', path: 'leave', group: 'people', requires: { anyOf: [P.LeaveView, P.LeaveApprove, P.LeaveManage, P.LeaveConfigure] } },
-  { id: 'payroll', path: 'payroll', group: 'people', requires: { anyOf: [P.PayrollView] } },
+  { id: 'payroll', path: 'payroll', group: 'people', requires: { anyOf: [P.PayrollView, P.PayslipsViewSelf, P.ReimbursementsSubmit, P.ReimbursementsApprove] } },
   { id: 'recruitment', path: 'recruitment', group: 'talent', requires: { anyOf: [PP.RecruitmentView] } },
   { id: 'onboarding', path: 'onboarding', group: 'talent', requires: { anyOf: [PP.OnboardingView] } },
   { id: 'offboarding', path: 'offboarding', group: 'talent', requires: { anyOf: [PP.OffboardingView] } },

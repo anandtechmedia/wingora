@@ -6,6 +6,7 @@ import { I18nProvider } from '@/i18n/i18n';
 import { DashboardSourceProvider, disconnectedDashboardSource, httpDashboardSource } from '@/api/dashboard';
 import { disconnectedEmployeeSource, EmployeeSourceProvider, httpEmployeeSource } from '@/api/employees';
 import { disconnectedTimeSource, httpTimeSource, TimeSourceProvider } from '@/api/time';
+import { disconnectedPayrollSource, httpPayrollSource, PayrollSourceProvider } from '@/api/payroll';
 import { createLiveGateway } from '@/auth/live-gateway';
 import { createMockGateway } from '@/mocks/mock-gateway';
 import { WorkspaceProvider } from '@/shell/workspace';
@@ -20,6 +21,7 @@ const gateway = live ? createLiveGateway() : createMockGateway();
 const dashboardSource = live ? httpDashboardSource : disconnectedDashboardSource;
 const employeeSource = live ? httpEmployeeSource : disconnectedEmployeeSource;
 const timeSource = live ? httpTimeSource : disconnectedTimeSource;
+const payrollSource = live ? httpPayrollSource : disconnectedPayrollSource;
 
 export function App() {
   const router = useMemo(() => createBrowserRouter(createRoutes({ prototypeHint: !live })), []);
@@ -31,9 +33,11 @@ export function App() {
           <DashboardSourceProvider value={dashboardSource}>
             <EmployeeSourceProvider value={employeeSource}>
               <TimeSourceProvider value={timeSource}>
-                <WorkspaceProvider live={live}>
-                  <RouterProvider router={router} />
-                </WorkspaceProvider>
+                <PayrollSourceProvider value={payrollSource}>
+                  <WorkspaceProvider live={live}>
+                    <RouterProvider router={router} />
+                  </WorkspaceProvider>
+                </PayrollSourceProvider>
               </TimeSourceProvider>
             </EmployeeSourceProvider>
           </DashboardSourceProvider>
