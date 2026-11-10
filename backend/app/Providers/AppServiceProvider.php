@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Ai\LanguageModel;
+use App\Ai\NullLanguageModel;
+use App\Ai\OpenAiCompatibleLanguageModel;
 use App\Models\PersonalAccessToken;
 use App\Models\User;
 use App\Security\Permission;
@@ -22,7 +25,10 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        $this->app->singleton(LanguageModel::class, fn () => match (config('ai.provider')) {
+            'openai_compatible' => new OpenAiCompatibleLanguageModel((array) config('ai.openai_compatible')),
+            default => new NullLanguageModel,
+        });
     }
 
     public function boot(): void
@@ -73,6 +79,11 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('exports', fn (Request $request) => Limit::perMinute(10)->by($request->user()?->id ?: $request->ip()));
 
+        RateLimiter::for('careers', fn (Request $request) => Limit::perMinute(60)->by('careers:'.$request->ip()));
+        RateLimiter::for('careers-apply', fn (Request $request) => [
+            Limit::perMinute(3)->by('apply:'.$request->ip()),
+            Limit::perDay(20)->by('apply-day:'.$request->ip()),
+        ]);
         RateLimiter::for('uploads', fn (Request $request) => Limit::perMinute(20)->by($request->user()?->id ?: $request->ip()));
     }
 }

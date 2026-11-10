@@ -50,6 +50,16 @@ enum Permission: string
     case PayslipsViewSelf = 'payslips.view.self';
     case ReimbursementsSubmit = 'reimbursements.submit';
     case ReimbursementsApprove = 'reimbursements.approve';
+    case RecruitmentView = 'recruitment.view';
+    case RecruitmentManage = 'recruitment.manage';
+    case RecruitmentConfigure = 'recruitment.configure';
+    case RecruitmentOffers = 'recruitment.offers';
+    case RecruitmentInterview = 'recruitment.interview';
+    case OnboardingView = 'onboarding.view';
+    case OnboardingManage = 'onboarding.manage';
+    case OnboardingConfigure = 'onboarding.configure';
+    case OnboardingTasksSelf = 'onboarding.tasks.self';
+
     case FilesUpload = 'files.upload';
     case AuditView = 'audit.view';
     case AuditExport = 'audit.export';

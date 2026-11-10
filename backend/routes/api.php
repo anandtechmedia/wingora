@@ -27,6 +27,8 @@ use App\Http\Controllers\Api\V1\LeaveTypeController;
 use App\Http\Controllers\Api\V1\LegalEntityController;
 use App\Http\Controllers\Api\V1\LoanController;
 use App\Http\Controllers\Api\V1\LogController;
+use App\Http\Controllers\Api\V1\Onboarding\OnboardingPlanController;
+use App\Http\Controllers\Api\V1\Onboarding\OnboardingTemplateController;
 use App\Http\Controllers\Api\V1\OrganizationController;
 use App\Http\Controllers\Api\V1\PayrollRunController;
 use App\Http\Controllers\Api\V1\PayrollSetupController;
@@ -36,6 +38,13 @@ use App\Http\Controllers\Api\V1\Platform\RuleSetController;
 use App\Http\Controllers\Api\V1\Platform\RuleVersionController;
 use App\Http\Controllers\Api\V1\Platform\TenantController;
 use App\Http\Controllers\Api\V1\PolicyController;
+use App\Http\Controllers\Api\V1\Recruitment\AiAssistController;
+use App\Http\Controllers\Api\V1\Recruitment\ApplicationController;
+use App\Http\Controllers\Api\V1\Recruitment\InterviewController;
+use App\Http\Controllers\Api\V1\Recruitment\JobOpeningController;
+use App\Http\Controllers\Api\V1\Recruitment\OfferController;
+use App\Http\Controllers\Api\V1\Recruitment\PublicCareersController;
+use App\Http\Controllers\Api\V1\Recruitment\RecruitmentSettingsController;
 use App\Http\Controllers\Api\V1\ReferenceController;
 use App\Http\Controllers\Api\V1\ReimbursementController;
 use App\Http\Controllers\Api\V1\ShiftController;
@@ -44,6 +53,12 @@ use App\Http\Controllers\Api\V1\WorkLocationController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->name('v1.')->group(function () {
+    // Public careers site: no session, no token; the tenant comes only from an enabled careers slug.
+    Route::prefix('public/careers/{site}')->middleware('throttle:careers')->group(function () {
+        Route::get('/', [PublicCareersController::class, 'show']);
+        Route::get('jobs/{opening}', [PublicCareersController::class, 'opening']);
+        Route::post('jobs/{opening}/apply', [PublicCareersController::class, 'apply'])->middleware('throttle:careers-apply');
+    });
     // Unauthenticated endpoints, each with its own rate limiter.
     Route::prefix('auth')->group(function () {
         Route::post('login', [SessionController::class, 'store'])->middleware('throttle:login');
@@ -83,6 +98,61 @@ Route::prefix('v1')->name('v1.')->group(function () {
 
             // Organization (tenant) data. The tenant always comes from the authenticated user.
             Route::middleware('tenant')->group(function () {
+                Route::get('recruitment/settings', [RecruitmentSettingsController::class, 'show']);
+                Route::patch('recruitment/settings', [RecruitmentSettingsController::class, 'update']);
+                Route::post('recruitment/stages', [RecruitmentSettingsController::class, 'storeStage']);
+                Route::patch('recruitment/stages/{stage}', [RecruitmentSettingsController::class, 'updateStage']);
+                Route::delete('recruitment/stages/{stage}', [RecruitmentSettingsController::class, 'destroyStage']);
+                Route::get('recruitment/openings', [JobOpeningController::class, 'index']);
+                Route::post('recruitment/openings', [JobOpeningController::class, 'store']);
+                Route::get('recruitment/openings/{opening}', [JobOpeningController::class, 'show']);
+                Route::patch('recruitment/openings/{opening}', [JobOpeningController::class, 'update']);
+                Route::post('recruitment/openings/{opening}/publish', [JobOpeningController::class, 'publish']);
+                Route::post('recruitment/openings/{opening}/close', [JobOpeningController::class, 'close']);
+                Route::get('recruitment/board', [ApplicationController::class, 'board']);
+                Route::post('recruitment/applications', [ApplicationController::class, 'store'])->middleware('throttle:uploads');
+                Route::get('recruitment/applications/{application}', [ApplicationController::class, 'show']);
+                Route::post('recruitment/applications/{application}/move', [ApplicationController::class, 'move']);
+                Route::post('recruitment/applications/{application}/reject', [ApplicationController::class, 'reject']);
+                Route::post('recruitment/applications/{application}/withdraw', [ApplicationController::class, 'withdraw']);
+                Route::post('recruitment/applications/{application}/hold', [ApplicationController::class, 'hold']);
+                Route::post('recruitment/applications/{application}/erase', [ApplicationController::class, 'erase']);
+                Route::post('recruitment/applications/{application}/documents', [ApplicationController::class, 'uploadDocument'])->middleware('throttle:uploads');
+                Route::patch('recruitment/documents/{document}', [ApplicationController::class, 'updateDocument']);
+                Route::get('recruitment/documents/{document}/download', [ApplicationController::class, 'download']);
+                Route::get('recruitment/applications/{application}/offers', [OfferController::class, 'index']);
+                Route::post('recruitment/applications/{application}/offers', [OfferController::class, 'store']);
+                Route::post('recruitment/applications/{application}/hire', [OfferController::class, 'hire']);
+                Route::post('recruitment/offers/{offer}/{action}', [OfferController::class, 'transition'])->whereIn('action', ['approve', 'send', 'accept', 'decline', 'withdraw']);
+                Route::get('recruitment/offers/{offer}/letter', [OfferController::class, 'letter']);
+                Route::get('recruitment/interviews', [InterviewController::class, 'index']);
+                Route::post('recruitment/interviews', [InterviewController::class, 'store']);
+                Route::post('recruitment/interviews/{interview}/cancel', [InterviewController::class, 'cancel']);
+                Route::post('recruitment/interviews/{interview}/complete', [InterviewController::class, 'complete']);
+                Route::post('recruitment/interviews/{interview}/feedback', [InterviewController::class, 'feedback']);
+                Route::get('recruitment/applications/{application}/ai-drafts', [AiAssistController::class, 'drafts']);
+                Route::post('recruitment/applications/{application}/ai/summary', [AiAssistController::class, 'summary']);
+                Route::post('recruitment/applications/{application}/ai/organize-documents', [AiAssistController::class, 'organize']);
+                Route::post('recruitment/ai-drafts/{draft}/review', [AiAssistController::class, 'review']);
+
+                Route::get('onboarding/templates', [OnboardingTemplateController::class, 'index']);
+                Route::post('onboarding/templates', [OnboardingTemplateController::class, 'store']);
+                Route::patch('onboarding/templates/{template}', [OnboardingTemplateController::class, 'update']);
+                Route::post('onboarding/templates/{template}/tasks', [OnboardingTemplateController::class, 'storeTask']);
+                Route::patch('onboarding/template-tasks/{task}', [OnboardingTemplateController::class, 'updateTask']);
+                Route::delete('onboarding/template-tasks/{task}', [OnboardingTemplateController::class, 'destroyTask']);
+                Route::get('onboarding/document-requirements', [OnboardingTemplateController::class, 'documentRequirements']);
+                Route::get('onboarding/plans', [OnboardingPlanController::class, 'index']);
+                Route::post('onboarding/plans', [OnboardingPlanController::class, 'store']);
+                Route::get('onboarding/plans/{plan}', [OnboardingPlanController::class, 'show']);
+                Route::post('onboarding/plans/{plan}/cancel', [OnboardingPlanController::class, 'cancel']);
+                Route::get('onboarding/my-tasks', [OnboardingPlanController::class, 'myTasks']);
+                Route::post('onboarding/tasks/{task}/complete', [OnboardingPlanController::class, 'complete']);
+                Route::post('onboarding/tasks/{task}/upload', [OnboardingPlanController::class, 'upload'])->middleware('throttle:uploads');
+                Route::post('onboarding/tasks/{task}/review', [OnboardingPlanController::class, 'review']);
+                Route::post('onboarding/tasks/{task}/skip', [OnboardingPlanController::class, 'skip']);
+                Route::get('onboarding/tasks/{task}/document', [OnboardingPlanController::class, 'document']);
+
                 Route::get('organization', [OrganizationController::class, 'show']);
                 Route::patch('organization', [OrganizationController::class, 'update']);
                 Route::patch('organization/security', [OrganizationController::class, 'updateSecurity']);
