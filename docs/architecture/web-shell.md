@@ -89,6 +89,29 @@ uniform forgot-password response, redirect safety, per-role navigation, direct-U
 notification filtering, workspace switching, sign-out, 404, the error boundary and an axe check.
 `packages/permissions` tests the permission rules.
 
+## Organization dashboard
+
+`modules/dashboard/` renders `GET /api/v1/dashboard` ([API contract](dashboard.md)). It never computes figures from employee lists, and it shows no figures when the API is unavailable.
+
+- **Data source:** `DashboardSourceProvider` supplies a `DashboardSource`.
+  - `httpDashboardSource` calls the API.
+  - `disconnectedDashboardSource`, the default, always rejects. The prototype then shows "Live figures need the Wingora API" instead of sample numbers.
+  - Tests inject test doubles shaped like the API response.
+- **Widgets:** the server decides which widgets the user receives. Any key it leaves out is not rendered. Widgets for modules that aren't built yet (`state: "unavailable"`) show "Available when {module} is connected".
+- **Filters:**
+  - Country (the four markets).
+  - Legal entity, loaded from `GET /api/v1/legal-entities` and narrowed by country.
+  - From/to dates using the design-system `DatePicker`.
+  - Each change aborts the in-flight request. The previous figures stay on screen, dimmed, until the new ones arrive.
+- **States:** a skeleton on first load, an error state with retry, an empty state for roles without headcount access, and an empty state for trends with no data.
+- **Charts:** `TrendChart` is plain SVG with a `viewBox`, so it scales with its card. There is no chart library. The SVG is hidden from assistive technology, and a visually hidden table carries the same figures.
+
+### Running against the API
+
+Set `VITE_API_MODE=live` (see `apps/web/.env.example`). The app then uses `createLiveGateway()` for sign-in: Sanctum SPA cookies, `/sanctum/csrf-cookie`, then `/api/v1/auth/login`, `/login/mfa` and `/me`.
+
+`vite dev` and `vite preview` proxy `/api` and `/sanctum` to `WINGORA_API_ORIGIN` (default `http://127.0.0.1:8000`), so cookies stay same-origin. Any other mode is the visual prototype, with mock sign-in and no dashboard figures.
+
 ## Not done yet
 
 - Real API client, CSRF cookie bootstrap and session restore on reload.

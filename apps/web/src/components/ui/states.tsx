@@ -4,15 +4,18 @@ import { useI18n } from '@/i18n/i18n';
 import { Button } from './button';
 import { AlertTriangleIcon, InboxIcon, RefreshIcon, Spinner } from './icons';
 
-export function EmptyState({ title, description, icon, action, className }: {
+export function EmptyState({ title, description, icon, action, className, headingLevel = 3 }: {
   title: ReactNode; description?: ReactNode; icon?: ReactNode; action?: ReactNode; className?: string;
+  /** Match the page outline (e.g. 2 when the state sits directly under the page h1). */
+  headingLevel?: 2 | 3 | 4;
 }) {
+  const Heading = `h${headingLevel}` as const;
   return (
     <div className={cn('flex flex-col items-center px-6 py-12 text-center', className)}>
       <span className="mb-4 inline-flex size-12 items-center justify-center rounded-full bg-surface-muted text-fg-muted" aria-hidden="true">
         {icon ?? <InboxIcon size={22} />}
       </span>
-      <h3 className="text-md font-semibold text-fg">{title}</h3>
+      <Heading className="text-md font-semibold text-fg">{title}</Heading>
       {description && <p className="mt-1 max-w-(--container-form) text-sm text-fg-secondary">{description}</p>}
       {action && <div className="mt-5">{action}</div>}
     </div>
@@ -52,16 +55,17 @@ export function LoadingState({ label, variant = 'spinner', rows = 3, className }
   );
 }
 
-export function ErrorState({ title, description, onRetry, className }: {
-  title?: ReactNode; description?: ReactNode; onRetry?: () => void; className?: string;
+export function ErrorState({ title, description, onRetry, className, headingLevel = 3 }: {
+  title?: ReactNode; description?: ReactNode; onRetry?: () => void; className?: string; headingLevel?: 2 | 3 | 4;
 }) {
+  const Heading = `h${headingLevel}` as const;
   const { t } = useI18n();
   return (
     <div role="alert" className={cn('flex flex-col items-center px-6 py-12 text-center', className)}>
       <span className="mb-4 inline-flex size-12 items-center justify-center rounded-full bg-danger-subtle text-danger-fg" aria-hidden="true">
         <AlertTriangleIcon size={22} />
       </span>
-      <h3 className="text-md font-semibold text-fg">{title ?? t('ui.error.title')}</h3>
+      <Heading className="text-md font-semibold text-fg">{title ?? t('ui.error.title')}</Heading>
       <p className="mt-1 max-w-(--container-form) text-sm text-fg-secondary">{description ?? t('ui.error.description')}</p>
       {onRetry && <Button variant="secondary" className="mt-5" leadingIcon={<RefreshIcon />} onClick={onRetry}>{t('ui.retry')}</Button>}
     </div>
