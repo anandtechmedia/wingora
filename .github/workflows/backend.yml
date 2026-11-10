@@ -32,7 +32,7 @@ jobs:
       DB_USERNAME: root
       DB_PASSWORD: root
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # MySQL 8 ships preinstalled on GitHub's Ubuntu runners (no containers used).
       - name: Start MySQL
