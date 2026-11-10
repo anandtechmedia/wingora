@@ -65,6 +65,9 @@ final class OnboardingService
 
     public function canWork(User $user, OnboardingTask $task): bool
     {
+        if (! $user->hasPermission(P::OnboardingTasksSelf) && ! $user->hasPermission(P::OnboardingManage)) {
+            return false;
+        }
         $plan = $task->plan;
         $employee = $plan->employee;
 
@@ -83,6 +86,9 @@ final class OnboardingService
         if ($user->hasPermission(P::OnboardingView)) {
             return $query;
         }
+        if (! $user->hasPermission(P::OnboardingTasksSelf)) {
+            return $query->whereRaw('1 = 0');
+        }
         $me = $user->employee?->id;
 
         return $query->where(fn ($q) => $q
@@ -95,6 +101,9 @@ final class OnboardingService
     {
         $me = $user->employee?->id;
         $hr = $user->hasPermission(P::OnboardingManage);
+        if (! $hr && ! $user->hasPermission(P::OnboardingTasksSelf)) {
+            return OnboardingTask::query()->whereRaw('1 = 0');
+        }
 
         return OnboardingTask::query()->whereIn('status', ['pending', 'returned', 'submitted'])
             ->whereHas('plan', fn ($p) => $p->where('status', 'in_progress'))

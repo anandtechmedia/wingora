@@ -6,6 +6,7 @@ use App\Country\RuleCategory;
 use App\Models\AuditLog;
 use App\Models\Employee;
 use App\Models\LegalEntity;
+use App\Models\OnboardingTask;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Notifications\OnboardingTaskReminder;
@@ -109,6 +110,19 @@ class OnboardingTest extends CountryTestCase
         $this->assertSame('completed', $done['status']);
         $this->assertSame(100, $done['progress']['percent']);
         $this->assertSame(2, AuditLog::withoutGlobalScopes()->where('tenant_id', $this->tenant->id)->where('event', 'onboarding.document_reviewed')->count());
+    }
+
+    public function test_a_named_assignee_without_onboarding_permissions_cannot_work_the_task(): void
+    {
+        ['plan' => $plan] = $this->started('2027-03-01');
+        $auditor = $this->makeUser($this->tenant, 'auditor');
+        $id = $plan['tasks'][2]['id'];
+        OnboardingTask::withoutGlobalScopes()->where('public_id', $id)->firstOrFail()->forceFill(['assignee' => 'user', 'assignee_user_id' => $auditor->id])->saveQuietly();
+
+        $this->assertSame([], $this->apiAs($auditor, 'GET', '/api/v1/onboarding/my-tasks')->assertOk()->json('data'));
+        $this->apiAs($auditor, 'GET', "/api/v1/onboarding/plans/{$plan['id']}")->assertNotFound();
+        $this->apiAs($auditor, 'POST', "/api/v1/onboarding/tasks/{$id}/complete")->assertNotFound();
+        $this->assertSame('pending', OnboardingTask::withoutGlobalScopes()->where('public_id', $id)->value('status'));
     }
 
     public function test_plans_are_tenant_and_person_scoped(): void
