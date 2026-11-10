@@ -129,7 +129,7 @@ function NewRunDialog({ onClose, onCreated }: { onClose: () => void; onCreated: 
         <Select label={pt('runTypeLabel')} value={type} onChange={(e) => setType(e.target.value as RunType)} hint={pt('offCycleHint')}
           options={(['regular', 'off_cycle'] as const).map((x) => ({ value: x, label: pt(`runType.${x}`) }))} />
         {periods.data && periods.data.data.length === 0 && <p className="text-sm text-fg-muted sm:col-span-2">{pt('noPeriods')}</p>}
-        <FormError message={formError(error, pt('actionFailed'))} />
+        <FormError message={(error ? formError(error, pt('actionFailed')) : null)} />
       </div>
     </Modal>
   );
@@ -202,7 +202,7 @@ function ClaimDialog({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
         <TextArea label={pt('description')} required value={f.description} onChange={(v) => setF({ ...f, description: v })} error={fields.description} />
         <FileField label={pt('receiptOptional')} accept=".pdf,.png,.jpg,.jpeg" onFile={(receipt) => setF({ ...f, receipt })} />
         {fields.receipt_id && <p role="alert" className="text-sm text-danger-fg sm:col-span-2">{fields.receipt_id}</p>}
-        <FormError message={formError(error, pt('actionFailed'))} />
+        <FormError message={(error ? formError(error, pt('actionFailed')) : null)} />
       </div>
     </Modal>
   );
@@ -253,7 +253,7 @@ function LoanDialog({ onClose, onSaved }: { onClose: () => void; onSaved: () => 
         <Input label={pt('principal')} required inputMode="decimal" value={f.principal} onChange={(e) => setF({ ...f, principal: e.target.value })} error={fields.principal} />
         <Input label={pt('installment')} required inputMode="decimal" value={f.installment} onChange={(e) => setF({ ...f, installment: e.target.value })} error={fields.installment} />
         <TextArea label={pt('reason')} required value={f.reason} onChange={(v) => setF({ ...f, reason: v })} error={fields.reason} />
-        <FormError message={formError(error, pt('actionFailed'))} />
+        <FormError message={(error ? formError(error, pt('actionFailed')) : null)} />
       </div>
     </Modal>
   );
@@ -327,7 +327,7 @@ function CompensationDialog({ employeeId, onClose, onSaved }: { employeeId: stri
         <Select label={pt('structure')} placeholder={pt('noStructure')} value={f.salary_structure ?? ''} onChange={(e) => setF({ ...f, salary_structure: e.target.value || null })} error={fields.salary_structure}
           options={(structures.data ?? []).filter((s) => s.status === 'active').map((s) => ({ value: s.id, label: `${s.name} (${s.legal_entity.name})` }))} />
         <TextArea label={pt('reason')} required value={f.reason} onChange={(v) => setF({ ...f, reason: v })} error={fields.reason} />
-        <FormError message={formError(error, pt('actionFailed'))} />
+        <FormError message={(error ? formError(error, pt('actionFailed')) : null)} />
       </div>
     </Modal>
   );
@@ -412,7 +412,7 @@ function CalendarDialog({ onClose, onSaved }: { onClose: () => void; onSaved: ()
         <Select label={pt('approvalLevels')} value={String(f.approval_levels)} onChange={(e) => setF({ ...f, approval_levels: Number(e.target.value) })} error={fields.approval_levels}
           options={[1, 2, 3].map((n) => ({ value: String(n), label: String(n) }))} />
         <Input label={pt('payDateOffset')} type="number" min={0} max={31} value={String(f.pay_date_offset_days)} onChange={(e) => setF({ ...f, pay_date_offset_days: Number(e.target.value) })} error={fields.pay_date_offset_days} />
-        <FormError message={formError(error, pt('actionFailed'))} />
+        <FormError message={(error ? formError(error, pt('actionFailed')) : null)} />
       </div>
     </Modal>
   );
@@ -432,7 +432,7 @@ function StructureDialog({ onClose, onSaved }: { onClose: () => void; onSaved: (
           options={(entities.data ?? []).map((e) => ({ value: e.id, label: `${e.name} (${e.country_code})` }))} />
         <Input label={pt('name')} required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} error={fields.name} />
         <Input label={pt('code')} required value={f.code} onChange={(e) => setF({ ...f, code: e.target.value })} error={fields.code} />
-        <FormError message={formError(error, pt('actionFailed'))} />
+        <FormError message={(error ? formError(error, pt('actionFailed')) : null)} />
       </div>
     </Modal>
   );
@@ -458,7 +458,7 @@ function ComponentDialog({ structure, onClose, onSaved }: { structure: SalaryStr
         {f.method === 'percent_of_base' && <Input label={pt('ratePercent')} required inputMode="decimal" value={f.rate_percent ?? ''} onChange={(e) => setF({ ...f, rate_percent: e.target.value })} error={fields.rate_percent} />}
         <Input label={pt('ruleKey')} hint={pt('ruleKeyHint')} value={f.rule_key ?? ''} onChange={(e) => setF({ ...f, rule_key: e.target.value })} error={fields.rule_key} />
         <Input label={pt('effectiveFrom')} type="date" required value={f.effective_from} onChange={(e) => setF({ ...f, effective_from: e.target.value })} error={fields.effective_from} />
-        <FormError message={formError(error, pt('actionFailed'))} />
+        <FormError message={(error ? formError(error, pt('actionFailed')) : null)} />
       </div>
     </Modal>
   );

@@ -46,6 +46,7 @@ function fakeSource(overrides: Partial<PayrollSource> = {}): PayrollSource {
     payslips: vi.fn(async () => page([slip])),
     decide: vi.fn(async () => ({ ...run, status: 'approved' as const })),
     downloadPayslip: vi.fn(async () => undefined),
+    periods: vi.fn(async () => page([])),
     ...overrides,
   };
 }
@@ -88,6 +89,15 @@ describe('payroll', { timeout: 20_000 }, () => {
     await userEvent.click(screen.getByRole('button', { name: 'Approve level 2' }));
     await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Approve' }));
     expect(source.decide).toHaveBeenCalledWith('run1', true, null);
+  });
+
+  it('opens a form without an error before anything is submitted', async () => {
+    setup(fakeSource(), 'owner@wingora.test');
+    await userEvent.click(await screen.findByRole('tab', { name: 'Payroll runs' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'New run' }));
+    const dialog = await screen.findByRole('dialog');
+    expect(await within(dialog).findByText(/No payroll periods yet/)).toBeInTheDocument();
+    expect(within(dialog).queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('says the API is needed instead of showing invented figures', async () => {

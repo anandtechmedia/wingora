@@ -16,10 +16,11 @@ export function RunDetail({ id, onBack }: { id: string; onBack: () => void }) {
   const [issuesOnly, setIssuesOnly] = useState(false);
   const [decision, setDecision] = useState<boolean | null>(null);
   const [importing, setImporting] = useState(false);
-  const [open, setOpen] = useState<Payslip | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
   const detail = useResource(useCallback((signal: AbortSignal) => { void version; return source.run(id, signal); }, [source, id, version]));
   const slips = useResource(useCallback((signal: AbortSignal) => { void version; return source.payslips(id, { search, issues: issuesOnly, page }, signal); }, [source, id, search, issuesOnly, page, version]));
   const refresh = () => setVersion((v) => v + 1);
+  const open = slips.data?.data.find((s) => s.id === openId) ?? null;
   const step = (key: string, fn: () => Promise<unknown>, done: string) => act(key, fn, done).then((ok) => ok && refresh());
   const columns: DataTableColumn<Payslip>[] = [
     { id: 'employee', header: pt('employee'), primary: true, cell: (s) => <div><div className="font-medium text-fg">{s.employee.name}</div><div className="text-xs text-fg-muted">{s.employee.employee_number}</div></div> },
@@ -28,7 +29,7 @@ export function RunDetail({ id, onBack }: { id: string; onBack: () => void }) {
     { id: 'deductions', header: pt('deductions'), cell: (s) => money(s.deductions) },
     { id: 'net', header: pt('net'), cell: (s) => <span className="font-medium">{money(s.net)}</span> },
     { id: 'issues', header: pt('issues'), cell: (s) => (s.issues.length ? <Badge tone="warning" size="sm">{pt('issueCount', { count: s.issues.length })}</Badge> : '—') },
-    { id: 'actions', header: pt('actions'), cell: (s) => <Button size="sm" variant="tertiary" onClick={() => setOpen(s)}>{pt('viewLines')}</Button> },
+    { id: 'actions', header: pt('actions'), cell: (s) => <Button size="sm" variant="tertiary" onClick={() => setOpenId(s.id)}>{pt('viewLines')}</Button> },
   ];
   return (
     <div className="space-y-6">
@@ -86,7 +87,7 @@ export function RunDetail({ id, onBack }: { id: string; onBack: () => void }) {
             {decision !== null && <DecisionDialog approve={decision} subject={`${r.legal_entity.name} · ${r.period.start_date} – ${r.period.end_date} · ${money(r.net)}`} onClose={() => setDecision(null)}
               onDecide={async (note) => { await source.decide(id, decision, note); refresh(); }} />}
             {importing && <ImportDialog runId={id} onClose={() => setImporting(false)} onDone={refresh} />}
-            {open && <LinesDialog runId={id} slip={open} editable={Boolean(r.can?.edit)} onClose={() => setOpen(null)} onChanged={refresh} />}
+            {open && <LinesDialog runId={id} slip={open} editable={Boolean(r.can?.edit)} onClose={() => setOpenId(null)} onChanged={refresh} />}
           </div>
         )}
       </ResourceView>
@@ -98,9 +99,9 @@ function LinesDialog({ runId, slip, editable, onClose, onChanged }: { runId: str
   const { pt, t, money } = usePayrollT();
   const source = usePayrollSource();
   const { busy, run } = useAction();
-  const [lines, setLines] = useState(slip.lines ?? []);
+  const lines = slip.lines ?? [];
   const [adding, setAdding] = useState(false);
-  const remove = (lineId: string) => run(lineId, () => source.removeLine(runId, lineId), pt('lineRemoved')).then((ok) => { if (ok) { setLines((l) => l.filter((x) => x.id !== lineId)); onChanged(); } });
+  const remove = (lineId: string) => run(lineId, () => source.removeLine(runId, lineId), pt('lineRemoved')).then((ok) => ok && onChanged());
   return (
     <Modal open onClose={onClose} size="lg" title={`${slip.employee.name ?? ''} · ${money(slip.net)}`} description={pt('linesHint')}
       footer={<>{editable && <Button variant="secondary" onClick={() => setAdding(true)}>{pt('addLine')}</Button>}<Button onClick={onClose}>{t('ui.close')}</Button></>}>
@@ -113,12 +114,12 @@ function LinesDialog({ runId, slip, editable, onClose, onChanged }: { runId: str
             <div className="flex items-center gap-2"><span className={l.kind === 'deduction' ? 'text-danger-fg' : 'text-fg'}>{l.kind === 'deduction' ? '−' : ''}{money(l.amount)}</span>
               {editable && l.source === 'manual' && <Button size="sm" variant="tertiary" loading={busy === l.id} onClick={() => remove(l.id)}>{pt('remove')}</Button>}</div>
           </li>))}</ul>)}
-      {adding && <AddLineDialog runId={runId} slipId={slip.id} onClose={() => setAdding(false)} onSaved={(line) => { setLines((l) => [...l, line]); onChanged(); }} />}
+      {adding && <AddLineDialog runId={runId} slipId={slip.id} onClose={() => setAdding(false)} onSaved={onChanged} />}
     </Modal>
   );
 }
 
-function AddLineDialog({ runId, slipId, onClose, onSaved }: { runId: string; slipId: string; onClose: () => void; onSaved: (line: import('@/api/payroll').PayrollLine) => void }) {
+function AddLineDialog({ runId, slipId, onClose, onSaved }: { runId: string; slipId: string; onClose: () => void; onSaved: () => void }) {
   const { pt, t } = usePayrollT();
   const source = usePayrollSource();
   const [f, setF] = useState<LineInput>({ code: '', name: '', kind: 'deduction', amount: '', reason: '' });
@@ -129,7 +130,8 @@ function AddLineDialog({ runId, slipId, onClose, onSaved }: { runId: string; sli
     setBusy(true);
     setError(null);
     try {
-      onSaved(await source.addLine(runId, slipId, { ...f, code: f.code.toUpperCase() }));
+      await source.addLine(runId, slipId, { ...f, code: f.code.toUpperCase() });
+      onSaved();
       onClose();
     } catch (e) {
       setError(e);
@@ -146,7 +148,7 @@ function AddLineDialog({ runId, slipId, onClose, onSaved }: { runId: string; sli
         <Select label={pt('kindLabel')} value={f.kind} onChange={(e) => setF({ ...f, kind: e.target.value as LineInput['kind'] })} options={(['earning', 'deduction'] as const).map((k) => ({ value: k, label: pt(`kind.${k}`) }))} />
         <Input label={pt('amount')} required inputMode="decimal" value={f.amount} onChange={(e) => setF({ ...f, amount: e.target.value })} error={fields.amount} />
         <TextArea label={pt('reason')} required value={f.reason} onChange={(v) => setF({ ...f, reason: v })} error={fields.reason} />
-        <FormError message={formError(error, pt('actionFailed'))} />
+        <FormError message={(error ? formError(error, pt('actionFailed')) : null)} />
       </div>
     </Modal>
   );
@@ -179,7 +181,7 @@ function ImportDialog({ runId, onClose, onDone }: { runId: string; onClose: () =
       <div className="grid gap-3">
         <FileField label={pt('file')} accept=".csv,text/csv" onFile={setFile} />
         {Object.values(fields).length > 0 && <ul role="alert" className="text-sm text-danger-fg">{Object.values(fields).map((m, i) => <li key={i}>{m}</li>)}</ul>}
-        <FormError message={Object.keys(fields).length ? null : formError(error, pt('actionFailed'))} />
+        <FormError message={Object.keys(fields).length ? null : (error ? formError(error, pt('actionFailed')) : null)} />
       </div>
     </Modal>
   );
