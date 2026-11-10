@@ -78,12 +78,12 @@ describe('permission-based navigation', () => {
   it('an Employee sees only permitted modules and gets 403 on others', async () => {
     setup('/dashboard', 'employee@wingora.test');
     expect(await screen.findByRole('heading', { name: /Welcome back, Jordan/ })).toBeInTheDocument();
-    expect(navLinks()).toEqual(['Dashboard', 'Employees', 'Attendance', 'Leave', 'Helpdesk', 'Documents']);
-    expect(navLinks()).not.toContain('Payroll');
+    expect(navLinks()).toEqual(['Dashboard', 'Employees', 'Attendance', 'Leave', 'Payroll', 'Recruitment', 'Onboarding', 'Helpdesk', 'Documents']);
+    expect(navLinks()).not.toContain('Settings');
   });
 
   it('direct navigation to an unauthorized module renders access denied', async () => {
-    setup('/payroll', 'employee@wingora.test');
+    setup('/settings', 'employee@wingora.test');
     expect(await screen.findByRole('heading', { name: "You don't have access to this page" })).toBeInTheDocument();
     expect(screen.queryByRole('navigation', { name: 'Breadcrumb' })).not.toBeInTheDocument();
   });
@@ -100,7 +100,7 @@ describe('permission-based navigation', () => {
     await userEvent.keyboard('{Control>}k{/Control}');
     const dialog = screen.getByRole('dialog', { name: 'Search Wingora' });
     const options = within(dialog).getAllByRole('option').map((o) => o.textContent);
-    expect(options).not.toContain('Payroll');
+    expect(options).not.toContain('Settings');
     await userEvent.keyboard('lea');
     expect(within(dialog).getAllByRole('option')).toHaveLength(1);
     await userEvent.keyboard('{Enter}');
@@ -116,7 +116,7 @@ describe('permission-based navigation', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Notifications, 1 unread' }));
     const drawer = screen.getByRole('dialog', { name: 'Notifications' });
     expect(within(drawer).getByText('Leave request awaiting approval')).toBeInTheDocument();
-    expect(within(drawer).queryByText('Onboarding checklist due')).not.toBeInTheDocument();
+    expect(within(drawer).queryByText('Review cycle opens Monday')).not.toBeInTheDocument();
     await userEvent.click(within(drawer).getByRole('button', { name: 'Mark all as read' }));
     expect(within(drawer).queryByText('New')).not.toBeInTheDocument();
   });

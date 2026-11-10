@@ -121,3 +121,25 @@ Set `VITE_API_MODE=live` (see `apps/web/.env.example`). The app then uses `creat
 
 ## Attendance and leave
 `modules/attendance` and `modules/leave` use `api/time.ts` (`TimeSource`, provided in `app.tsx`; disconnected unless `VITE_API_MODE=live`). Tabs appear only for the permissions the server grants. Approve and cancel buttons follow the `can_decide`/`can_cancel` flags the API sends with each request. Times are shown in the employee's zone exactly as the API returns them; the browser never converts them. Leave days are always counted by the server (`/leave/requests/preview`). See `attendance-leave.md`.
+
+## Payroll preparation (web)
+
+`modules/payroll` is backed by `api/payroll.ts` (`PayrollSource`, HTTP and disconnected implementations). It never calculates money in the browser: every amount arrives from the API as `{ amount, minor, currency }` and is only formatted for display.
+
+- **Tabs** are chosen from permissions: My pay (`payslips.view.self`, `reimbursements.submit`), Payroll runs, Compensation and Loans (`payroll.view`), Reimbursements (`reimbursements.approve` or `payroll.manage`) and Setup (`payroll.configure`). Run actions (prepare, submit, approve, publish, export) are shown from the run's server-supplied `can` flags; the server enforces them regardless.
+- **Source labels:** every line, structure component and totals row shows `SourceBadge` — Calculated, Entered (manual) or Provider. A disclaimer states that runs are prepared for review and are not a statutory payroll calculation.
+- **Approvals:** the run detail shows the approval timeline per review cycle and level; approve/reject reuse `DecisionDialog`.
+- **Files:** payslip PDFs, receipts and CSV exports download through `apiDownload`; receipts upload through `/api/v1/files` first.
+- Without an API the module shows "Payroll needs the Wingora API" instead of sample data.
+
+## Recruitment and onboarding (web)
+
+API reference: `docs/architecture/recruitment-onboarding.md` (backend). Client: `apps/web/src/api/recruitment.ts` (`RecruitmentSource`, `CareersSource`; disconnected sources in prototype mode).
+
+- **Public careers site** — `/careers/:site` and `/careers/:site/:job` (`pages/careers-page.tsx`) sit outside the signed-in shell and need no session. The organization comes only from the careers address. Applying needs a CV and explicit consent; the form sends the consent version it showed (a stale version gets a 409 and a "reload" message) and includes a hidden honeypot field. The confirmation is the same whether or not the person applied before.
+- **Recruitment** (`modules/recruitment`) — tabs by permission: Pipeline and Openings (`recruitment.view`), My interviews (`recruitment.interview` or `recruitment.view`), Settings (`recruitment.configure`).
+  - Kanban columns scroll horizontally on small screens. Cards move with a "Move to" menu (keyboard, mouse and touch) that only lists open stages and sends the card's `version`; a 409 shows a conflict message and reloads the board. Hiring and rejection are separate, human actions.
+  - The candidate drawer has the profile (consent version and retention date, private documents downloaded through the API), interviews (time shown in the interview's own time zone; colleagues' feedback only after you submit yours), offers (salary entered manually; accepting does not create an employee; "Hire" is a separate step) and AI assist.
+  - AI drafts are labelled, stay "Needs review" until a person accepts or discards them, and never move, score, reject or hire.
+- **Onboarding** (`modules/onboarding`) — My tasks (`onboarding.tasks.self`), Employees onboarding with progress bars and stages (`onboarding.view`), Templates (`onboarding.configure`). Template tasks can request a document taken from the legal entity's country rules. HR accepts or returns submitted documents with a note.
+- Buttons follow the `can` flags in each response; the server enforces every rule.
