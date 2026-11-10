@@ -32,6 +32,16 @@ enum Permission: string
     case EmployeesImport = 'employees.import';
     case EmployeesExport = 'employees.export';
     case PoliciesManage = 'policies.manage';
+    case AttendanceView = 'attendance.view';
+    case AttendanceClock = 'attendance.clock';
+    case AttendanceApprove = 'attendance.approve';
+    case AttendanceManage = 'attendance.manage';
+    case AttendanceConfigure = 'attendance.configure';
+    case LeaveView = 'leave.view';
+    case LeaveApply = 'leave.apply';
+    case LeaveApprove = 'leave.approve';
+    case LeaveManage = 'leave.manage';
+    case LeaveConfigure = 'leave.configure';
     case PayrollView = 'payroll.view';
     case PayrollManage = 'payroll.manage';
     case FilesUpload = 'files.upload';

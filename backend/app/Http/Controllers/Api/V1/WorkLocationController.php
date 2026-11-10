@@ -10,8 +10,8 @@ use App\Http\Resources\RuleVersionResource;
 use App\Http\Resources\WorkLocationResource;
 use App\Models\HolidayCalendar;
 use App\Models\LegalEntity;
-use App\Models\RuleVersion;
 use App\Models\WorkLocation;
+use App\Time\HolidayService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -87,26 +87,12 @@ class WorkLocationController extends Controller
         return RuleVersionResource::collection($resolver->forLocation($workLocation, RuleCategory::from($data['category']), $data['date'] ?? now()->toDateString()));
     }
 
-    public function holidays(Request $request, WorkLocation $workLocation, RuleResolver $resolver): JsonResponse
+    public function holidays(Request $request, WorkLocation $workLocation, HolidayService $holidays): JsonResponse
     {
         Gate::authorize('view', $workLocation);
         $year = (int) $request->validate(['year' => ['required', 'integer', 'between:2000,2100']])['year'];
-        [$from, $to] = ["{$year}-01-01", "{$year}-12-31"];
-        $calendar = $workLocation->holidayCalendar;
 
-        $statutory = ($calendar?->include_statutory ?? true)
-            ? $resolver->effectiveBetween($workLocation->country_code, $workLocation->subdivision_code, RuleCategory::Holidays, $from, $to)
-                ->flatMap(fn (RuleVersion $v) => collect($v->payload['holidays'])
-                    ->filter(fn ($h) => $h['date'] >= max($from, $v->effective_from->toDateString())
-                        && $h['date'] <= min($to, $v->effective_to?->toDateString() ?? $to))
-                    ->map(fn ($h) => ['date' => $h['date'], 'name' => $h['name'], 'type' => $h['type'], 'paid' => $h['paid'], 'source' => 'statutory', 'jurisdiction' => $v->ruleSet->jurisdiction()]))
-            : collect();
-
-        $company = $calendar ? $calendar->holidays()->whereBetween('date', [$from, $to])->get()
-            ->map(fn ($h) => ['date' => $h->date->toDateString(), 'name' => $h->name, 'type' => $h->type, 'paid' => $h->is_paid, 'source' => 'company', 'jurisdiction' => null])
-            : collect();
-
-        return response()->json(['data' => $statutory->concat($company)->sortBy('date')->values()]);
+        return response()->json(['data' => $holidays->forLocation($workLocation, "{$year}-01-01", "{$year}-12-31")]);
     }
 
     private function validated(Request $request, string $country, ?WorkLocation $existing = null): array

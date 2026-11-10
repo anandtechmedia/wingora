@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AttendanceController;
+use App\Http\Controllers\Api\V1\AttendanceRequestController;
 use App\Http\Controllers\Api\V1\AuditLogController;
 use App\Http\Controllers\Api\V1\AuditRetentionController;
 use App\Http\Controllers\Api\V1\Auth\MeController;
@@ -19,6 +21,8 @@ use App\Http\Controllers\Api\V1\EmployeeImporter;
 use App\Http\Controllers\Api\V1\EmployeeRecordController;
 use App\Http\Controllers\Api\V1\FileController;
 use App\Http\Controllers\Api\V1\HolidayCalendarController;
+use App\Http\Controllers\Api\V1\LeaveController;
+use App\Http\Controllers\Api\V1\LeaveTypeController;
 use App\Http\Controllers\Api\V1\LegalEntityController;
 use App\Http\Controllers\Api\V1\LogController;
 use App\Http\Controllers\Api\V1\OrganizationController;
@@ -28,6 +32,7 @@ use App\Http\Controllers\Api\V1\Platform\RuleVersionController;
 use App\Http\Controllers\Api\V1\Platform\TenantController;
 use App\Http\Controllers\Api\V1\PolicyController;
 use App\Http\Controllers\Api\V1\ReferenceController;
+use App\Http\Controllers\Api\V1\ShiftController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\WorkLocationController;
 use Illuminate\Support\Facades\Route;
@@ -122,6 +127,45 @@ Route::prefix('v1')->name('v1.')->group(function () {
                 Route::post('policies/{policy}/acknowledge', [PolicyController::class, 'acknowledge']);
                 Route::get('employees/{employee}/compensation', [EmployeeController::class, 'compensation']);
                 Route::put('employees/{employee}/assignment', [EmployeeAssignmentController::class, 'update']);
+
+                Route::get('attendance/me', [AttendanceController::class, 'me']);
+                Route::post('attendance/clock-in', [AttendanceController::class, 'clockIn']);
+                Route::post('attendance/clock-out', [AttendanceController::class, 'clockOut']);
+                Route::get('attendance/records', [AttendanceController::class, 'index']);
+                Route::put('attendance/records', [AttendanceController::class, 'correct']);
+                Route::get('attendance/report', [AttendanceController::class, 'report'])->middleware('throttle:exports');
+                Route::get('attendance/requests', [AttendanceRequestController::class, 'index']);
+                Route::post('attendance/requests', [AttendanceRequestController::class, 'store']);
+                Route::post('attendance/requests/{attendanceRequest}/approve', [AttendanceRequestController::class, 'approve']);
+                Route::post('attendance/requests/{attendanceRequest}/reject', [AttendanceRequestController::class, 'reject']);
+                Route::post('attendance/requests/{attendanceRequest}/cancel', [AttendanceRequestController::class, 'cancel']);
+                Route::get('shifts', [ShiftController::class, 'shifts']);
+                Route::post('shifts', [ShiftController::class, 'storeShift']);
+                Route::patch('shifts/{shift}', [ShiftController::class, 'updateShift']);
+                Route::get('work-schedules', [ShiftController::class, 'schedules']);
+                Route::post('work-schedules', [ShiftController::class, 'storeSchedule']);
+                Route::patch('work-schedules/{workSchedule}', [ShiftController::class, 'updateSchedule']);
+                Route::get('employees/{employee}/schedule-assignments', [ShiftController::class, 'assignments']);
+                Route::post('employees/{employee}/schedule-assignments', [ShiftController::class, 'assign']);
+
+                Route::get('leave-types', [LeaveTypeController::class, 'index']);
+                Route::post('leave-types', [LeaveTypeController::class, 'store']);
+                Route::patch('leave-types/{leaveType}', [LeaveTypeController::class, 'update']);
+                Route::get('leave-types/{leaveType}/policies', [LeaveTypeController::class, 'policies']);
+                Route::post('leave-types/{leaveType}/policies', [LeaveTypeController::class, 'storePolicy']);
+                Route::post('leave-types/{leaveType}/allocate', [LeaveTypeController::class, 'allocate']);
+                Route::post('leave-types/{leaveType}/carry-forward', [LeaveTypeController::class, 'carryForward']);
+                Route::get('leave/balances', [LeaveController::class, 'balances']);
+                Route::get('leave/ledger', [LeaveController::class, 'ledger']);
+                Route::post('leave/adjustments', [LeaveController::class, 'adjust']);
+                Route::get('leave/holidays', [LeaveController::class, 'holidays']);
+                Route::get('leave/requests', [LeaveController::class, 'index']);
+                Route::post('leave/requests/preview', [LeaveController::class, 'preview']);
+                Route::post('leave/requests', [LeaveController::class, 'store']);
+                Route::get('leave/requests/{leaveRequest}', [LeaveController::class, 'show']);
+                Route::post('leave/requests/{leaveRequest}/approve', [LeaveController::class, 'approve']);
+                Route::post('leave/requests/{leaveRequest}/reject', [LeaveController::class, 'reject']);
+                Route::post('leave/requests/{leaveRequest}/cancel', [LeaveController::class, 'cancel']);
 
                 Route::get('legal-entities', [LegalEntityController::class, 'index']);
                 Route::post('legal-entities', [LegalEntityController::class, 'store']);
