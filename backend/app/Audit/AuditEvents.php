@@ -22,6 +22,32 @@ final class AuditEvents
 
     public const PAYROLL_RUN_REJECTED = 'payroll.run_rejected';
 
+    public const PAYROLL_RUN_CREATED = 'payroll.run_created';
+
+    public const PAYROLL_RUN_SUBMITTED = 'payroll.run_submitted';
+
+    public const PAYROLL_RUN_PUBLISHED = 'payroll.run_published';
+
+    public const PAYROLL_LINE_ENTERED = 'payroll.line_entered';
+
+    public const PAYROLL_LINE_REMOVED = 'payroll.line_removed';
+
+    public const PAYROLL_PROVIDER_IMPORTED = 'payroll.provider_imported';
+
+    public const PAYROLL_EXPORTED = 'payroll.exported';
+
+    public const PAYSLIP_VIEWED = 'payroll.payslip_viewed';
+
+    public const COMPENSATION_CHANGED = 'payroll.compensation_changed';
+
+    public const LOAN_CREATED = 'payroll.loan_created';
+
+    public const LOAN_CANCELLED = 'payroll.loan_cancelled';
+
+    public const REIMBURSEMENT_SUBMITTED = 'payroll.reimbursement_submitted';
+
+    public const REIMBURSEMENT_DECIDED = 'payroll.reimbursement_decided';
+
     public const DATA_EXPORTED = 'export.completed';
 
     public const AUDIT_EXPORTED = 'audit.exported';

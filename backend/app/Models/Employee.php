@@ -118,6 +118,11 @@ class Employee extends TenantModel
         return $this->hasOne(EmployeeCompensation::class);
     }
 
+    public function compensationRecords(): HasMany
+    {
+        return $this->hasMany(CompensationRecord::class);
+    }
+
     public function fullName(): string
     {
         return trim($this->first_name.' '.$this->last_name);

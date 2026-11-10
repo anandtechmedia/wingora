@@ -44,6 +44,12 @@ enum Permission: string
     case LeaveConfigure = 'leave.configure';
     case PayrollView = 'payroll.view';
     case PayrollManage = 'payroll.manage';
+    case PayrollConfigure = 'payroll.configure';
+    case PayrollApprove = 'payroll.approve';
+    case PayrollExport = 'payroll.export';
+    case PayslipsViewSelf = 'payslips.view.self';
+    case ReimbursementsSubmit = 'reimbursements.submit';
+    case ReimbursementsApprove = 'reimbursements.approve';
     case FilesUpload = 'files.upload';
     case AuditView = 'audit.view';
     case AuditExport = 'audit.export';
