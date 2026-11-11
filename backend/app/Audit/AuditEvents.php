@@ -90,6 +90,20 @@ final class AuditEvents
 
     public const ONBOARDING_REMINDERS_SENT = 'onboarding.reminders_sent';
 
+    public const HELPDESK_TICKET_CREATED = 'helpdesk.ticket_opened';
+
+    public const HELPDESK_TICKET_ASSIGNED = 'helpdesk.ticket_assigned';
+
+    public const HELPDESK_STATUS_CHANGED = 'helpdesk.ticket_status_changed';
+
+    public const HELPDESK_COMMENT_ADDED = 'helpdesk.comment_added';
+
+    public const HELPDESK_ATTACHMENT_VIEWED = 'helpdesk.attachment_viewed';
+
+    public const HELPDESK_SETTINGS_CHANGED = 'helpdesk.settings_changed';
+
+    public const HELPDESK_ARTICLE_PUBLISHED = 'helpdesk.article_published';
+
     public const DATA_EXPORTED = 'export.completed';
 
     public const AUDIT_EXPORTED = 'audit.exported';

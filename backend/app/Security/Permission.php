@@ -59,6 +59,10 @@ enum Permission: string
     case OnboardingManage = 'onboarding.manage';
     case OnboardingConfigure = 'onboarding.configure';
     case OnboardingTasksSelf = 'onboarding.tasks.self';
+    case HelpdeskSubmit = 'helpdesk.submit';
+    case HelpdeskAgent = 'helpdesk.agent';
+    case HelpdeskManage = 'helpdesk.manage';
+    case HelpdeskConfigure = 'helpdesk.configure';
 
     case FilesUpload = 'files.upload';
     case AuditView = 'audit.view';
