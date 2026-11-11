@@ -120,7 +120,8 @@ final class Subscriptions
             $locked->forceFill($upgrade || $plan->id === $locked->plan_id && $interval === $locked->billing_interval
                 ? ['plan_id' => $plan->id, 'billing_interval' => $interval, 'stripe_price_id' => $price, 'pending_plan_id' => null, 'pending_interval' => null, 'plan_change_at' => null]
                 : ['pending_plan_id' => $plan->id, 'pending_interval' => $interval, 'stripe_price_id' => $price, 'plan_change_at' => $locked->current_period_end ?? now()]);
-            $locked->forceFill(['cancel_at_period_end' => $keepCancellation, 'version' => $locked->version + 1])->saveQuietly();
+            // If lifting the cancellation failed (or timed out), keep whatever is stored now: a webhook may already have synced Stripe's state.
+            $locked->forceFill(['cancel_at_period_end' => $keepCancellation && $locked->cancel_at_period_end, 'version' => $locked->version + 1])->saveQuietly();
             AuditLog::record($upgrade ? AuditEvents::BILLING_PLAN_CHANGED : AuditEvents::BILLING_PLAN_CHANGE_SCHEDULED, $locked, $old,
                 ['plan' => $plan->code, 'interval' => $interval, 'effective' => $upgrade ? 'now' : $locked->plan_change_at?->toIso8601String()]);
 
