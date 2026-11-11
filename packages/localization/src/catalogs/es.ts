@@ -141,7 +141,7 @@ export const es: Messages = {
   'error.appTitle': 'Algo salió mal',
   'error.appDescription': 'Un error inesperado impidió cargar esta página. Inténtalo de nuevo o vuelve al panel.',
   'error.code': 'Error {code}',
-  'error.goToDashboard': 'Ir al panel',
+  'error.goToDashboard': 'Ir al inicio',
   'error.reload': 'Recargar página',
   'error.goBack': 'Volver',
   'error.reference': 'Referencia: {id}',

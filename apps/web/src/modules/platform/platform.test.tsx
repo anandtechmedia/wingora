@@ -66,6 +66,7 @@ describe('Platform console', { timeout: 20_000 }, () => {
     expect(router.state.location.pathname).toBe('/platform');
     expect(screen.queryByRole('button', { name: /Switch organization/i })).not.toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Health' })).toBeInTheDocument();
+    for (const link of screen.getAllByRole('link', { name: /Wingora|Home/ })) expect(link).toHaveAttribute('href', '/');
     expect(await screen.findAllByText('Acme Corp')).not.toHaveLength(0);
     expect(await axeViolations(container)).toEqual([]);
   });

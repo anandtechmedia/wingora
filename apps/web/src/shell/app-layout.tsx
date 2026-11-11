@@ -20,7 +20,7 @@ import { useRegionName, useWorkspace } from './workspace';
 function Brand({ compact }: { compact?: boolean }) {
   const { t } = useI18n();
   return (
-    <Link to="/dashboard" className="flex items-center gap-2.5 rounded-md focus-visible:outline-nav-indicator">
+    <Link to="/" className="flex items-center gap-2.5 rounded-md focus-visible:outline-nav-indicator">
       <span aria-hidden="true" className="inline-flex size-8 shrink-0 items-center justify-center rounded-md bg-accent text-sm font-bold text-on-accent">W</span>
       <span className={compact ? 'sr-only' : 'flex flex-col leading-none'}>
         <span className="text-md font-semibold tracking-tight text-nav-active-fg">{t('app.name')}</span>
@@ -151,7 +151,7 @@ export function AppLayout() {
   }, [visibleModule, t]);
 
   const crumbs = visibleModule && visibleModule.id !== 'dashboard'
-    ? [{ label: t('shell.home'), render: (c: React.ReactNode, cls: string) => <Link to="/dashboard" className={cls}>{c}</Link> }, { label: t(moduleLabel(visibleModule.id)) }]
+    ? [{ label: t('shell.home'), render: (c: React.ReactNode, cls: string) => <Link to="/" className={cls}>{c}</Link> }, { label: t(moduleLabel(visibleModule.id)) }]
     : [];
 
   return (

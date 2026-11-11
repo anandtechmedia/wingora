@@ -140,7 +140,7 @@ export const en = {
   'error.appTitle': 'Something went wrong',
   'error.appDescription': 'An unexpected error stopped this page from loading. Try again, or return to the dashboard.',
   'error.code': 'Error {code}',
-  'error.goToDashboard': 'Go to dashboard',
+  'error.goToDashboard': 'Go to home',
   'error.reload': 'Reload page',
   'error.goBack': 'Go back',
   'error.reference': 'Reference: {id}',

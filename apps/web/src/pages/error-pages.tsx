@@ -20,7 +20,7 @@ function ErrorPage({ code, icon, title, description, actions, fullPage }: { code
 
 function DashboardLink({ variant = 'primary' }: { variant?: 'primary' | 'secondary' }) {
   const { t } = useI18n();
-  return <Link to="/dashboard" className={buttonClasses(variant, 'md')}>{t('error.goToDashboard')}</Link>;
+  return <Link to="/" className={buttonClasses(variant, 'md')}>{t('error.goToDashboard')}</Link>;
 }
 
 export function AccessDeniedPage() {
