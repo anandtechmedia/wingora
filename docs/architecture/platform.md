@@ -51,7 +51,7 @@ also require a fresh MFA code (`code` or `recovery_code`).
 
 `POST /account/exports` queues `BuildTenantExport`. The ZIP (private disk, `exports/<tenant>/<export>.zip`) holds one
 CSV per record type (decrypted, internal ids kept so rows can be related, CSV formula injection neutralized), users
-with roles, and every stored file. Requests, downloads and failures are audited. Downloads expire after 7 days;
+with roles, and every stored file. Requests, downloads and failures are audited. Export and deletion requests share the MFA rate limit (5 per minute). Downloads expire after 7 days;
 `wingora:exports:expire` (hourly) deletes the file.
 
 ## Account deletion
@@ -59,10 +59,14 @@ with roles, and every stored file. Requests, downloads and failures are audited.
 1. The owner types the organization name and an MFA code. Refused while the organization is on legal hold.
 2. Deletion is scheduled 30 days ahead and can be cancelled until then. Renewal is cancelled in Stripe (the owner can
    resume billing after cancelling the deletion).
-3. `wingora:tenants:purge-deleted` (daily) deletes every tenant-owned row, users and their tokens/sessions, and all
+3. `wingora:tenants:purge-deleted` (daily) first locks and rechecks the request and tenant (a cancellation or legal
+   hold committed before then always wins) and marks the request `purging`, after which it can no longer be cancelled.
+   It then ends any live Stripe subscription immediately, deletes stored files, and only then the database rows. If
+   Stripe or file storage fails, nothing else is deleted and the next run retries. It deletes every tenant-owned row, users and their tokens/sessions, and all
    stored files and exports. Kept: an anonymized tenant row (`status=deleted`, so nobody can sign in), the subscription
    and invoices (App Wings' financial records), processed webhook ids, the deletion request and a platform audit entry
-   with row and file counts. Organizations placed on legal hold during the wait are skipped.
+   with row and file counts. The organization's audit chains are anchored at their last entry so chain verification
+   still passes. Organizations placed on legal hold during the wait are skipped.
 
 ## Health
 
