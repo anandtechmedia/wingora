@@ -90,6 +90,7 @@ describe('Helpdesk for employees', () => {
     await userEvent.click(screen.getByRole('button', { name: 'New ticket' }));
     const dialog = await screen.findByRole('dialog');
     await within(dialog).findByRole('option', { name: 'Benefits' });
+    expect(within(dialog).queryByRole('alert')).toBeNull();
     expect(within(dialog).queryByRole('option', { name: 'Old payroll' })).toBeNull();
     await userEvent.selectOptions(within(dialog).getByRole('combobox', { name: /Category/ }), 'c1');
     expect(within(dialog).getByText('Insurance and perks')).toBeTruthy();

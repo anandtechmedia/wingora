@@ -148,7 +148,7 @@ function NewTicketDialog({ onClose, onCreated }: { onClose: () => void; onCreate
         <TextArea label={ht('description')} required value={input.description} error={fields.description} onChange={(description) => setInput({ ...input, description })} />
         <FileField label={ht('attachmentOptional')} accept={ACCEPT} onFile={setFile} />
         <FieldAlert message={fileError(fields)} />
-        <FormError message={formError(error, ht('createFailed'))} />
+        <FormError message={error ? formError(error, ht('createFailed')) : null} />
       </div>
     </Modal>
   );
@@ -311,7 +311,7 @@ function Conversation({ ticket, onChanged }: { ticket: Ticket; onChanged: () => 
           {ticket.can.internal_notes && <Checkbox label={ht('internalNote')} description={ht('internalNoteHint')} checked={internal} onChange={(e) => setInternal(e.target.checked)} />}
           <FileField label={ht('attachmentOptional')} accept={ACCEPT} onFile={setFile} />
           <FieldAlert message={fileError(fields)} />
-          <FormError message={formError(error, ht('sendFailed'))} />
+          <FormError message={error ? formError(error, ht('sendFailed')) : null} />
           <div><Button type="submit" loading={busy} disabled={body.trim() === ''}>{ht(internal ? 'addNote' : 'send')}</Button></div>
         </form>
       ) : ticket.status === 'closed' && <p className="mt-4 text-sm text-fg-muted">{ht('closedNotice')}</p>}
@@ -455,7 +455,7 @@ function ArticleForm({ initial, onClose, onSaved }: { initial: Article | null; o
       <div className="sm:col-span-2"><Input label={ht('summary')} maxLength={1000} value={input.summary} error={fields.summary} onChange={(e) => setInput({ ...input, summary: e.target.value })} /></div>
       <TextArea label={ht(input.kind === 'faq' ? 'answer' : 'body')} required value={input.body} error={fields.body} onChange={(body) => setInput({ ...input, body })} />
       {!initial && <p className="text-sm text-fg-muted sm:col-span-2">{ht('draftNotice')}</p>}
-      <FormError message={formError(error, ht('saveFailed'))} />
+      <FormError message={error ? formError(error, ht('saveFailed')) : null} />
       <div className="flex justify-end gap-2 sm:col-span-2">
         <Button variant="secondary" onClick={onClose}>{t('ui.cancel')}</Button>
         <Button type="submit" loading={busy} disabled={input.title.trim().length < 3 || input.body.trim().length < 3}>{ht('save')}</Button>
@@ -506,7 +506,7 @@ function DueForm({ initial, onSaved }: { initial: DueHours; onSaved: () => void 
           error={fields[`due_hours.${p}`]} onChange={(e) => setHours({ ...hours, [p]: e.target.value })} />
       ))}
       <div><Button type="submit" loading={busy}>{ht('save')}</Button></div>
-      <FormError message={formError(error, ht('saveFailed'))} />
+      <FormError message={error ? formError(error, ht('saveFailed')) : null} />
     </form>
   );
 }
@@ -569,7 +569,7 @@ function CategoryDialog({ category, onClose, onSaved }: { category: HelpdeskCate
               : <div className="mt-2 grid max-h-56 gap-2 overflow-y-auto sm:grid-cols-2">{people.map((a) => <Checkbox key={a.id} label={a.name} checked={input.agent_ids.includes(a.id)} onChange={(e) => toggle(a.id, e.target.checked)} />)}</div>}
           <FieldAlert message={fields.agent_ids} />
         </fieldset>
-        <FormError message={formError(error, ht('saveFailed'))} />
+        <FormError message={error ? formError(error, ht('saveFailed')) : null} />
       </div>
     </Modal>
   );
