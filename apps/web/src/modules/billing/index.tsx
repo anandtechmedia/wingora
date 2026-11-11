@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Permission as P } from '@wingora/permissions';
 import type { MessageKey } from '@wingora/localization';
 import { ApiNotConnectedError } from '@/api/dashboard';
@@ -15,6 +15,8 @@ import { useAction, useCan, useSave } from '@/modules/recruitment/shared';
 
 const INTERVALS: Interval[] = ['monthly', 'annual'];
 const HOURS = [1, 4, 8, 24, 72];
+/** How often an export that is still being prepared is re-checked while the Account tab is open. */
+const EXPORT_POLL_MS = 3000;
 type Tone = 'neutral' | 'warning' | 'success' | 'danger' | 'accent';
 const statusTone: Record<string, Tone> = { trialing: 'accent', active: 'success', past_due: 'warning', unpaid: 'danger', canceled: 'neutral', incomplete: 'warning' };
 const invoiceTone: Record<Invoice['status'], Tone> = { draft: 'neutral', open: 'warning', paid: 'success', void: 'neutral', uncollectible: 'danger' };
@@ -322,8 +324,14 @@ function Exports() {
   const [requesting, setRequesting] = useState(false);
   const mfa = useMfaReady();
   const exports = useResource(useCallback((signal: AbortSignal) => source.exports(signal), [source]));
+  const pending = exports.data?.some((e) => e.status === 'queued' || e.status === 'running') ?? false;
+  const reload = exports.reload;
+  useEffect(() => {
+    if (!pending) return;
+    const id = window.setTimeout(reload, EXPORT_POLL_MS);
+    return () => window.clearTimeout(id);
+  }, [pending, reload, exports.data]);
   if (exports.error instanceof ApiNotConnectedError) return null;
-  const pending = exports.data?.some((e) => e.status === 'queued' || e.status === 'running');
   return (
     <Card title={bt('exportTitle')} headingLevel={2} description={bt('exportHint')}
       actions={<Button variant="secondary" disabled={!mfa || pending} onClick={() => setRequesting(true)}>{bt('requestExport')}</Button>}>

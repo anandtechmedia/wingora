@@ -128,6 +128,16 @@ describe('Account', () => {
     await waitFor(() => expect(source.requestExport).toHaveBeenCalledWith({ code: '123456' }));
   });
 
+  it('keeps checking a queued export until it can be downloaded', async () => {
+    const queued = { id: 'x1', status: 'queued' as const, size: null, error: null, created_at: '2027-01-10T10:00:00Z', completed_at: null, expires_at: null };
+    const exports = vi.fn().mockResolvedValueOnce([queued]).mockResolvedValue([{ ...queued, status: 'ready' as const, size: 2048, expires_at: '2027-01-17T10:00:00Z' }]);
+    setup(fakeSource(paid, { exports }));
+    await userEvent.click(await screen.findByRole('tab', { name: 'Account' }));
+    expect(await screen.findByText('Queued')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Download' }, { timeout: 8000 })).toBeInTheDocument();
+    expect(exports).toHaveBeenCalledTimes(2);
+  }, 15000);
+
   it('only schedules deletion once the organization name matches, and sends recovery codes as such', async () => {
     const source = fakeSource(paid);
     const me = personas['owner@wingora.test']!;
