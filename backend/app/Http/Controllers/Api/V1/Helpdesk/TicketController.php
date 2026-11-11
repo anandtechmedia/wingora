@@ -195,16 +195,16 @@ class TicketController extends Controller
         $works = HelpdeskAccess::works($user, $ticket);
         $internal = (bool) ($data['internal'] ?? false);
         abort_if($internal && ! $works, 403, __('Only the helpdesk team can add internal notes.'));
-        abort_if($ticket->status === 'closed', 409, __('Closed tickets cannot be changed.'));
-
         DB::transaction(function () use ($ticket, $user, $data, $internal, $works, $request) {
+            // Lock first so a concurrent close cannot slip in between the check and the insert.
+            $t = HelpdeskTicket::query()->whereKey($ticket->id)->lockForUpdate()->first();
+            abort_if($t->status === 'closed', 409, __('Closed tickets cannot be changed.'));
             $comment = new HelpdeskComment;
             $comment->fill(['body' => $data['body']]);
             $comment->forceFill(['tenant_id' => $ticket->tenant_id, 'helpdesk_ticket_id' => $ticket->id, 'author_id' => $user->id, 'internal' => $internal])->save();
             foreach ($request->file('files', []) as $i => $upload) {
                 $this->attach($ticket, $comment, $upload, $user, $internal, "files.$i");
             }
-            $t = HelpdeskTicket::query()->whereKey($ticket->id)->lockForUpdate()->first();
             if (! $internal && $works && $t->requester_id !== $user->id && $t->first_response_at === null) {
                 $t->first_response_at = now();
             }
