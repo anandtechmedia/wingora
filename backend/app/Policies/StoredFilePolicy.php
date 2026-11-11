@@ -23,8 +23,8 @@ class StoredFilePolicy
         }
 
         return match ($category) {
-            // Recruitment and onboarding files are reachable only through their own resources.
-            'recruitment', 'onboarding', 'helpdesk' => false,
+            // Module-owned files are reachable only through their own resources.
+            'recruitment', 'onboarding', 'helpdesk', 'documents' => false,
             'payroll' => $user->hasPermission(P::PayrollManage),
             'identity', 'contract' => $user->hasPermission(P::EmployeesManage) || ($employee && $user->employee?->id === $employee->id),
             default => $employee === null || EmployeeAccess::canViewEmployee($user, $employee),
@@ -37,14 +37,14 @@ class StoredFilePolicy
             return false;
         }
 
-        if ((int) $file->uploaded_by === (int) $user->id && ! in_array($file->category, ['payroll', 'recruitment', 'onboarding', 'helpdesk'], true)) {
+        if ((int) $file->uploaded_by === (int) $user->id && ! in_array($file->category, ['payroll', 'recruitment', 'onboarding', 'helpdesk', 'documents'], true)) {
             return true;
         }
 
         $isOwnFile = $file->employee_id !== null && $user->employee?->id === (int) $file->employee_id;
 
         return match ($file->category) {
-            'recruitment', 'onboarding', 'helpdesk' => false,
+            'recruitment', 'onboarding', 'helpdesk', 'documents' => false,
             'payroll' => $user->hasPermission(P::PayrollView) || $isOwnFile,
             'identity', 'contract' => $user->hasPermission(P::EmployeesSensitiveView) || $isOwnFile,
             default => $file->employee_id === null
@@ -57,7 +57,7 @@ class StoredFilePolicy
     {
         // Module-owned files are removed only through their own resources.
         return $this->sameTenant($user, $file)
-            && ! in_array($file->category, ['recruitment', 'onboarding', 'helpdesk'], true)
+            && ! in_array($file->category, ['recruitment', 'onboarding', 'helpdesk', 'documents'], true)
             && ($user->hasPermission(P::EmployeesManage) || (int) $file->uploaded_by === (int) $user->id);
     }
 }

@@ -9,7 +9,7 @@ class StoredFile extends TenantModel
 {
     use SoftDeletes;
 
-    public const CATEGORIES = ['general', 'identity', 'contract', 'payroll', 'recruitment', 'onboarding', 'helpdesk'];
+    public const CATEGORIES = ['general', 'identity', 'contract', 'payroll', 'recruitment', 'onboarding', 'helpdesk', 'documents'];
 
     protected $fillable = [];
 

@@ -104,6 +104,16 @@ final class AuditEvents
 
     public const HELPDESK_ARTICLE_PUBLISHED = 'helpdesk.article_published';
 
+    public const DOCUMENT_REQUEST_SUBMITTED = 'documents.request_submitted';
+
+    public const DOCUMENT_REQUEST_DECIDED = 'documents.request_decided';
+
+    public const DOCUMENT_REQUEST_CANCELLED = 'documents.request_cancelled';
+
+    public const DOCUMENT_DELIVERED = 'documents.delivered';
+
+    public const DOCUMENT_DOWNLOADED = 'documents.downloaded';
+
     public const DATA_EXPORTED = 'export.completed';
 
     public const AUDIT_EXPORTED = 'audit.exported';

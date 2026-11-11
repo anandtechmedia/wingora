@@ -14,6 +14,8 @@ use App\Http\Controllers\Api\V1\CompensationController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DepartmentController;
 use App\Http\Controllers\Api\V1\DesignationController;
+use App\Http\Controllers\Api\V1\Documents\DocumentRequestController;
+use App\Http\Controllers\Api\V1\Documents\DocumentTemplateController;
 use App\Http\Controllers\Api\V1\EmergencyContactController;
 use App\Http\Controllers\Api\V1\EmployeeAssignmentController;
 use App\Http\Controllers\Api\V1\EmployeeController;
@@ -176,6 +178,16 @@ Route::prefix('v1')->name('v1.')->group(function () {
                 Route::delete('helpdesk/articles/{article}', [KnowledgeBaseController::class, 'destroy']);
                 Route::post('helpdesk/articles/{article}/publish', [KnowledgeBaseController::class, 'publish']);
                 Route::post('helpdesk/articles/{article}/unpublish', [KnowledgeBaseController::class, 'unpublish']);
+                Route::get('document-templates', [DocumentTemplateController::class, 'index']);
+                Route::post('document-templates', [DocumentTemplateController::class, 'store']);
+                Route::patch('document-templates/{documentTemplate}', [DocumentTemplateController::class, 'update']);
+                Route::get('document-requests', [DocumentRequestController::class, 'index']);
+                Route::post('document-requests', [DocumentRequestController::class, 'store']);
+                Route::get('document-requests/{documentRequest}', [DocumentRequestController::class, 'show']);
+                Route::post('document-requests/{documentRequest}/decide', [DocumentRequestController::class, 'decide']);
+                Route::post('document-requests/{documentRequest}/cancel', [DocumentRequestController::class, 'cancel']);
+                Route::post('document-requests/{documentRequest}/deliver', [DocumentRequestController::class, 'deliver'])->middleware('throttle:uploads');
+                Route::get('document-requests/{documentRequest}/document', [DocumentRequestController::class, 'download']);
 
                 Route::get('organization', [OrganizationController::class, 'show']);
                 Route::patch('organization', [OrganizationController::class, 'update']);

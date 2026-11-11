@@ -63,6 +63,11 @@ enum Permission: string
     case HelpdeskAgent = 'helpdesk.agent';
     case HelpdeskManage = 'helpdesk.manage';
     case HelpdeskConfigure = 'helpdesk.configure';
+    case DocumentsRequest = 'documents.request';
+    case DocumentsApprove = 'documents.approve';
+    case DocumentsManage = 'documents.manage';
+    case DocumentsSalary = 'documents.salary';
+    case DocumentsConfigure = 'documents.configure';
 
     case FilesUpload = 'files.upload';
     case AuditView = 'audit.view';
