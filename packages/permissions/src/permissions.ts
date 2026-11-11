@@ -61,6 +61,9 @@ export const Permission = {
   DocumentsManage: 'documents.manage',
   DocumentsSalary: 'documents.salary',
   DocumentsConfigure: 'documents.configure',
+  BillingView: 'billing.view',
+  BillingManage: 'billing.manage',
+  AccountManage: 'account.manage',
   FilesUpload: 'files.upload',
   AuditView: 'audit.view',
   SecurityEventsView: 'security-events.view',
@@ -76,7 +79,6 @@ export const PendingPermission = {
   AssetsView: 'assets.view',
   ProjectsView: 'projects.view',
   ReportsView: 'reports.view',
-  BillingView: 'billing.view',
 } as const;
 
 export type PermissionKey = (typeof Permission)[keyof typeof Permission] | (typeof PendingPermission)[keyof typeof PendingPermission];

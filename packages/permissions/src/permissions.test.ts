@@ -40,9 +40,10 @@ describe('modules', () => {
     expect(navigationFor([])).toEqual([]);
   });
 
-  it('billing requires both billing and organization management', () => {
+  it('billing needs billing or account management', () => {
     const billing = findModule('billing')!;
-    expect(canAccessModule([PendingPermission.BillingView], billing)).toBe(false);
-    expect(canAccessModule([PendingPermission.BillingView, Permission.OrganizationManage], billing)).toBe(true);
+    expect(canAccessModule([Permission.OrganizationManage], billing)).toBe(false);
+    expect(canAccessModule([Permission.BillingView], billing)).toBe(true);
+    expect(canAccessModule([Permission.AccountManage], billing)).toBe(true);
   });
 });

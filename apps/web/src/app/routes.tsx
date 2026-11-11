@@ -23,6 +23,7 @@ const screens: Partial<Record<ModuleId, ModuleComponent>> = {
   onboarding: lazy(() => import('@/modules/onboarding')),
   helpdesk: lazy(() => import('@/modules/helpdesk')),
   documents: lazy(() => import('@/modules/documents')),
+  billing: lazy(() => import('@/modules/billing')),
 };
 /** Public careers site: outside the signed-in shell, no session required. */
 const CareersPage = lazy(() => import('@/pages/careers-page'));

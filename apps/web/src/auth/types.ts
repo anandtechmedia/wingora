@@ -1,3 +1,5 @@
+import type { BillingSummary } from '@/api/billing';
+
 /** Shape of `GET /api/v1/auth/me` (backend `MeController` + `UserResource`). Keep in sync with the backend. */
 export interface MeResponse {
   user: {
@@ -12,6 +14,8 @@ export interface MeResponse {
   mfa_enrollment_required: boolean;
   organization: { id: string; name: string; country_code: string } | null;
   permissions: string[];
+  /** Subscription state; absent for platform staff and in the prototype. */
+  billing?: BillingSummary | null;
 }
 
 export type AuthErrorCode = 'invalid_credentials' | 'mfa_invalid' | 'mfa_expired' | 'unknown';

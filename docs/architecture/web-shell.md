@@ -165,3 +165,23 @@ API reference: `docs/architecture/recruitment-onboarding.md` (backend). Client: 
 - **Request drawer:** shows the steps, answers and rejection reason, and only the actions the server's `can` flags allow: approve, reject (reason required; an approved request can only be rejected), deliver (a typed salary figure for salary letters, which is printed but never stored, or an uploaded PDF/DOCX), cancel and download. Every mutation sends the request `version`; the drawer reloads after any attempt.
 - **Templates:** name, delivery, description, up to 10 questions, letter text with the allowed placeholders listed beside it (unknown placeholders are rejected by the server), manager step, salary and active flags. Restricting a template to one legal entity is supported by the API but not yet offered on screen.
 
+
+## Billing and account (`modules/billing`)
+
+Backed by `api/billing.ts` (`BillingSource`), which mirrors the Billing and Account APIs in
+`docs/architecture/billing.md` and `platform.md`. The server enforces every rule below; the page only hides what the
+server would refuse.
+
+- **Tabs by permission:** *Plan and usage* and *Invoices* need `billing.view`; plan changes, cancellation and the
+  Stripe Customer Portal need `billing.manage`; *Account* (support access, data export, deletion) needs
+  `account.manage`. The Billing menu entry needs `billing.view` or `account.manage`.
+- **Payments stay on Stripe:** subscribing opens Stripe Checkout and payment methods open the Customer Portal.
+  `redirect()` follows only `https://*.stripe.com` URLs. Card details never reach Wingora.
+- **Plan changes:** a live Stripe subscription changes in place with its `version` (a concurrent change returns 409).
+  Upgrades apply now; downgrades are explained as applying at renewal. Manual (invoiced) plans show a contact note.
+- **Read-only banner:** `/me` carries the `billing` summary. While access is read-only, or a payment has failed, every
+  page shows a banner, with a link to Billing for those who can open it.
+- **Account:** support access is granted for 1–72 hours with a reason and an explicit payroll opt-in, and can be
+  revoked. Export and deletion need a verification code (a 6-digit code is sent as `code`, anything else as
+  `recovery_code`); deletion also needs the organization name typed exactly, is blocked under legal hold, and can be
+  cancelled until the purge starts.

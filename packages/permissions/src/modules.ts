@@ -32,7 +32,7 @@ export const modules: readonly ModuleDefinition[] = [
   { id: 'documents', path: 'documents', group: 'operations', requires: { anyOf: [P.DocumentsRequest, P.DocumentsApprove, P.DocumentsManage, P.DocumentsSalary, P.DocumentsConfigure] } },
   { id: 'reports', path: 'reports', group: 'insights', requires: { anyOf: [PP.ReportsView, P.AuditView] } },
   { id: 'settings', path: 'settings', group: 'administration', requires: { anyOf: [P.OrganizationManage, P.OrganizationSecurityManage, P.UsersManage, P.RolesAssign] } },
-  { id: 'billing', path: 'billing', group: 'administration', requires: { allOf: [PP.BillingView, P.OrganizationManage] } },
+  { id: 'billing', path: 'billing', group: 'administration', requires: { anyOf: [P.BillingView, P.AccountManage] } },
 ];
 
 export function findModule(id: string): ModuleDefinition | undefined {

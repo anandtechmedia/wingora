@@ -1,4 +1,5 @@
 import { Suspense, useEffect, useState } from 'react';
+import { BillingBanner } from './billing-banner';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { modules, navigationFor, type ModuleDefinition } from '@wingora/permissions';
 import {
@@ -203,6 +204,7 @@ export function AppLayout() {
             <div className="mb-4 flex flex-col gap-3 lg:hidden">
               <div className="flex flex-wrap gap-2"><OrganizationSwitcher /><EntitySelector /></div>
             </div>
+            <BillingBanner />
             {crumbs.length > 0 && <div className="mb-4"><Breadcrumbs items={crumbs} /></div>}
             <ErrorBoundary key={location.pathname} fallback={(reset) => <AppErrorPage onRetry={reset} />}>
               <Suspense fallback={<LoadingState label={t('shell.loadingModule')} className="py-24" />}>
