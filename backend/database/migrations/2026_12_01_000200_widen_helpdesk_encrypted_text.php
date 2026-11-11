@@ -16,9 +16,6 @@ return new class extends Migration
         Schema::table('helpdesk_comments', fn (Blueprint $table) => $table->mediumText('body')->change());
     }
 
-    public function down(): void
-    {
-        Schema::table('helpdesk_tickets', fn (Blueprint $table) => $table->text('description')->change());
-        Schema::table('helpdesk_comments', fn (Blueprint $table) => $table->text('body')->change());
-    }
+    /** Intentionally irreversible: narrowing back to TEXT would fail on, or truncate, longer stored ciphertext. */
+    public function down(): void {}
 };
