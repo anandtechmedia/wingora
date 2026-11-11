@@ -162,4 +162,12 @@ class HelpdeskTest extends SecurityTestCase
         $this->apiAs($this->admin, 'DELETE', "/api/v1/files/{$file->public_id}")->assertForbidden();
         $this->assertNotNull(\App\Models\StoredFile::withoutGlobalScopes()->find($file->id));
     }
+
+    public function test_rejected_category_edit_changes_nothing(): void
+    {
+        $cat = $this->category();
+        $this->apiAs($this->admin, 'PATCH', "/api/v1/helpdesk/categories/{$cat['id']}", ['name' => 'Renamed', 'restricted' => true, 'agent_ids' => ['01UNKNOWNUNKNOWNUNKNOWNUNK']])->assertStatus(422);
+        $row = \App\Models\HelpdeskCategory::withoutGlobalScopes()->firstOrFail();
+        $this->assertSame(['Benefits', false], [$row->name, $row->restricted]);
+    }
 }

@@ -82,10 +82,13 @@ class HelpdeskSettingsController extends Controller
 
     private function apply(HelpdeskCategory $category, array $data): void
     {
-        $category->fill(array_intersect_key($data, array_flip($category->getFillable())))->save();
+        $users = null;
         if (array_key_exists('agent_ids', $data)) {
-            $users = User::query()->where('tenant_id', $category->tenant_id)->whereIn('public_id', $data['agent_ids'])->get();
+            $users = User::query()->where('tenant_id', request()->user()->tenant_id)->whereIn('public_id', $data['agent_ids'])->get();
             abort_if($users->count() !== count(array_unique($data['agent_ids'])), 422, __('Unknown agent.'));
+        }
+        $category->fill(array_intersect_key($data, array_flip($category->getFillable())))->save();
+        if ($users !== null) {
             $category->agents()->sync($users->mapWithKeys(fn ($u) => [$u->id => ['tenant_id' => $category->tenant_id]])->all());
             AuditLog::record(AuditEvents::HELPDESK_SETTINGS_CHANGED, $category, [], ['agents' => $users->pluck('public_id')->all()]);
         }
