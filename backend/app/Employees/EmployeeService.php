@@ -2,6 +2,7 @@
 
 namespace App\Employees;
 
+use App\Billing\Entitlements;
 use App\Country\RuleResolver;
 use App\Models\Department;
 use App\Models\Designation;
@@ -10,6 +11,7 @@ use App\Models\EmploymentHistory;
 use App\Models\LegalEntity;
 use App\Models\User;
 use App\Models\WorkLocation;
+use App\Support\Tenancy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -29,12 +31,15 @@ class EmployeeService
         'work_location_id' => WorkLocation::class,
     ];
 
-    public function __construct(private readonly RuleResolver $rules) {}
+    public function __construct(private readonly RuleResolver $rules, private readonly Entitlements $entitlements) {}
 
     /** @param array<string, mixed> $input validated input with public ids */
     public function create(array $input, User $actor): Employee
     {
         return DB::transaction(function () use ($input, $actor) {
+            if (($input['status'] ?? 'active') !== 'terminated') {
+                $this->entitlements->assertEmployeeCapacity(Tenancy::current());
+            }
             $employee = new Employee;
             $employee->fill(array_intersect_key($input, array_flip($employee->getFillable())));
             $employee->forceFill($this->employmentAttributes($input, null) + ['status' => $input['status'] ?? 'active']);
@@ -57,6 +62,7 @@ class EmployeeService
                 $employee->termination_date = $input['effective_date'] ?? now()->toDateString();
             }
             if (isset($input['status']) && $input['status'] !== 'terminated' && $employee->getOriginal('status') === 'terminated') {
+                $this->entitlements->assertEmployeeCapacity(Tenancy::current());
                 $employee->termination_date = null;
             }
 

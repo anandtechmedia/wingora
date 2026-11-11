@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Recruitment;
 use App\Ai\AiUnavailable;
 use App\Ai\LanguageModel;
 use App\Audit\AuditEvents;
+use App\Billing\Entitlements;
 use App\Http\Controllers\Controller;
 use App\Models\AiDraft;
 use App\Models\AuditLog;
@@ -12,6 +13,7 @@ use App\Models\JobApplication;
 use App\Models\RecruitmentSetting;
 use App\Recruitment\RecruitmentAccess;
 use App\Security\Permission as P;
+use App\Support\Tenancy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -48,7 +50,7 @@ class AiAssistController extends Controller
         ]));
         $started = microtime(true);
         try {
-            $completion = $model->complete(self::SYSTEM, $prompt);
+            $completion = app(Entitlements::class)->meterAi(Tenancy::current(), fn () => $model->complete(self::SYSTEM, $prompt));
         } catch (AiUnavailable $e) {
             abort(503, __('The AI assistant is unavailable right now. You can continue without it.'));
         }

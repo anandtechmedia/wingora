@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Billing\Subscriptions;
 use App\Models\Concerns\Auditable;
 use App\Models\Concerns\HasPublicId;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Tenant extends Model
 {
@@ -20,6 +22,17 @@ class Tenant extends Model
     protected function casts(): array
     {
         return ['mfa_required' => 'boolean', 'audit_legal_hold' => 'boolean'];
+    }
+
+    protected static function booted(): void
+    {
+        // Every organization starts on a free trial; access rules depend on there being a subscription.
+        static::created(fn (Tenant $tenant) => app(Subscriptions::class)->startTrial($tenant));
+    }
+
+    public function subscription(): HasOne
+    {
+        return $this->hasOne(Subscription::class);
     }
 
     public function isActive(): bool

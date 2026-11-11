@@ -2,8 +2,10 @@
 
 use App\Audit\AuditCategory;
 use App\Audit\AuditEvents;
+use App\Billing\BillingRestricted;
 use App\Exceptions\TenantContextMissing;
 use App\Http\Middleware\AssignRequestId;
+use App\Http\Middleware\EnforceSubscription;
 use App\Http\Middleware\EnforceTokenAbilities;
 use App\Http\Middleware\EnsureAccountIsActive;
 use App\Http\Middleware\EnsurePlatformStaff;
@@ -58,10 +60,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'tenant' => ResolveTenant::class,
             'platform' => EnsurePlatformStaff::class,
             'abilities.http' => EnforceTokenAbilities::class,
+            'billing' => EnforceSubscription::class,
         ]);
 
         // Tenant context must exist before route-model binding runs, so bound models are tenant-scoped.
-        foreach ([EnsureAccountIsActive::class, RequireMfa::class, EnforceTokenAbilities::class, ResolveTenant::class, EnsurePlatformStaff::class, SetLocale::class] as $class) {
+        foreach ([EnsureAccountIsActive::class, RequireMfa::class, EnforceTokenAbilities::class, ResolveTenant::class, EnforceSubscription::class, EnsurePlatformStaff::class, SetLocale::class] as $class) {
             $middleware->prependToPriorityList(before: SubstituteBindings::class, prepend: $class);
         }
     })
@@ -93,6 +96,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 $e instanceof ModelNotFoundException, $e instanceof NotFoundHttpException => [404, 'Not found', 'The requested resource was not found.', []],
                 $e instanceof TokenMismatchException => [419, 'CSRF token mismatch', 'Refresh the CSRF cookie and retry.', []],
                 $e instanceof ThrottleRequestsException => [429, 'Too many requests', 'Slow down and retry later.', []],
+                $e instanceof BillingRestricted => [402, 'Payment required', $e->getMessage(), ['code' => $e->reason] + $e->context],
                 $e instanceof HttpExceptionInterface => [$e->getStatusCode(), Response::$statusTexts[$e->getStatusCode()] ?? 'Error', $e->getStatusCode() < 500 && $e->getMessage() !== '' ? $e->getMessage() : null, []],
                 default => [500, 'Server error', null, []],
             };

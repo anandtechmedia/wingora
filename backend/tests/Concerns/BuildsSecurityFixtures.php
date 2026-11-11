@@ -5,7 +5,9 @@ namespace Tests\Concerns;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\EmployeeCompensation;
+use App\Models\Plan;
 use App\Models\Role;
+use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Security\RoleCatalog;
@@ -21,6 +23,8 @@ trait BuildsSecurityFixtures
     {
         $tenant = Tenant::factory()->create($attributes);
         RoleCatalog::syncTenantRoles($tenant);
+        // Fixtures are paying customers with every module, so module tests are not affected by trial dates.
+        Subscription::forTenant($tenant)->forceFill(['status' => 'active', 'provider' => 'manual', 'plan_id' => Plan::query()->where('code', 'enterprise')->value('id')])->saveQuietly();
 
         return $tenant;
     }

@@ -114,6 +114,20 @@ final class AuditEvents
 
     public const DOCUMENT_DOWNLOADED = 'documents.downloaded';
 
+    public const BILLING_CHECKOUT_STARTED = 'billing.checkout_started';
+
+    public const BILLING_PLAN_CHANGED = 'billing.plan_changed';
+
+    public const BILLING_PLAN_CHANGE_SCHEDULED = 'billing.plan_change_scheduled';
+
+    public const BILLING_SUBSCRIPTION_CANCELED = 'billing.subscription_canceled';
+
+    public const BILLING_SUBSCRIPTION_RESUMED = 'billing.subscription_resumed';
+
+    public const BILLING_PAYMENT_FAILED = 'billing.payment_failed';
+
+    public const BILLING_PAYMENT_SUCCEEDED = 'billing.payment_succeeded';
+
     public const DATA_EXPORTED = 'export.completed';
 
     public const AUDIT_EXPORTED = 'audit.exported';

@@ -10,6 +10,8 @@ use App\Http\Controllers\Api\V1\Auth\PasswordController;
 use App\Http\Controllers\Api\V1\Auth\PreferenceController;
 use App\Http\Controllers\Api\V1\Auth\SessionController;
 use App\Http\Controllers\Api\V1\Auth\TokenController;
+use App\Http\Controllers\Api\V1\Billing\BillingController;
+use App\Http\Controllers\Api\V1\Billing\StripeWebhookController;
 use App\Http\Controllers\Api\V1\CompensationController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DepartmentController;
@@ -39,6 +41,7 @@ use App\Http\Controllers\Api\V1\PayrollRunController;
 use App\Http\Controllers\Api\V1\PayrollSetupController;
 use App\Http\Controllers\Api\V1\PayslipController;
 use App\Http\Controllers\Api\V1\Platform\AuditLogController as PlatformAuditLogController;
+use App\Http\Controllers\Api\V1\Platform\PlanController;
 use App\Http\Controllers\Api\V1\Platform\RuleSetController;
 use App\Http\Controllers\Api\V1\Platform\RuleVersionController;
 use App\Http\Controllers\Api\V1\Platform\TenantController;
@@ -64,6 +67,9 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::get('jobs/{opening}', [PublicCareersController::class, 'opening']);
         Route::post('jobs/{opening}/apply', [PublicCareersController::class, 'apply'])->middleware('throttle:careers-apply');
     });
+    // Payment provider webhooks: no session or token; authenticity comes only from the verified signature.
+    Route::post('webhooks/stripe', StripeWebhookController::class)->middleware('throttle:webhooks');
+
     // Unauthenticated endpoints, each with its own rate limiter.
     Route::prefix('auth')->group(function () {
         Route::post('login', [SessionController::class, 'store'])->middleware('throttle:login');
@@ -102,7 +108,16 @@ Route::prefix('v1')->name('v1.')->group(function () {
             });
 
             // Organization (tenant) data. The tenant always comes from the authenticated user.
-            Route::middleware('tenant')->group(function () {
+            Route::middleware(['tenant', 'billing'])->group(function () {
+                Route::get('billing/subscription', [BillingController::class, 'show']);
+                Route::get('billing/plans', [BillingController::class, 'plans']);
+                Route::get('billing/invoices', [BillingController::class, 'invoices']);
+                Route::post('billing/checkout', [BillingController::class, 'checkout']);
+                Route::post('billing/change', [BillingController::class, 'change']);
+                Route::post('billing/cancel', [BillingController::class, 'cancel']);
+                Route::post('billing/resume', [BillingController::class, 'resume']);
+                Route::post('billing/portal', [BillingController::class, 'portal']);
+
                 Route::get('recruitment/settings', [RecruitmentSettingsController::class, 'show']);
                 Route::patch('recruitment/settings', [RecruitmentSettingsController::class, 'update']);
                 Route::post('recruitment/stages', [RecruitmentSettingsController::class, 'storeStage']);
@@ -362,6 +377,10 @@ Route::prefix('v1')->name('v1.')->group(function () {
                 Route::get('audit-logs/summary', [PlatformAuditLogController::class, 'summary']);
                 Route::get('audit-logs/export', [PlatformAuditLogController::class, 'export'])->middleware('throttle:exports');
                 Route::get('audit-logs/integrity', [PlatformAuditLogController::class, 'integrity'])->middleware('throttle:exports');
+
+                Route::get('plans', [PlanController::class, 'index']);
+                Route::post('plans', [PlanController::class, 'store']);
+                Route::patch('plans/{plan}', [PlanController::class, 'update']);
 
                 Route::get('rule-sets', [RuleSetController::class, 'index']);
                 Route::post('rule-sets', [RuleSetController::class, 'store']);
