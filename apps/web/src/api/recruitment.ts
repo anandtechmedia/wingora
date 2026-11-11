@@ -167,8 +167,16 @@ export const httpRecruitmentSource: RecruitmentSource = {
   schedule: (input) => write('POST', `${v1}/recruitment/interviews`, input),
   interviewAction: (id, action) => write('POST', `${v1}/recruitment/interviews/${id}/${action}`),
   submitFeedback: (id, input) => write('POST', `${v1}/recruitment/interviews/${id}/feedback`, input),
-  panelUsers: async (search, signal) => (await apiRequest<{ data: PanelUser[] }>('GET', `${v1}/users`, { query: { per_page: '100' }, signal })).data
-    .filter((u) => u.name.toLowerCase().includes(search.trim().toLowerCase())).map((u) => ({ id: u.id, name: u.name })),
+  panelUsers: async (search, signal) => {
+    const term = search.trim().toLowerCase();
+    const users: PanelUser[] = [];
+    for (let page = 1, last = 1; page <= last && page <= 50; page++) {
+      const r = await apiRequest<{ data: PanelUser[]; meta?: { last_page: number } }>('GET', `${v1}/users`, { query: { per_page: '100', page: String(page) }, signal });
+      users.push(...r.data);
+      last = r.meta?.last_page ?? 1;
+    }
+    return users.filter((u) => u.name.toLowerCase().includes(term)).map((u) => ({ id: u.id, name: u.name }));
+  },
   offers: (applicationId, signal) => data(apiRequest('GET', `${v1}/recruitment/applications/${applicationId}/offers`, { signal })),
   createOffer: (applicationId, input) => write('POST', `${v1}/recruitment/applications/${applicationId}/offers`, input),
   offerAction: (id, action, note) => write('POST', `${v1}/recruitment/offers/${id}/${action}`, { note }),

@@ -58,3 +58,11 @@ describe('modules', () => {
     expect(homePath([])).toBe('/access-denied');
   });
 });
+
+describe('configuration-only access', () => {
+  it('opens payroll, recruitment and onboarding for their configure permissions', () => {
+    expect(canAccessModule(['payroll.configure'], findModule('payroll')!)).toBe(true);
+    expect(canAccessModule(['recruitment.configure'], findModule('recruitment')!)).toBe(true);
+    expect(canAccessModule(['onboarding.configure'], findModule('onboarding')!)).toBe(true);
+  });
+});
