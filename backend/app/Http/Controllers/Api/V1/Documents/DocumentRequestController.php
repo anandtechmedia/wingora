@@ -115,6 +115,7 @@ class DocumentRequestController extends Controller
 
         return $this->locked($documentRequest, $data['version'], function (DocumentRequest $r) use ($user, $data) {
             abort_unless(DocumentAccess::canDecide($user, $r), in_array($r->status, DocumentRequest::PENDING, true) ? 403 : 409);
+            abort_if($r->status === 'approved' && $data['decision'] === 'approve', 409, __('This request is already approved.'));
             $step = $r->status;
             $manager = $step === 'pending_manager';
             $r->forceFill($manager ? ['manager_decided_by' => $user->id, 'manager_decided_at' => now()] : ['decided_by' => $user->id, 'decided_at' => now()]);
@@ -149,6 +150,8 @@ class DocumentRequestController extends Controller
         $user = $request->user();
         $this->visible($user, $documentRequest);
         $template = $documentRequest->template;
+        // Letters render the template's current text, so a salary flag changed since submission would print a blank or stray figure.
+        abort_if($documentRequest->includes_salary !== $template->includes_salary, 409, __('This document type changed after the request was made. Reject it so the employee can request again.'));
         $data = $request->validate([
             'version' => ['required', 'integer'],
             'salary' => [$documentRequest->includes_salary ? 'required' : 'prohibited', 'nullable', 'string', 'min:1', 'max:120'],

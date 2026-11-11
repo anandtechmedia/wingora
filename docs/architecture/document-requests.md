@@ -16,9 +16,12 @@ The Organization Owner holds every tenant permission. Auditors get none. Nobody 
 
 ## Flow
 
-`pending_manager` → `pending_hr` → `approved` → `delivered`, with `rejected` (reason required) from either pending step and `cancelled` by the requester while pending. The manager step happens only when the template `requires_manager` and the employee's manager has a user with `documents.approve`; otherwise requests start at `pending_hr`. Every change requires the request `version` (row lock + compare; mismatch `409`).
+`pending_manager` → `pending_hr` → `approved` → `delivered`, with `rejected` (reason required) from either pending step or from `approved` before delivery and `cancelled` by the requester while pending. The manager step happens only when the template `requires_manager` and the employee's manager has a user with `documents.approve`; otherwise requests start at `pending_hr`. Every change requires the request `version` (row lock + compare; mismatch `409`).
 
 ## Templates
+
+Letters render the template's current text. A request records the template's salary flag at submission; if the flag has changed since, delivery returns `409` and the request should be rejected so the employee can request again.
+
 
 - `delivery: generated` renders a PDF letter from `body` with the built-in Payroll PDF writer (no new dependency). Placeholders: `employee.name|first_name|last_name|number|job_title|department|designation|hire_date|employment_type`, `entity.legal_name|country`, `today`, `request.number`, `answers.<field key>`, and `salary` for salary templates. Unknown placeholders are rejected when the template is saved. The writer uses WinAnsi Helvetica, so scripts outside Latin-1 (e.g. Arabic) are not rendered yet.
 - `delivery: upload` takes a finished PDF/DOCX from HR at delivery.

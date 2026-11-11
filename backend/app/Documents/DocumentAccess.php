@@ -61,7 +61,8 @@ final class DocumentAccess
         return match ($r->status) {
             'pending_manager' => $user->hasPermission(P::DocumentsManage)
                 || ($user->hasPermission(P::DocumentsApprove) && Approvers::isManagerOf($user, $r->employee)),
-            'pending_hr' => $user->hasPermission(self::finalPermission($r)),
+            // An approved request can still be rejected before delivery (e.g. its template changed).
+            'pending_hr', 'approved' => $user->hasPermission(self::finalPermission($r)),
             default => false,
         };
     }

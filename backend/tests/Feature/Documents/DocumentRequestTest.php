@@ -153,6 +153,11 @@ class DocumentRequestTest extends SecurityTestCase
         $this->apiAs($this->admin, 'PATCH', "/api/v1/document-templates/{$t['id']}", ['includes_salary' => true, 'body' => '{{salary}}'])->assertOk();
         $this->apiAs($this->payroll, 'POST', "/api/v1/document-requests/{$pending['id']}/decide", ['decision' => 'approve', 'version' => 1])->assertNotFound();
         $this->apiAs($this->hr, 'POST', "/api/v1/document-requests/{$pending['id']}/decide", ['decision' => 'approve', 'version' => 1])->assertOk();
+        // The template now prints {{salary}}, but this request was not a salary request: delivery is refused rather than printing a blank figure.
+        $this->apiAs($this->hr, 'POST', "/api/v1/document-requests/{$pending['id']}/deliver", ['version' => 2])->assertStatus(409);
+        $this->apiAs($this->hr, 'POST', "/api/v1/document-requests/{$pending['id']}/decide", ['decision' => 'approve', 'version' => 2])->assertStatus(409);
+        $this->apiAs($this->hr, 'POST', "/api/v1/document-requests/{$pending['id']}/decide", ['decision' => 'reject', 'reason' => 'Template changed', 'version' => 2])
+            ->assertOk()->assertJsonPath('data.status', 'rejected');
         $this->assertStringNotContainsString('98,765', AuditLog::withoutGlobalScopes()->get(['old_values', 'new_values'])->toJson());
     }
 
