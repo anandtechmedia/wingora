@@ -19,7 +19,7 @@ class DocumentRequest extends TenantModel
 
     protected function casts(): array
     {
-        return ['answers' => 'encrypted:array', 'rejection_reason' => 'encrypted', 'manager_step' => 'boolean', 'number' => 'integer', 'version' => 'integer',
+        return ['answers' => 'encrypted:array', 'rejection_reason' => 'encrypted', 'manager_step' => 'boolean', 'includes_salary' => 'boolean', 'number' => 'integer', 'version' => 'integer',
             'manager_decided_at' => 'immutable_datetime', 'decided_at' => 'immutable_datetime', 'delivered_at' => 'immutable_datetime', 'cancelled_at' => 'immutable_datetime'];
     }
 

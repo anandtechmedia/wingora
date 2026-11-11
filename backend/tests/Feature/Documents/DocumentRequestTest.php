@@ -144,6 +144,15 @@ class DocumentRequestTest extends SecurityTestCase
         $this->assertStringContainsString('98,765.00', $this->apiAs($this->employee, 'GET', "/api/v1/document-requests/{$r['id']}/document")->assertOk()->streamedContent());
         $this->apiAs($this->hr, 'GET', "/api/v1/document-requests/{$r['id']}/document")->assertNotFound();
         $this->assertStringNotContainsString('98,765', DB::table('document_requests')->get()->toJson());
+
+        // Turning the template into a non-salary one later must not open the delivered salary letter to HR.
+        $this->apiAs($this->admin, 'PATCH', "/api/v1/document-templates/{$t['id']}", ['includes_salary' => false, 'body' => '{{employee.name}} works here.'])->assertOk();
+        $this->apiAs($this->hr, 'GET', "/api/v1/document-requests/{$r['id']}/document")->assertNotFound();
+        $this->apiAs($this->payroll, 'GET', "/api/v1/document-requests/{$r['id']}/document")->assertOk();
+        $pending = $this->submit($this->manager, $t, []);
+        $this->apiAs($this->admin, 'PATCH', "/api/v1/document-templates/{$t['id']}", ['includes_salary' => true, 'body' => '{{salary}}'])->assertOk();
+        $this->apiAs($this->payroll, 'POST', "/api/v1/document-requests/{$pending['id']}/decide", ['decision' => 'approve', 'version' => 1])->assertNotFound();
+        $this->apiAs($this->hr, 'POST', "/api/v1/document-requests/{$pending['id']}/decide", ['decision' => 'approve', 'version' => 1])->assertOk();
         $this->assertStringNotContainsString('98,765', AuditLog::withoutGlobalScopes()->get(['old_values', 'new_values'])->toJson());
     }
 

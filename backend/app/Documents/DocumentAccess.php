@@ -3,7 +3,6 @@
 namespace App\Documents;
 
 use App\Models\DocumentRequest;
-use App\Models\DocumentTemplate;
 use App\Models\User;
 use App\Security\Permission as P;
 use App\Time\Approvers;
@@ -16,9 +15,10 @@ use Illuminate\Database\Eloquent\Builder;
  */
 final class DocumentAccess
 {
-    public static function finalPermission(DocumentTemplate $template): P
+    /** Uses the request's own salary flag, captured at submission, never the template's current one. */
+    public static function finalPermission(DocumentRequest $r): P
     {
-        return $template->includes_salary ? P::DocumentsSalary : P::DocumentsManage;
+        return $r->includes_salary ? P::DocumentsSalary : P::DocumentsManage;
     }
 
     public static function any(User $user): bool
@@ -42,7 +42,7 @@ final class DocumentAccess
         return $query->where(function (Builder $q) use ($user) {
             $q->where('requester_id', $user->id);
             if ($user->hasPermission(P::DocumentsSalary)) {
-                $q->orWhereIn('document_template_id', DocumentTemplate::query()->where('includes_salary', true)->select('id'));
+                $q->orWhere('includes_salary', true);
             }
             if ($user->hasPermission(P::DocumentsApprove) && $user->employee) {
                 $q->orWhere(fn (Builder $m) => $m->where('manager_step', true)
@@ -61,7 +61,7 @@ final class DocumentAccess
         return match ($r->status) {
             'pending_manager' => $user->hasPermission(P::DocumentsManage)
                 || ($user->hasPermission(P::DocumentsApprove) && Approvers::isManagerOf($user, $r->employee)),
-            'pending_hr' => $user->hasPermission(self::finalPermission($r->template)),
+            'pending_hr' => $user->hasPermission(self::finalPermission($r)),
             default => false,
         };
     }
@@ -69,12 +69,12 @@ final class DocumentAccess
     public static function canDeliver(User $user, DocumentRequest $r): bool
     {
         return $r->status === 'approved' && $r->requester_id !== $user->id && $r->employee_id !== $user->employee?->id
-            && $user->hasPermission(self::finalPermission($r->template));
+            && $user->hasPermission(self::finalPermission($r));
     }
 
     public static function canDownload(User $user, DocumentRequest $r): bool
     {
         return $r->status === 'delivered' && $r->stored_file_id !== null
-            && ($r->requester_id === $user->id || $user->hasPermission(self::finalPermission($r->template)));
+            && ($r->requester_id === $user->id || $user->hasPermission(self::finalPermission($r)));
     }
 }

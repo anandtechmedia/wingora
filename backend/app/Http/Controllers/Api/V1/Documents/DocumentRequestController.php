@@ -93,6 +93,7 @@ class DocumentRequestController extends Controller
                 'answers' => $answers,
                 'status' => $manager ? 'pending_manager' : 'pending_hr',
                 'manager_step' => $manager,
+                'includes_salary' => $template->includes_salary,
             ])->save();
 
             return $r;
@@ -150,7 +151,7 @@ class DocumentRequestController extends Controller
         $template = $documentRequest->template;
         $data = $request->validate([
             'version' => ['required', 'integer'],
-            'salary' => [$template->includes_salary ? 'required' : 'prohibited', 'nullable', 'string', 'min:1', 'max:120'],
+            'salary' => [$documentRequest->includes_salary ? 'required' : 'prohibited', 'nullable', 'string', 'min:1', 'max:120'],
             'file' => $template->delivery === 'upload' ? PrivateUpload::rules(['pdf', 'docx']) : ['prohibited'],
         ]);
 
@@ -165,7 +166,7 @@ class DocumentRequestController extends Controller
             }
             $r->forceFill(['status' => 'delivered', 'stored_file_id' => $file->id, 'delivered_by' => $user->id, 'delivered_at' => now()]);
             // The salary figure exists only inside the letter; the audit trail records that one was included, never its value.
-            AuditLog::record(AuditEvents::DOCUMENT_DELIVERED, $r, ['status' => 'approved'], ['status' => 'delivered', 'delivery' => $template->delivery, 'salary_included' => $template->includes_salary]);
+            AuditLog::record(AuditEvents::DOCUMENT_DELIVERED, $r, ['status' => 'approved'], ['status' => 'delivered', 'delivery' => $template->delivery, 'salary_included' => $r->includes_salary]);
         }, $user);
     }
 
@@ -183,22 +184,14 @@ class DocumentRequestController extends Controller
 
     private function actionable($query, User $user): void
     {
-        $finalTemplates = DocumentTemplate::query()->where(function ($q) use ($user) {
-            $q->whereRaw('1 = 0');
-            if ($user->hasPermission(P::DocumentsManage)) {
-                $q->orWhere('includes_salary', false);
-            }
-            if ($user->hasPermission(P::DocumentsSalary)) {
-                $q->orWhere('includes_salary', true);
-            }
-        })->select('id');
+        $salary = array_keys(array_filter([0 => $user->hasPermission(P::DocumentsManage), 1 => $user->hasPermission(P::DocumentsSalary)]));
         $team = $user->hasPermission(P::DocumentsManage)
             ? null
             : Approvers::visibleEmployees($user, P::DocumentsRequest, P::DocumentsApprove, P::DocumentsManage)->select('employees.id');
         $query->where('requester_id', '!=', $user->id)
             ->when($user->employee, fn ($q, $me) => $q->where('employee_id', '!=', $me->id))
-            ->where(function ($q) use ($finalTemplates, $team, $user) {
-                $q->whereIn('status', ['pending_hr', 'approved'])->whereIn('document_template_id', $finalTemplates);
+            ->where(function ($q) use ($salary, $team, $user) {
+                $q->whereIn('status', ['pending_hr', 'approved'])->whereIn('includes_salary', $salary === [] ? [-1] : $salary);
                 if ($user->hasPermission(P::DocumentsManage) || $user->hasPermission(P::DocumentsApprove)) {
                     $q->orWhere(fn ($m) => $m->where('status', 'pending_manager')->when($team, fn ($t) => $t->whereIn('employee_id', $team)));
                 }
@@ -260,7 +253,7 @@ class DocumentRequestController extends Controller
         return [
             'id' => $r->public_id,
             'number' => $r->number,
-            'template' => ['id' => $t->public_id, 'name' => $t->name, 'delivery' => $t->delivery, 'includes_salary' => $t->includes_salary, 'fields' => $t->fields ?? []],
+            'template' => ['id' => $t->public_id, 'name' => $t->name, 'delivery' => $t->delivery, 'includes_salary' => $r->includes_salary, 'fields' => $t->fields ?? []],
             'employee' => $this->person($r->employee),
             'requester' => ['id' => $r->requester->public_id, 'name' => $r->requester->name],
             'status' => $r->status,

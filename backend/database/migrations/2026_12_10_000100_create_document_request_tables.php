@@ -50,6 +50,8 @@ return new class extends Migration
             $table->mediumText('answers');
             $table->string('status', 20);
             $table->boolean('manager_step')->default(false);
+            // Snapshot of the template flag, so later template edits cannot change who may decide or download.
+            $table->boolean('includes_salary')->default(false);
             $table->foreignId('manager_decided_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamp('manager_decided_at')->nullable();
             $table->foreignId('decided_by')->nullable()->constrained('users')->nullOnDelete();
