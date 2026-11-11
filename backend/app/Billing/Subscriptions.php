@@ -110,17 +110,17 @@ final class Subscriptions
             throw new BillingRestricted('upgrade_payment_failed', __('The payment for the upgrade did not go through, so your plan has not changed. Update your payment method and try again.'));
         }
         // Pending updates cannot carry other changes, so a scheduled cancellation is only lifted once the upgrade is paid.
-        if ($upgrade && $subscription->cancel_at_period_end) {
-            $this->stripe->post($path, ['cancel_at_period_end' => 'false']);
-        }
+        // The upgrade is paid at this point, so a failure here must not stop the plan from being applied locally.
+        $keepCancellation = $upgrade && $subscription->cancel_at_period_end
+            && rescue(fn () => $this->stripe->post($path, ['cancel_at_period_end' => 'false'])) === null;
 
-        return DB::transaction(function () use ($subscription, $plan, $interval, $price, $upgrade) {
+        return DB::transaction(function () use ($subscription, $plan, $interval, $price, $upgrade, $keepCancellation) {
             $locked = Subscription::query()->withoutGlobalScopes()->lockForUpdate()->findOrFail($subscription->id);
             $old = ['plan' => $locked->plan->code, 'interval' => $locked->billing_interval];
             $locked->forceFill($upgrade || $plan->id === $locked->plan_id && $interval === $locked->billing_interval
                 ? ['plan_id' => $plan->id, 'billing_interval' => $interval, 'stripe_price_id' => $price, 'pending_plan_id' => null, 'pending_interval' => null, 'plan_change_at' => null]
                 : ['pending_plan_id' => $plan->id, 'pending_interval' => $interval, 'stripe_price_id' => $price, 'plan_change_at' => $locked->current_period_end ?? now()]);
-            $locked->forceFill(['cancel_at_period_end' => false, 'version' => $locked->version + 1])->saveQuietly();
+            $locked->forceFill(['cancel_at_period_end' => $keepCancellation, 'version' => $locked->version + 1])->saveQuietly();
             AuditLog::record($upgrade ? AuditEvents::BILLING_PLAN_CHANGED : AuditEvents::BILLING_PLAN_CHANGE_SCHEDULED, $locked, $old,
                 ['plan' => $plan->code, 'interval' => $interval, 'effective' => $upgrade ? 'now' : $locked->plan_change_at?->toIso8601String()]);
 

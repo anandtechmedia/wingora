@@ -408,4 +408,14 @@ class BillingTest extends SecurityTestCase
         $s = $this->sub();
         $this->assertSame(['active', 'enterprise', 'annual'], [$s->status, $s->plan->code, $s->billing_interval]);
     }
+
+    public function test_a_paid_upgrade_applies_even_if_lifting_the_cancellation_fails(): void
+    {
+        $this->setSub(['status' => 'active', 'provider' => 'stripe', 'stripe_customer_id' => 'cus_1', 'stripe_subscription_id' => 'sub_1', 'billing_interval' => 'monthly', 'currency' => 'USD', 'cancel_at_period_end' => true], 'growth');
+        Http::fake(['*/subscriptions/sub_1' => Http::sequence()->push(['id' => 'sub_1', 'items' => ['data' => [['id' => 'si_1']]]])->push(['id' => 'sub_1'])->push(['error' => ['message' => 'boom']], 500)]);
+        $this->apiAs($this->owner, 'POST', '/api/v1/billing/change', ['plan' => 'enterprise', 'interval' => 'monthly', 'version' => $this->sub()->version])->assertOk();
+        $s = $this->sub();
+        $this->assertSame('enterprise', $s->plan->code);
+        $this->assertTrue($s->cancel_at_period_end);
+    }
 }
