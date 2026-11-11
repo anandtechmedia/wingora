@@ -129,7 +129,7 @@ function NewTicketDialog({ onClose, onCreated }: { onClose: () => void; onCreate
   const [file, setFile] = useState<File | null>(null);
   const { error, busy, save } = useSave();
   const fields = validationErrors(error);
-  const cats = categories.data ?? [];
+  const cats = (categories.data ?? []).filter((c) => c.active);
   const selected = cats.find((c) => c.id === input.category_id);
   const ready = input.category_id !== '' && input.subject.trim().length >= 3 && input.description.trim().length >= 3;
   return (
@@ -233,7 +233,7 @@ function StaffControls({ ticket, onChanged }: { ticket: Ticket; onChanged: () =>
         options={PRIORITIES.map((p) => ({ value: p, label: ht(`priority.${p}`) }))} />}
       {ticket.can.work && <Select label={ht('category')} value={ticket.category.id} disabled={busy !== null || categories.loading}
         onChange={(e) => act('category', () => source.updateTicket(ticket.id, { category_id: e.target.value }, ticket.version), ht('saved'))}
-        options={withCurrent(categories.data ?? [], ticket.category)} />}
+        options={withCurrent((categories.data ?? []).filter((c) => c.active), ticket.category)} />}
       {ticket.can.assign ? (
         <Select label={ht('assignee')} value={ticket.assignee?.id ?? ''} disabled={busy !== null || agents.loading}
           onChange={(e) => act('assign', () => source.assign(ticket.id, e.target.value || null, ticket.version), ht('assignedToast'))}

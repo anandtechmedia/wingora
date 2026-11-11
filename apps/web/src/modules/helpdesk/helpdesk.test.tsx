@@ -78,12 +78,19 @@ describe('Helpdesk for employees', () => {
   });
 
   it('creates a ticket with a category and priority', async () => {
-    const source = fakeSource({ tickets: vi.fn(async () => page<Ticket>([])) });
+    const source = fakeSource({
+      tickets: vi.fn(async () => page<Ticket>([])),
+      categories: vi.fn(async () => [
+        { id: 'c1', name: 'Benefits', description: 'Insurance and perks', restricted: false, active: true, sort_order: 0 },
+        { id: 'c9', name: 'Old payroll', description: null, restricted: false, active: false, sort_order: 1 },
+      ]),
+    });
     setup('employee@wingora.test', source);
     await screen.findAllByText('You have no tickets.');
     await userEvent.click(screen.getByRole('button', { name: 'New ticket' }));
     const dialog = await screen.findByRole('dialog');
     await within(dialog).findByRole('option', { name: 'Benefits' });
+    expect(within(dialog).queryByRole('option', { name: 'Old payroll' })).toBeNull();
     await userEvent.selectOptions(within(dialog).getByRole('combobox', { name: /Category/ }), 'c1');
     expect(within(dialog).getByText('Insurance and perks')).toBeTruthy();
     await userEvent.selectOptions(within(dialog).getByRole('combobox', { name: /Priority/ }), 'high');
