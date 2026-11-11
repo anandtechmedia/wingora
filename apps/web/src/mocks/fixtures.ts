@@ -29,6 +29,11 @@ export const personas: Record<string, MeResponse> = {
   'employee@wingora.test': persona('usr_employee', 'Jordan Lee', 'employee@wingora.test', ['employee'], [
     P.OrganizationView, P.EmployeesViewSelf, P.FilesUpload, P.AttendanceView, P.AttendanceClock, P.LeaveView, P.LeaveApply, P.PayslipsViewSelf, P.ReimbursementsSubmit, P.RecruitmentInterview, P.OnboardingTasksSelf, P.HelpdeskSubmit, P.DocumentsRequest,
   ], false),
+  // Platform staff belong to no organization: they see only the platform console.
+  'platform@wingora.test': { ...persona('usr_platform', 'Sam Rivera', 'platform@wingora.test', ['platform-admin'], [
+    P.PlatformTenantsView, P.PlatformTenantsManage, P.PlatformAuditView, P.PlatformCountryRulesManage, P.PlatformCountryRulesApprove,
+    P.PlatformBillingView, P.PlatformSupportAccess, P.PlatformHealthView,
+  ], true), organization: null },
 };
 
 export interface OrganizationOption { id: string; name: string; countryCode: string }

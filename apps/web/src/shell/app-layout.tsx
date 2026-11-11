@@ -67,6 +67,7 @@ function NavList({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: (
 function OrganizationSwitcher({ className }: { className?: string }) {
   const { t } = useI18n();
   const { organizations, organization, setOrganization } = useWorkspace();
+  if (organizations.length === 0) return null;
   return (
     <Dropdown label={t('shell.switchOrganization')} align="start" className={className}
       triggerClassName={cn(buttonClasses('tertiary', 'md'), 'max-w-56 justify-start')}
@@ -78,7 +79,8 @@ function OrganizationSwitcher({ className }: { className?: string }) {
 function EntitySelector({ className }: { className?: string }) {
   const { t, locale } = useI18n();
   const region = useRegionName();
-  const { entities, entity, setEntity } = useWorkspace();
+  const { organizations, entities, entity, setEntity } = useWorkspace();
+  if (organizations.length === 0) return null;
   const countries = new Set(entities.map((e) => e.countryCode)).size;
   return (
     <Dropdown label={t('shell.legalEntity')} align="start" className={className} menuClassName="w-72"

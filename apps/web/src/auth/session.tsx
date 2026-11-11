@@ -70,11 +70,11 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 /** Keeps signed-in users out of the sign-in pages. */
 export function PublicOnly({ children }: { children: ReactNode }) {
   const { state } = useSession();
-  if (state.status === 'signed-in') return <Navigate to="/dashboard" replace />;
+  if (state.status === 'signed-in') return <Navigate to="/" replace />;
   return children;
 }
 
 /** Only allows open redirects to same-origin application paths. */
-export function safeRedirect(target: unknown, fallback = '/dashboard'): string {
+export function safeRedirect(target: unknown, fallback = '/'): string {
   return typeof target === 'string' && target.startsWith('/') && !target.startsWith('//') && !target.startsWith('/\\') ? target : fallback;
 }

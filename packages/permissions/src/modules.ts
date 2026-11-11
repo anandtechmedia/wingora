@@ -1,10 +1,10 @@
 import { Permission as P, PendingPermission as PP, satisfies, type Requirement } from './permissions.ts';
 
-export type ModuleGroup = 'overview' | 'people' | 'talent' | 'operations' | 'insights' | 'administration';
+export type ModuleGroup = 'overview' | 'people' | 'talent' | 'operations' | 'insights' | 'administration' | 'platform';
 
 export type ModuleId =
   | 'dashboard' | 'employees' | 'attendance' | 'leave' | 'payroll' | 'recruitment' | 'onboarding' | 'offboarding'
-  | 'performance' | 'assets' | 'helpdesk' | 'projects' | 'reports' | 'documents' | 'settings' | 'billing';
+  | 'performance' | 'assets' | 'helpdesk' | 'projects' | 'reports' | 'documents' | 'settings' | 'billing' | 'platform';
 
 export interface ModuleDefinition {
   id: ModuleId;
@@ -14,7 +14,7 @@ export interface ModuleDefinition {
   requires: Requirement;
 }
 
-export const moduleGroups: readonly ModuleGroup[] = ['overview', 'people', 'talent', 'operations', 'insights', 'administration'];
+export const moduleGroups: readonly ModuleGroup[] = ['overview', 'people', 'talent', 'operations', 'insights', 'administration', 'platform'];
 
 export const modules: readonly ModuleDefinition[] = [
   { id: 'dashboard', path: 'dashboard', group: 'overview', requires: { anyOf: [P.OrganizationView] } },
@@ -33,6 +33,7 @@ export const modules: readonly ModuleDefinition[] = [
   { id: 'reports', path: 'reports', group: 'insights', requires: { anyOf: [PP.ReportsView, P.AuditView] } },
   { id: 'settings', path: 'settings', group: 'administration', requires: { anyOf: [P.OrganizationManage, P.OrganizationSecurityManage, P.UsersManage, P.RolesAssign] } },
   { id: 'billing', path: 'billing', group: 'administration', requires: { anyOf: [P.BillingView, P.AccountManage] } },
+  { id: 'platform', path: 'platform', group: 'platform', requires: { anyOf: [P.PlatformTenantsView, P.PlatformBillingView, P.PlatformAuditView, P.PlatformHealthView] } },
 ];
 
 export function findModule(id: string): ModuleDefinition | undefined {
@@ -41,6 +42,12 @@ export function findModule(id: string): ModuleDefinition | undefined {
 
 export function canAccessModule(granted: ReadonlySet<string> | readonly string[], module: ModuleDefinition): boolean {
   return satisfies(granted, module.requires);
+}
+
+/** Where a signed-in user lands: the first module they may open, in navigation order. */
+export function homePath(granted: ReadonlySet<string> | readonly string[]): string {
+  const first = modules.find((m) => canAccessModule(granted, m));
+  return first ? `/${first.path}` : '/access-denied';
 }
 
 /** Modules the user may see, in navigation order, grouped. Empty groups are omitted. */

@@ -60,18 +60,20 @@ function LiveWorkspace({ children }: { children: ReactNode }) {
 }
 
 function PrototypeWorkspace({ children }: { children: ReactNode }) {
+  const { me } = useSession();
+  const platformStaff = me != null && me.organization === null;
   const [orgId, setOrgId] = useState(organizations[0]!.id);
   const [entityId, setEntityId] = useState<string | null>(null);
   const value = useMemo<WorkspaceValue>(() => {
     const organization = organizations.find((o) => o.id === orgId) ?? organizations[0]!;
-    const entities = legalEntities[organization.id] ?? [];
+    const entities = platformStaff ? [] : legalEntities[organization.id] ?? [];
     return {
-      organizations, organization, entities,
+      organizations: platformStaff ? [] : organizations, organization, entities,
       entity: entities.find((e) => e.id === entityId) ?? null,
       setOrganization: (id) => { setOrgId(id); setEntityId(null); },
       setEntity: setEntityId,
     };
-  }, [orgId, entityId]);
+  }, [orgId, entityId, platformStaff]);
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
 }
 

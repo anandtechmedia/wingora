@@ -11,6 +11,7 @@ import { CareersSourceProvider, disconnectedCareersSource, disconnectedRecruitme
 import { disconnectedHelpdeskSource, HelpdeskSourceProvider, httpHelpdeskSource } from '@/api/helpdesk';
 import { DocumentsSourceProvider, disconnectedDocumentsSource, httpDocumentsSource } from '@/api/documents';
 import { BillingSourceProvider, disconnectedBillingSource, httpBillingSource } from '@/api/billing';
+import { disconnectedPlatformSource, httpPlatformSource, PlatformSourceProvider } from '@/api/platform';
 import { createLiveGateway } from '@/auth/live-gateway';
 import { createMockGateway } from '@/mocks/mock-gateway';
 import { WorkspaceProvider } from '@/shell/workspace';
@@ -31,6 +32,7 @@ const careersSource = live ? httpCareersSource : disconnectedCareersSource;
 const helpdeskSource = live ? httpHelpdeskSource : disconnectedHelpdeskSource;
 const documentsSource = live ? httpDocumentsSource : disconnectedDocumentsSource;
 const billingSource = live ? httpBillingSource : disconnectedBillingSource;
+const platformSource = live ? httpPlatformSource : disconnectedPlatformSource;
 
 export function App() {
   const router = useMemo(() => createBrowserRouter(createRoutes({ prototypeHint: !live })), []);
@@ -48,9 +50,11 @@ export function App() {
                       <HelpdeskSourceProvider value={helpdeskSource}>
                         <DocumentsSourceProvider value={documentsSource}>
                           <BillingSourceProvider value={billingSource}>
-                            <WorkspaceProvider live={live}>
-                              <RouterProvider router={router} />
-                            </WorkspaceProvider>
+                            <PlatformSourceProvider value={platformSource}>
+                              <WorkspaceProvider live={live}>
+                                <RouterProvider router={router} />
+                              </WorkspaceProvider>
+                            </PlatformSourceProvider>
                           </BillingSourceProvider>
                         </DocumentsSourceProvider>
                       </HelpdeskSourceProvider>

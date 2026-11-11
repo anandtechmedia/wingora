@@ -185,3 +185,24 @@ server would refuse.
   revoked. Export and deletion need a verification code (a 6-digit code is sent as `code`, anything else as
   `recovery_code`); deletion also needs the organization name typed exactly, is blocked under legal hold, and can be
   cancelled until the purge starts.
+
+## Platform console (`modules/platform`)
+
+Backed by `api/platform.ts` (`PlatformSource`), which mirrors the platform administration API in
+`backend/docs/architecture/platform.md`. Those endpoints return Laravel's plain paginator, which
+`fromPaginator` (`api/http.ts`) converts to the `{ data, meta }` shape the tables use.
+
+- **Who sees it:** platform staff only. The menu entry needs `platform.tenants.view`,
+  `platform.billing.view`, `platform.audit.view` or `platform.health.view`, none of which an
+  organization role holds. Platform staff have no organization, so the organization and legal-entity
+  selectors are hidden, and `/` sends every user to the first module they may open (`homePath`).
+- **Organizations:** search and filter, then a side panel with status, subscription, usage, support
+  access, legal hold and scheduled deletion. Suspending or reactivating needs `platform.tenants.manage`
+  and a reason. Extending a trial or assigning a plan needs `platform.billing.manage` (Platform Owner)
+  and sends the subscription `version`, so a concurrent change is refused instead of overwritten.
+- **Support access:** shown only while the organization owner's grant is active. Sections come from the
+  server (`payroll` only when the owner allowed it); every view is audited in the organization's log.
+- **Subscriptions, usage, audit log and health:** read-only views of the platform API. Revenue is per
+  currency and never converted. The audit export needs `platform.audit.export`.
+
+As everywhere else, the console only hides what the server would refuse; the server enforces every rule.

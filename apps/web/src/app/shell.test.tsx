@@ -68,9 +68,9 @@ describe('authentication flow', () => {
 
   it('only redirects to same-origin paths', () => {
     expect(safeRedirect('/leave?x=1')).toBe('/leave?x=1');
-    expect(safeRedirect('//evil.example')).toBe('/dashboard');
-    expect(safeRedirect('/\\evil.example')).toBe('/dashboard');
-    expect(safeRedirect('https://evil.example')).toBe('/dashboard');
+    expect(safeRedirect('//evil.example')).toBe('/');
+    expect(safeRedirect('/\\evil.example')).toBe('/');
+    expect(safeRedirect('https://evil.example')).toBe('/');
   });
 });
 

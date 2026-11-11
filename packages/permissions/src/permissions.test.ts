@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canAccessModule, findModule, modules, navigationFor, Permission, PendingPermission, satisfies } from './index.ts';
+import { canAccessModule, findModule, homePath, modules, navigationFor, Permission, PendingPermission, satisfies } from './index.ts';
 
 describe('satisfies', () => {
   it('handles anyOf, allOf and authenticated', () => {
@@ -18,10 +18,10 @@ describe('satisfies', () => {
 });
 
 describe('modules', () => {
-  it('defines the 16 navigation modules with unique ids and paths', () => {
-    expect(modules).toHaveLength(16);
-    expect(new Set(modules.map((m) => m.id)).size).toBe(16);
-    expect(new Set(modules.map((m) => m.path)).size).toBe(16);
+  it('defines the 17 navigation modules with unique ids and paths', () => {
+    expect(modules).toHaveLength(17);
+    expect(new Set(modules.map((m) => m.id)).size).toBe(17);
+    expect(new Set(modules.map((m) => m.path)).size).toBe(17);
   });
 
   it('pending permission values never collide with backend permission values', () => {
@@ -45,5 +45,16 @@ describe('modules', () => {
     expect(canAccessModule([Permission.OrganizationManage], billing)).toBe(false);
     expect(canAccessModule([Permission.BillingView], billing)).toBe(true);
     expect(canAccessModule([Permission.AccountManage], billing)).toBe(true);
+  });
+
+  it('the platform console is only for platform staff, who land on it', () => {
+    const platform = findModule('platform')!;
+    const tenant = Object.values(Permission).filter((p) => !p.startsWith('platform.'));
+    expect(canAccessModule(tenant, platform)).toBe(false);
+    expect(canAccessModule([Permission.PlatformHealthView], platform)).toBe(true);
+    expect(canAccessModule([Permission.PlatformSupportAccess], platform)).toBe(false);
+    expect(homePath([Permission.PlatformTenantsView])).toBe('/platform');
+    expect(homePath([Permission.OrganizationView])).toBe('/dashboard');
+    expect(homePath([])).toBe('/access-denied');
   });
 });

@@ -1,6 +1,6 @@
 import { lazy, Suspense, type ComponentType, type LazyExoticComponent } from 'react';
 import { Navigate, type RouteObject } from 'react-router';
-import { canAccessModule, modules, type ModuleDefinition, type ModuleId } from '@wingora/permissions';
+import { canAccessModule, homePath, modules, type ModuleDefinition, type ModuleId } from '@wingora/permissions';
 import { PublicOnly, RequireAuth, useSession } from '@/auth/session';
 import { AccessDeniedPage, NotFoundPage, RouteErrorPage } from '@/pages/error-pages';
 import { ForgotPasswordPage } from '@/pages/forgot-password-page';
@@ -24,12 +24,19 @@ const screens: Partial<Record<ModuleId, ModuleComponent>> = {
   helpdesk: lazy(() => import('@/modules/helpdesk')),
   documents: lazy(() => import('@/modules/documents')),
   billing: lazy(() => import('@/modules/billing')),
+  platform: lazy(() => import('@/modules/platform')),
 };
 /** Public careers site: outside the signed-in shell, no session required. */
 const CareersPage = lazy(() => import('@/pages/careers-page'));
 const DesignSystem = lazy(() => import('@/design-system/design-system-route'));
 
 /** Route guard: renders 403 in place (URL kept) when the user lacks the module's permission. */
+/** `/` sends each user to the first module they may open (platform staff have no organization dashboard). */
+function Home() {
+  const { permissions } = useSession();
+  return <Navigate to={homePath(permissions)} replace />;
+}
+
 function ModuleRoute({ module }: { module: ModuleDefinition }) {
   const { permissions } = useSession();
   if (!canAccessModule(permissions, module)) return <AccessDeniedPage />;
@@ -49,7 +56,7 @@ export function createRoutes({ prototypeHint = false }: { prototypeHint?: boolea
       element: <RequireAuth><AppLayout /></RequireAuth>,
       errorElement: <RouteErrorPage />,
       children: [
-        { index: true, element: <Navigate to="/dashboard" replace /> },
+        { index: true, element: <Home /> },
         ...modules.map((m) => ({ path: m.path, element: <ModuleRoute module={m} /> })),
         ...modules.filter((m) => m.id === 'employees').map((m) => ({ path: `${m.path}/:recordId`, element: <ModuleRoute module={m} /> })),
         { path: 'design-system', element: <DesignSystem /> },
