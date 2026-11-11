@@ -20,7 +20,8 @@ export function I18nProvider({ locale, children }: { locale: string; children: R
   useEffect(() => {
     if (isLocaleLoaded(locale)) return;
     let active = true;
-    void loadLocale(locale).then(() => active && setLoaded(true));
+    // On a failed fetch the page stays in English; a later locale change retries.
+    loadLocale(locale).then(() => active && setLoaded(true), () => undefined);
     return () => {
       active = false;
     };
