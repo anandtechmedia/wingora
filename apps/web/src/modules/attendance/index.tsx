@@ -26,7 +26,7 @@ export default function Attendance() {
   );
 }
 
-function ClockCard() {
+function ClockCard({ onChanged }: { onChanged: () => void }) {
   const { tt } = useTimeT();
   const source = useTimeSource();
   const { toast } = useToast();
@@ -42,6 +42,7 @@ function ClockCard() {
     } finally {
       setBusy(false);
       today.reload();
+      onChanged();
     }
   };
   return (
@@ -99,7 +100,7 @@ function MyAttendance() {
   const columns = useRecordColumns(false);
   return (
     <div className="space-y-6">
-      <ClockCard />
+      <ClockCard onChanged={records.reload} />
       <Card padding="none" title={tt('last30Days')} headingLevel={2}>
         <RecordTable resource={records} columns={columns} onPage={setPage} />
       </Card>
