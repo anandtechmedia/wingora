@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Platform;
 
+use App\Audit\AuditChain;
 use App\Models\AuditLog;
 use App\Models\DeletionRequest;
 use App\Models\Employee;
@@ -10,6 +11,7 @@ use App\Models\SupportGrant;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\Tenancy;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Tests\Feature\Security\SecurityTestCase;
@@ -195,6 +197,11 @@ class PlatformTest extends SecurityTestCase
         $this->assertSame('completed', DeletionRequest::query()->withoutGlobalScopes()->where('tenant_id', $tenant->id)->latest('id')->value('status'));
         $this->assertTrue(AuditLog::query()->withoutGlobalScopes()->whereNull('tenant_id')->where('event', 'account.deletion_completed')->exists());
         $this->apiWithToken($token, 'GET', '/api/v1/organization')->assertUnauthorized();
+        $chains = DB::table('audit_chains')->where('tenant_id', $tenant->id)->pluck('chain');
+        $this->assertNotEmpty($chains);
+        foreach ($chains as $chain) {
+            $this->assertTrue(AuditChain::verify($chain)['valid'], $chain);
+        }
         Tenancy::forget();
     }
 

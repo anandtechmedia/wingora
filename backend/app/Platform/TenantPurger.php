@@ -92,6 +92,8 @@ final class TenantPurger
                     $deleted && $counts[$table] = $deleted;
                 }
             }
+            // The organization's audit entries are gone; anchor its chains at their head so verification still passes.
+            DB::table('audit_chains')->where('tenant_id', $tenant->id)->update(['anchor_sequence' => DB::raw('last_sequence'), 'anchor_hash' => DB::raw('last_hash'), 'updated_at' => now()]);
             $tenant->forceFill(['name' => 'Deleted organization', 'slug' => 'deleted-'.Str::lower($tenant->public_id), 'status' => 'deleted'])->saveQuietly();
         }));
         DeletionRequest::query()->withoutGlobalScopes()->whereKey($request->id)->update(['status' => 'completed', 'completed_at' => now(), 'requested_by' => null, 'canceled_by' => null]);
