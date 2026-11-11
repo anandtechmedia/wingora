@@ -30,6 +30,12 @@ class StripeClient
         return $this->send('post', $path, $params);
     }
 
+    /** @return array<string, mixed> */
+    public function delete(string $path): array
+    {
+        return $this->send('delete', $path, []);
+    }
+
     private function send(string $method, string $path, array $params): array
     {
         if (! $this->configured()) {
@@ -43,7 +49,11 @@ class StripeClient
         }
         $url = rtrim((string) config('billing.stripe.api_base'), '/').'/'.ltrim($path, '/');
         try {
-            $response = $method === 'post' ? $request->post($url, $params) : $request->get($url, $params);
+            $response = match ($method) {
+                'post' => $request->post($url, $params),
+                'delete' => $request->delete($url),
+                default => $request->get($url, $params),
+            };
         } catch (ConnectionException) {
             throw new StripeError(__('The payment provider could not be reached. Try again shortly.'), 503);
         }

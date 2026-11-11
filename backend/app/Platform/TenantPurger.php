@@ -3,10 +3,12 @@
 namespace App\Platform;
 
 use App\Audit\AuditEvents;
+use App\Billing\Stripe\StripeClient;
 use App\Models\AuditLog;
 use App\Models\DataExport;
 use App\Models\DeletionRequest;
 use App\Models\StoredFile;
+use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +25,8 @@ use Illuminate\Support\Str;
  */
 final class TenantPurger
 {
+    public function __construct(private readonly StripeClient $stripe) {}
+
     private const KEEP = ['tenants', 'subscriptions', 'invoices', 'billing_events', 'deletion_requests', 'audit_chains'];
 
     /** @return int number of organizations purged */
@@ -61,6 +65,9 @@ final class TenantPurger
     /** @return bool false when the purge must be retried on the next run */
     private function purge(Tenant $tenant, DeletionRequest $request): bool
     {
+        if (! $this->stopBilling($tenant)) {
+            return false;
+        }
         $files = StoredFile::query()->withoutGlobalScopes()->withTrashed()->where('tenant_id', $tenant->id)->get(['disk', 'path'])
             ->concat(DataExport::query()->withoutGlobalScopes()->where('tenant_id', $tenant->id)->whereNotNull('path')->get(['disk', 'path']));
         // Files go first, while their records still exist, so a failed delete is retried on the next run.
@@ -89,6 +96,25 @@ final class TenantPurger
         }));
         DeletionRequest::query()->withoutGlobalScopes()->whereKey($request->id)->update(['status' => 'completed', 'completed_at' => now(), 'requested_by' => null, 'canceled_by' => null]);
         AuditLog::record(AuditEvents::DELETION_COMPLETED, metadata: ['tenant' => $tenant->public_id, 'rows' => array_sum($counts), 'files' => $files->count()], category: null, tenantId: null);
+
+        return true;
+    }
+
+    /** Ends a live Stripe subscription now, so a deleted organization is never charged again. */
+    private function stopBilling(Tenant $tenant): bool
+    {
+        $subscription = Subscription::forTenant($tenant);
+        if (! $subscription || $subscription->provider !== 'stripe' || $subscription->status === 'canceled' || ! $subscription->stripe_subscription_id) {
+            return true;
+        }
+        $path = 'subscriptions/'.$subscription->stripe_subscription_id;
+        $state = rescue(fn () => $this->stripe->delete($path), null, false) ?? rescue(fn () => $this->stripe->get($path), null, false);
+        if (($state['status'] ?? null) !== 'canceled') {
+            Log::warning('tenant.purge_billing_not_stopped', ['tenant' => $tenant->public_id]);
+
+            return false;
+        }
+        $subscription->forceFill(['status' => 'canceled', 'canceled_at' => now(), 'cancel_at_period_end' => false, 'version' => $subscription->version + 1])->saveQuietly();
 
         return true;
     }

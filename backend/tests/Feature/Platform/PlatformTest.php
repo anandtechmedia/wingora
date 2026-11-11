@@ -10,6 +10,7 @@ use App\Models\SupportGrant;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\Tenancy;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Tests\Feature\Security\SecurityTestCase;
 use ZipArchive;
@@ -220,5 +221,26 @@ class PlatformTest extends SecurityTestCase
         $this->apiAs($this->owner, 'POST', '/api/v1/account/deletion/cancel')->assertConflict();
         $this->apiAs($this->owner, 'GET', '/api/v1/account/deletion')->assertOk()->assertJsonPath('data.request.status', 'purging');
         Tenancy::forget();
+    }
+
+    public function test_purge_waits_until_stripe_stops_billing(): void
+    {
+        config(['billing.stripe.secret' => 'sk_test_x']);
+        Subscription::forTenant($this->tenant)->forceFill(['provider' => 'stripe', 'status' => 'active', 'stripe_customer_id' => 'cus_1', 'stripe_subscription_id' => 'sub_1', 'cancel_at_period_end' => true])->saveQuietly();
+        $this->apiAs($this->owner, 'POST', '/api/v1/account/deletion', ['confirm_name' => 'Acme Corp'] + $this->code($this->owner))->assertCreated();
+        Tenancy::forget();
+        $this->travel(31)->days();
+
+        Http::fake(['*/subscriptions/sub_1' => Http::sequence()->push(['error' => ['type' => 'api_error']], 500)->push(['id' => 'sub_1', 'status' => 'active'])
+            ->push(['id' => 'sub_1', 'status' => 'canceled'])]);
+        $this->artisan('wingora:tenants:purge-deleted')->assertSuccessful();
+        $this->assertSame('active', $this->tenant->fresh()->status);
+        $this->assertSame(1, Employee::query()->withoutGlobalScopes()->where('tenant_id', $this->tenant->id)->count());
+        $this->assertSame('purging', DeletionRequest::query()->withoutGlobalScopes()->where('tenant_id', $this->tenant->id)->value('status'));
+
+        $this->artisan('wingora:tenants:purge-deleted')->assertSuccessful();
+        $this->assertSame('deleted', $this->tenant->fresh()->status);
+        $this->assertSame('canceled', Subscription::forTenant($this->tenant)->status);
+        Http::assertSent(fn ($r) => $r->method() === 'DELETE' && str_ends_with($r->url(), '/subscriptions/sub_1'));
     }
 }
