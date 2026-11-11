@@ -20,6 +20,7 @@ enum AuditCategory: string
     case DataExport = 'data_export';
     case Recruitment = 'recruitment';
     case Onboarding = 'onboarding';
+    case Helpdesk = 'helpdesk';
 
     public static function forEvent(string $event, ?Model $subject = null): self
     {
@@ -33,6 +34,7 @@ enum AuditCategory: string
             $starts('authz.', 'user.roles', 'role.') => self::Permissions,
             $starts('recruitment.', 'candidate.', 'ai.') => self::Recruitment,
             $starts('onboarding.') => self::Onboarding,
+            $starts('helpdesk.') => self::Helpdesk,
             $starts('leave.') => self::Leave,
             $starts('attendance.') => self::Attendance,
             $starts('payroll.', 'compensation.', 'employee_compensation.') => self::Payroll,
