@@ -4,6 +4,7 @@ namespace Tests\Feature\Helpdesk;
 
 use App\Audit\AuditCategory;
 use App\Models\AuditLog;
+use App\Models\HelpdeskCategory;
 use App\Models\StoredFile;
 use App\Models\Tenant;
 use App\Models\User;
@@ -157,17 +158,17 @@ class HelpdeskTest extends SecurityTestCase
     {
         $cat = $this->category();
         $this->apiAs($this->employee, 'POST', '/api/v1/helpdesk/tickets', ['category_id' => $cat['id'], 'subject' => 'Visa letter', 'description' => 'Need it', 'files' => [$this->pdf()]])->assertCreated();
-        $file = \App\Models\StoredFile::withoutGlobalScopes()->where('category', 'helpdesk')->firstOrFail();
+        $file = StoredFile::withoutGlobalScopes()->where('category', 'helpdesk')->firstOrFail();
         $this->apiAs($this->employee, 'DELETE', "/api/v1/files/{$file->public_id}")->assertForbidden();
         $this->apiAs($this->admin, 'DELETE', "/api/v1/files/{$file->public_id}")->assertForbidden();
-        $this->assertNotNull(\App\Models\StoredFile::withoutGlobalScopes()->find($file->id));
+        $this->assertNotNull(StoredFile::withoutGlobalScopes()->find($file->id));
     }
 
     public function test_rejected_category_edit_changes_nothing(): void
     {
         $cat = $this->category();
         $this->apiAs($this->admin, 'PATCH', "/api/v1/helpdesk/categories/{$cat['id']}", ['name' => 'Renamed', 'restricted' => true, 'agent_ids' => ['01UNKNOWNUNKNOWNUNKNOWNUNK']])->assertStatus(422);
-        $row = \App\Models\HelpdeskCategory::withoutGlobalScopes()->firstOrFail();
+        $row = HelpdeskCategory::withoutGlobalScopes()->firstOrFail();
         $this->assertSame(['Benefits', false], [$row->name, $row->restricted]);
     }
 
@@ -176,5 +177,14 @@ class HelpdeskTest extends SecurityTestCase
         $this->apiAs($this->admin, 'PATCH', '/api/v1/helpdesk/settings', ['due_hours' => ['urgent' => 2]])->assertOk();
         $this->assertEquals(['low' => 120, 'normal' => 72, 'high' => 24, 'urgent' => 2], $this->apiAs($this->admin, 'GET', '/api/v1/helpdesk/settings')->json('data.due_hours'));
         $this->apiAs($this->admin, 'PATCH', '/api/v1/helpdesk/settings', ['due_hours' => ['low' => null]])->assertOk()->assertJsonPath('data.due_hours.low', null);
+    }
+
+    public function test_long_multibyte_description_and_comment_are_stored(): void
+    {
+        $cat = $this->category();
+        $text = str_repeat('😀', 10000);
+        $id = $this->apiAs($this->employee, 'POST', '/api/v1/helpdesk/tickets', ['category_id' => $cat['id'], 'subject' => 'Long', 'description' => $text])->assertCreated()->json('data.id');
+        $this->apiAs($this->employee, 'POST', "/api/v1/helpdesk/tickets/{$id}/comments", ['body' => $text])->assertCreated();
+        $this->assertSame($text, $this->apiAs($this->employee, 'GET', "/api/v1/helpdesk/tickets/{$id}")->json('data.comments.0.body'));
     }
 }
