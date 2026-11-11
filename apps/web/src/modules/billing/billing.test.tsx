@@ -4,7 +4,7 @@ import { createMemoryRouter, RouterProvider } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 import { renderUi } from '@/test/render';
 import { axeViolations } from '@/test/axe';
-import { BillingSourceProvider, disconnectedBillingSource, isStripeUrl, type BillingSource, type Plan, type Subscription } from '@/api/billing';
+import { BillingSourceProvider, disconnectedBillingSource, httpBillingSource, isStripeUrl, type BillingSource, type Plan, type Subscription } from '@/api/billing';
 import { SessionProvider } from '@/auth/session';
 import type { MeResponse } from '@/auth/types';
 import { createMockGateway } from '@/mocks/mock-gateway';
@@ -204,5 +204,19 @@ describe('Billing access', () => {
     expect(isStripeUrl('http://checkout.stripe.com/x')).toBe(false);
     expect(isStripeUrl('https://stripe.com.evil.test/x')).toBe(false);
     expect(isStripeUrl('javascript:alert(1)')).toBe(false);
+  });
+});
+
+describe('Billing HTTP source', () => {
+  it('reads the invoice paginator so the page controls appear', async () => {
+    const body = { data: [], current_page: 2, last_page: 3, per_page: 25, total: 60 };
+    const fetch = vi.fn(async () => new Response(JSON.stringify(body), { status: 200 }));
+    vi.stubGlobal('fetch', fetch);
+    try {
+      expect(await httpBillingSource.invoices(2)).toEqual({ data: [], meta: { current_page: 2, last_page: 3, per_page: 25, total: 60 } });
+      expect(String((fetch.mock.calls[0] as unknown[])[0])).toContain('/api/v1/billing/invoices?page=2');
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

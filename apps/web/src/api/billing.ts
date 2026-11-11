@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
 import { ApiNotConnectedError } from './dashboard';
-import { apiDownload, apiRequest, ensureCsrfCookie } from './http';
+import { apiDownload, apiRequest, ensureCsrfCookie, fromPaginator } from './http';
 import type { Page } from './employees';
 
 /** Mirrors the Billing and Account APIs (docs/architecture/billing.md, platform.md). Amounts are in minor units. */
@@ -82,7 +82,7 @@ export function isStripeUrl(url: string): boolean {
 export const httpBillingSource: BillingSource = {
   subscription: (signal) => data(apiRequest('GET', `${v1}/billing/subscription`, { signal })),
   plans: (signal) => data(apiRequest('GET', `${v1}/billing/plans`, { signal })),
-  invoices: (page, signal) => apiRequest('GET', `${v1}/billing/invoices`, { query: { page: String(page) }, signal }),
+  invoices: (page, signal) => fromPaginator(apiRequest('GET', `${v1}/billing/invoices`, { query: { page: String(page) }, signal })),
   checkout: async (plan, interval) => (await post<{ url: string }>(`${v1}/billing/checkout`, { plan, interval })).url,
   change: (plan, interval, version) => post(`${v1}/billing/change`, { plan, interval, version }),
   cancel: () => post(`${v1}/billing/cancel`),

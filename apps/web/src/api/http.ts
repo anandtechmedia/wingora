@@ -42,6 +42,13 @@ export async function apiRequest<T>(method: 'GET' | 'POST' | 'PUT' | 'PATCH' | '
   return data as T;
 }
 
+/** Laravel's plain paginator JSON (`current_page`, `data`, ... at the top level), as some endpoints return it. */
+export interface LaravelPaginator<T> { data: T[]; current_page: number; last_page: number; per_page: number; total: number }
+export async function fromPaginator<T>(p: Promise<LaravelPaginator<T>>): Promise<{ data: T[]; meta: { current_page: number; last_page: number; per_page: number; total: number } }> {
+  const r = await p;
+  return { data: r.data, meta: { current_page: r.current_page, last_page: r.last_page, per_page: r.per_page, total: r.total } };
+}
+
 /** Fetches a file response (e.g. CSV export) and hands it to the browser as a download. */
 export async function apiDownload(path: string, query: Record<string, string | null | undefined>, fallbackName: string): Promise<void> {
   const url = new URL(baseUrl + path, window.location.origin);
