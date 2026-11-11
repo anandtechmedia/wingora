@@ -55,7 +55,7 @@ class TenantController extends Controller
     {
         Gate::authorize('viewAny', Tenant::class);
         $subscription = Subscription::forTenant($tenant);
-        $deletion = DeletionRequest::query()->withoutGlobalScopes()->where('tenant_id', $tenant->id)->where('status', 'scheduled')->first();
+        $deletion = DeletionRequest::query()->withoutGlobalScopes()->where('tenant_id', $tenant->id)->whereIn('status', ['scheduled', 'purging'])->latest('id')->first();
         $grant = SupportGrant::query()->withoutGlobalScopes()->where('tenant_id', $tenant->id)->active()->latest('id')->first();
 
         return response()->json(['data' => [

@@ -32,6 +32,7 @@ final class Health
             'status' => 'ok',
             'exports_failed_24h' => DataExport::query()->withoutGlobalScopes()->where('status', 'failed')->where('updated_at', '>=', now()->subDay())->count(),
             'deletions_scheduled' => DeletionRequest::query()->withoutGlobalScopes()->where('status', 'scheduled')->count(),
+            'deletions_in_progress' => DeletionRequest::query()->withoutGlobalScopes()->where('status', 'purging')->count(),
         ];
         $status = collect($checks)->contains(fn ($c) => $c['status'] === 'down') ? 'down'
             : (collect($checks)->contains(fn ($c) => $c['status'] === 'degraded') ? 'degraded' : 'ok');

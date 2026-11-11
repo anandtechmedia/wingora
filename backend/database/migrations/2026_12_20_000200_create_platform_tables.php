@@ -44,7 +44,7 @@ return new class extends Migration
             $table->ulid('public_id')->unique();
             $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
             $table->foreignId('requested_by')->nullable()->constrained('users')->nullOnDelete();
-            $table->string('status', 20)->default('scheduled'); // scheduled, canceled, completed
+            $table->string('status', 20)->default('scheduled'); // scheduled, canceled, purging, completed
             $table->timestamp('scheduled_for');
             $table->timestamp('canceled_at')->nullable();
             $table->foreignId('canceled_by')->nullable()->constrained('users')->nullOnDelete();

@@ -10,6 +10,7 @@ use App\Models\StoredFile;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -17,7 +18,8 @@ use Illuminate\Support\Str;
 /**
  * Permanently removes an organization's data and files once its deletion request is due. Kept: the anonymized tenant
  * row, the subscription and invoices (App Wings' financial records), processed webhook ids, the deletion request, and
- * a platform audit entry. Organizations on legal hold are never purged.
+ * a platform audit entry. Organizations on legal hold are never purged. Once a purge starts (`purging`) it cannot be
+ * cancelled, and a failed step is retried on the next run.
  */
 final class TenantPurger
 {
@@ -27,23 +29,47 @@ final class TenantPurger
     public function purgeDue(): int
     {
         $purged = 0;
-        DeletionRequest::query()->withoutGlobalScopes()->where('status', 'scheduled')->where('scheduled_for', '<=', now())->orderBy('id')
+        DeletionRequest::query()->withoutGlobalScopes()->whereIn('status', ['scheduled', 'purging'])->where('scheduled_for', '<=', now())->orderBy('id')
             ->each(function (DeletionRequest $request) use (&$purged) {
-                $tenant = Tenant::query()->find($request->tenant_id);
-                if (! $tenant || $tenant->audit_legal_hold) {
-                    return;
+                $tenant = $this->claim($request);
+                if ($tenant && $this->purge($tenant, $request)) {
+                    $purged++;
                 }
-                $this->purge($tenant, $request);
-                $purged++;
             });
 
         return $purged;
     }
 
-    public function purge(Tenant $tenant, DeletionRequest $request): void
+    /**
+     * Locks and rechecks the request and tenant, then marks the request `purging` so it can no longer be cancelled.
+     * A cancellation or legal hold committed before this point always wins.
+     */
+    private function claim(DeletionRequest $request): ?Tenant
+    {
+        return DB::transaction(function () use ($request) {
+            $locked = DeletionRequest::query()->withoutGlobalScopes()->whereKey($request->id)->lockForUpdate()->first();
+            $tenant = Tenant::query()->whereKey($request->tenant_id)->lockForUpdate()->first();
+            if (! $locked || ! in_array($locked->status, ['scheduled', 'purging'], true) || $locked->scheduled_for->isFuture() || ! $tenant || $tenant->audit_legal_hold) {
+                return null;
+            }
+            $locked->status === 'scheduled' && $locked->forceFill(['status' => 'purging'])->saveQuietly();
+
+            return $tenant;
+        });
+    }
+
+    /** @return bool false when the purge must be retried on the next run */
+    private function purge(Tenant $tenant, DeletionRequest $request): bool
     {
         $files = StoredFile::query()->withoutGlobalScopes()->withTrashed()->where('tenant_id', $tenant->id)->get(['disk', 'path'])
             ->concat(DataExport::query()->withoutGlobalScopes()->where('tenant_id', $tenant->id)->whereNotNull('path')->get(['disk', 'path']));
+        // Files go first, while their records still exist, so a failed delete is retried on the next run.
+        $failed = $files->reject(fn ($file) => rescue(fn () => Storage::disk($file->disk)->delete($file->path), false, false) === true);
+        if ($failed->isNotEmpty()) {
+            Log::warning('tenant.purge_files_failed', ['tenant' => $tenant->public_id, 'files' => $failed->count()]);
+
+            return false;
+        }
         $userIds = User::query()->withoutGlobalScopes()->where('tenant_id', $tenant->id)->pluck('id');
         $emails = User::query()->withoutGlobalScopes()->where('tenant_id', $tenant->id)->pluck('email');
         $counts = [];
@@ -62,10 +88,8 @@ final class TenantPurger
             $tenant->forceFill(['name' => 'Deleted organization', 'slug' => 'deleted-'.Str::lower($tenant->public_id), 'status' => 'deleted'])->saveQuietly();
         }));
         DeletionRequest::query()->withoutGlobalScopes()->whereKey($request->id)->update(['status' => 'completed', 'completed_at' => now(), 'requested_by' => null, 'canceled_by' => null]);
-
-        foreach ($files as $file) {
-            rescue(fn () => Storage::disk($file->disk)->delete($file->path), report: false);
-        }
         AuditLog::record(AuditEvents::DELETION_COMPLETED, metadata: ['tenant' => $tenant->public_id, 'rows' => array_sum($counts), 'files' => $files->count()], category: null, tenantId: null);
+
+        return true;
     }
 }

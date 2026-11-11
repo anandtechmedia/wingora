@@ -16,6 +16,7 @@ use App\Security\TwoFactor;
 use App\Support\Tenancy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -132,9 +133,15 @@ class AccountController extends Controller
     public function cancelDeletion(Request $request): JsonResponse
     {
         $this->owner($request);
-        $deletion = $this->scheduled() ?? abort(409, __('No deletion is scheduled.'));
-        $deletion->forceFill(['status' => 'canceled', 'canceled_at' => now(), 'canceled_by' => $request->user()->id])->save();
-        AuditLog::record(AuditEvents::DELETION_CANCELED, $deletion);
+        // Locked so it serializes with the purge job's claim: whichever commits first wins.
+        $deletion = DB::transaction(function () use ($request) {
+            $deletion = DeletionRequest::query()->whereIn('status', ['scheduled', 'purging'])->latest('id')->lockForUpdate()->first() ?? abort(409, __('No deletion is scheduled.'));
+            abort_if($deletion->status === 'purging', 409, __('Deletion has already started and can no longer be cancelled.'));
+            $deletion->forceFill(['status' => 'canceled', 'canceled_at' => now(), 'canceled_by' => $request->user()->id])->save();
+            AuditLog::record(AuditEvents::DELETION_CANCELED, $deletion);
+
+            return $deletion;
+        });
 
         return response()->json(['data' => $this->presentDeletion($deletion)]);
     }
@@ -156,7 +163,7 @@ class AccountController extends Controller
 
     private function scheduled(): ?DeletionRequest
     {
-        return DeletionRequest::query()->where('status', 'scheduled')->latest('id')->first();
+        return DeletionRequest::query()->whereIn('status', ['scheduled', 'purging'])->latest('id')->first();
     }
 
     private function presentGrant(SupportGrant $g): array

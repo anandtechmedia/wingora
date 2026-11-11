@@ -206,4 +206,19 @@ class PlatformTest extends SecurityTestCase
         $this->apiAs($this->owner, 'POST', '/api/v1/account/exports', $this->code($this->owner))->assertStatus(429);
         $this->assertSame(0, DeletionRequest::query()->withoutGlobalScopes()->count());
     }
+
+    public function test_a_started_purge_cannot_be_cancelled_and_a_late_legal_hold_stops_it(): void
+    {
+        $this->apiAs($this->owner, 'POST', '/api/v1/account/deletion', ['confirm_name' => 'Acme Corp'] + $this->code($this->owner))->assertCreated();
+        $this->travel(31)->days();
+        $this->tenant->forceFill(['audit_legal_hold' => true])->save();
+        $this->artisan('wingora:tenants:purge-deleted')->assertSuccessful();
+        $this->assertSame('active', $this->tenant->fresh()->status);
+        $this->assertSame('scheduled', DeletionRequest::query()->withoutGlobalScopes()->where('tenant_id', $this->tenant->id)->value('status'));
+
+        DeletionRequest::query()->withoutGlobalScopes()->where('tenant_id', $this->tenant->id)->update(['status' => 'purging']);
+        $this->apiAs($this->owner, 'POST', '/api/v1/account/deletion/cancel')->assertConflict();
+        $this->apiAs($this->owner, 'GET', '/api/v1/account/deletion')->assertOk()->assertJsonPath('data.request.status', 'purging');
+        Tenancy::forget();
+    }
 }

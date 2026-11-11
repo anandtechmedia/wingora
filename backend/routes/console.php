@@ -66,7 +66,10 @@ Artisan::command('wingora:tenants:purge-deleted', function (TenantPurger $purger
 Artisan::command('wingora:exports:expire', function () {
     $count = 0;
     DataExport::query()->withoutGlobalScopes()->where('status', 'ready')->where('expires_at', '<=', now())->each(function (DataExport $export) use (&$count) {
-        rescue(fn () => Storage::disk($export->disk)->delete($export->path), report: false);
+        // Keep the path when the delete fails so the next hourly run retries it; downloads already stop at expiry.
+        if (rescue(fn () => Storage::disk($export->disk)->delete($export->path), false, false) !== true) {
+            return;
+        }
         $export->forceFill(['status' => 'expired', 'path' => null])->saveQuietly();
         $count++;
     });
