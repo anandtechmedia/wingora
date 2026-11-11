@@ -27,7 +27,7 @@ export const modules: readonly ModuleDefinition[] = [
   { id: 'offboarding', path: 'offboarding', group: 'talent', requires: { anyOf: [PP.OffboardingView] } },
   { id: 'performance', path: 'performance', group: 'talent', requires: { anyOf: [PP.PerformanceView] } },
   { id: 'assets', path: 'assets', group: 'operations', requires: { anyOf: [PP.AssetsView] } },
-  { id: 'helpdesk', path: 'helpdesk', group: 'operations', requires: { anyOf: [PP.HelpdeskView] } },
+  { id: 'helpdesk', path: 'helpdesk', group: 'operations', requires: { anyOf: [P.HelpdeskSubmit, P.HelpdeskAgent, P.HelpdeskManage, P.HelpdeskConfigure] } },
   { id: 'projects', path: 'projects', group: 'operations', requires: { anyOf: [PP.ProjectsView] } },
   { id: 'documents', path: 'documents', group: 'operations', requires: { anyOf: [PP.DocumentsView] } },
   { id: 'reports', path: 'reports', group: 'insights', requires: { anyOf: [PP.ReportsView, P.AuditView] } },

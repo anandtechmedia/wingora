@@ -8,6 +8,7 @@ import { disconnectedEmployeeSource, EmployeeSourceProvider, httpEmployeeSource 
 import { disconnectedTimeSource, httpTimeSource, TimeSourceProvider } from '@/api/time';
 import { disconnectedPayrollSource, httpPayrollSource, PayrollSourceProvider } from '@/api/payroll';
 import { CareersSourceProvider, disconnectedCareersSource, disconnectedRecruitmentSource, httpCareersSource, httpRecruitmentSource, RecruitmentSourceProvider } from '@/api/recruitment';
+import { disconnectedHelpdeskSource, HelpdeskSourceProvider, httpHelpdeskSource } from '@/api/helpdesk';
 import { createLiveGateway } from '@/auth/live-gateway';
 import { createMockGateway } from '@/mocks/mock-gateway';
 import { WorkspaceProvider } from '@/shell/workspace';
@@ -25,6 +26,7 @@ const timeSource = live ? httpTimeSource : disconnectedTimeSource;
 const payrollSource = live ? httpPayrollSource : disconnectedPayrollSource;
 const recruitmentSource = live ? httpRecruitmentSource : disconnectedRecruitmentSource;
 const careersSource = live ? httpCareersSource : disconnectedCareersSource;
+const helpdeskSource = live ? httpHelpdeskSource : disconnectedHelpdeskSource;
 
 export function App() {
   const router = useMemo(() => createBrowserRouter(createRoutes({ prototypeHint: !live })), []);
@@ -39,9 +41,11 @@ export function App() {
                 <PayrollSourceProvider value={payrollSource}>
                   <RecruitmentSourceProvider value={recruitmentSource}>
                     <CareersSourceProvider value={careersSource}>
-                      <WorkspaceProvider live={live}>
-                        <RouterProvider router={router} />
-                      </WorkspaceProvider>
+                      <HelpdeskSourceProvider value={helpdeskSource}>
+                        <WorkspaceProvider live={live}>
+                          <RouterProvider router={router} />
+                        </WorkspaceProvider>
+                      </HelpdeskSourceProvider>
                     </CareersSourceProvider>
                   </RecruitmentSourceProvider>
                 </PayrollSourceProvider>
