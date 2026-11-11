@@ -26,9 +26,10 @@ class HelpdeskSettingsController extends Controller
     {
         abort_unless($request->user()->hasPermission(P::HelpdeskConfigure), 403);
         $data = $request->validate(['due_hours' => ['required', 'array'], 'due_hours.*' => ['nullable', 'integer', 'between:1,2160']]);
-        $hours = collect(['low', 'normal', 'high', 'urgent'])->mapWithKeys(fn ($p) => [$p => $data['due_hours'][$p] ?? null])->all();
         $settings = HelpdeskSetting::current();
         $before = $settings->due_hours;
+        // Omitted priorities keep their target; an explicit null clears it.
+        $hours = collect(['low', 'normal', 'high', 'urgent'])->mapWithKeys(fn ($p) => [$p => array_key_exists($p, $data['due_hours']) ? $data['due_hours'][$p] : ($before[$p] ?? null)])->all();
         $settings->forceFill(['due_hours' => $hours])->save();
         AuditLog::record(AuditEvents::HELPDESK_SETTINGS_CHANGED, $settings, ['due_hours' => $before], ['due_hours' => $hours]);
 

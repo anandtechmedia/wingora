@@ -170,4 +170,11 @@ class HelpdeskTest extends SecurityTestCase
         $row = \App\Models\HelpdeskCategory::withoutGlobalScopes()->firstOrFail();
         $this->assertSame(['Benefits', false], [$row->name, $row->restricted]);
     }
+
+    public function test_partial_due_hour_update_keeps_other_targets(): void
+    {
+        $this->apiAs($this->admin, 'PATCH', '/api/v1/helpdesk/settings', ['due_hours' => ['urgent' => 2]])->assertOk();
+        $this->assertEquals(['low' => 120, 'normal' => 72, 'high' => 24, 'urgent' => 2], $this->apiAs($this->admin, 'GET', '/api/v1/helpdesk/settings')->json('data.due_hours'));
+        $this->apiAs($this->admin, 'PATCH', '/api/v1/helpdesk/settings', ['due_hours' => ['low' => null]])->assertOk()->assertJsonPath('data.due_hours.low', null);
+    }
 }
