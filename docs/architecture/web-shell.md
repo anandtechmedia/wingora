@@ -143,3 +143,14 @@ API reference: `docs/architecture/recruitment-onboarding.md` (backend). Client: 
   - AI drafts are labelled, stay "Needs review" until a person accepts or discards them, and never move, score, reject or hire.
 - **Onboarding** (`modules/onboarding`) — My tasks (`onboarding.tasks.self`), Employees onboarding with progress bars and stages (`onboarding.view`), Templates (`onboarding.configure`). Template tasks can request a document taken from the legal entity's country rules. HR accepts or returns submitted documents with a note.
 - Buttons follow the `can` flags in each response; the server enforces every rule.
+
+## Helpdesk (web)
+
+`modules/helpdesk` uses `api/helpdesk.ts` (`HelpdeskSource`, provided in `app.tsx`) against the API in `docs/architecture/helpdesk.md` of the backend.
+
+- **Tabs by permission:** Queue (`helpdesk.agent` or `helpdesk.manage`), My tickets (`helpdesk.submit`), Knowledge base (submit, agent or manage) and Settings (`helpdesk.configure`). The nav entry requires any of the four.
+- **Tickets:** server-paginated list with status, priority, scope (`queue`/`assigned`) and overdue filters; a drawer shows the description, private attachments, the conversation, and only the controls the server's `can` and `next` flags allow. Every mutation sends the ticket `version`; on failure (for example a `409` conflict) the drawer reloads so the next attempt uses fresh data.
+- **Internal notes** are offered only when `can.internal_notes` is true and are highlighted; the API never returns them to requesters.
+- **Text** (descriptions, comments, article bodies) is rendered as plain text with preserved line breaks, never as HTML.
+- **Knowledge base:** FAQs expand inline; articles open in a drawer. Managers create drafts, edit (the form appears only after the full article loads), publish, unpublish and delete.
+- **Settings:** due-by hours per priority (empty means no target; these are internal targets, not contractual service levels) and categories with restriction and named agents.
