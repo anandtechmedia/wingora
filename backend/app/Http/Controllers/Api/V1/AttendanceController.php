@@ -115,6 +115,7 @@ class AttendanceController extends Controller
 
         $build = function ($list) use ($data, $schedules, $holidays) {
             $ids = $list->pluck('id');
+            $schedules->preload($list, $data['from'], $data['to']);
             $end = CarbonImmutable::parse($data['to'])->addDay()->toDateString();
             $records = AttendanceRecord::query()->whereIn('employee_id', $ids)->where('work_date', '>=', $data['from'])->where('work_date', '<', $end)->get()->groupBy('employee_id');
             $leave = LeaveRequest::query()->whereIn('employee_id', $ids)->where('status', 'approved')->where('start_date', '<=', $data['to'])->where('end_date', '>=', $data['from'])->get()->groupBy('employee_id');

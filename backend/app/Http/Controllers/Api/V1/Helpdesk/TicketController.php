@@ -29,6 +29,9 @@ class TicketController extends Controller
 
     private const WITH = ['category', 'requester', 'assignee'];
 
+    /** Category ids the user may work, resolved once per list request instead of once per ticket. */
+    private ?array $workable = null;
+
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -43,6 +46,7 @@ class TicketController extends Controller
             'per_page' => ['sometimes', 'integer', 'between:1,100'],
         ]);
         $scope = $data['scope'] ?? (HelpdeskAccess::isStaff($user) ? 'queue' : 'mine');
+        $this->workable = HelpdeskAccess::isStaff($user) ? HelpdeskAccess::workableCategories($user)->pluck('id')->map(fn ($id) => (int) $id)->all() : [];
         $query = HelpdeskAccess::tickets($user)->with(self::WITH);
         match ($scope) {
             'mine' => $query->where('requester_id', $user->id),
@@ -289,7 +293,7 @@ class TicketController extends Controller
     /** @return list<string> */
     private function next(HelpdeskTicket $t, User $user): array
     {
-        $flow = HelpdeskAccess::works($user, $t) ? HelpdeskTicket::STAFF_FLOW[$t->status] : [];
+        $flow = $this->works($user, $t) ? HelpdeskTicket::STAFF_FLOW[$t->status] : [];
         if ($t->requester_id === $user->id) {
             $flow = array_values(array_unique([...$flow, ...HelpdeskTicket::REQUESTER_FLOW[$t->status]]));
         }
@@ -297,10 +301,15 @@ class TicketController extends Controller
         return $flow;
     }
 
+    private function works(User $user, HelpdeskTicket $t): bool
+    {
+        return $this->workable === null ? HelpdeskAccess::works($user, $t) : in_array((int) $t->helpdesk_category_id, $this->workable, true);
+    }
+
     private function present(HelpdeskTicket $t, User $user, bool $detail = false): array
     {
         $t->loadMissing(self::WITH);
-        $works = HelpdeskAccess::works($user, $t);
+        $works = $this->works($user, $t);
         $out = [
             'id' => $t->public_id,
             'number' => $t->number,
