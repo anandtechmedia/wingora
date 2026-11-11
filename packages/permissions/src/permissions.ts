@@ -56,6 +56,11 @@ export const Permission = {
   HelpdeskAgent: 'helpdesk.agent',
   HelpdeskManage: 'helpdesk.manage',
   HelpdeskConfigure: 'helpdesk.configure',
+  DocumentsRequest: 'documents.request',
+  DocumentsApprove: 'documents.approve',
+  DocumentsManage: 'documents.manage',
+  DocumentsSalary: 'documents.salary',
+  DocumentsConfigure: 'documents.configure',
   FilesUpload: 'files.upload',
   AuditView: 'audit.view',
   SecurityEventsView: 'security-events.view',
@@ -71,7 +76,6 @@ export const PendingPermission = {
   AssetsView: 'assets.view',
   ProjectsView: 'projects.view',
   ReportsView: 'reports.view',
-  DocumentsView: 'documents.view',
   BillingView: 'billing.view',
 } as const;
 

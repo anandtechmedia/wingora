@@ -29,7 +29,7 @@ export const modules: readonly ModuleDefinition[] = [
   { id: 'assets', path: 'assets', group: 'operations', requires: { anyOf: [PP.AssetsView] } },
   { id: 'helpdesk', path: 'helpdesk', group: 'operations', requires: { anyOf: [P.HelpdeskSubmit, P.HelpdeskAgent, P.HelpdeskManage, P.HelpdeskConfigure] } },
   { id: 'projects', path: 'projects', group: 'operations', requires: { anyOf: [PP.ProjectsView] } },
-  { id: 'documents', path: 'documents', group: 'operations', requires: { anyOf: [PP.DocumentsView] } },
+  { id: 'documents', path: 'documents', group: 'operations', requires: { anyOf: [P.DocumentsRequest, P.DocumentsApprove, P.DocumentsManage, P.DocumentsSalary, P.DocumentsConfigure] } },
   { id: 'reports', path: 'reports', group: 'insights', requires: { anyOf: [PP.ReportsView, P.AuditView] } },
   { id: 'settings', path: 'settings', group: 'administration', requires: { anyOf: [P.OrganizationManage, P.OrganizationSecurityManage, P.UsersManage, P.RolesAssign] } },
   { id: 'billing', path: 'billing', group: 'administration', requires: { allOf: [PP.BillingView, P.OrganizationManage] } },

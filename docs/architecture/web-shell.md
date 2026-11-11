@@ -35,7 +35,8 @@ open redirect.
 | Reports | `reports.view`* or `audit.view` |
 | Settings | any of `organization.manage`, `organization.security.manage`, `users.manage`, `roles.assign` |
 | Billing | `billing.view`* **and** `organization.manage` |
-| Attendance, Leave, Recruitment, Onboarding, Offboarding, Performance, Assets, Helpdesk, Projects, Documents | `<module>.view`* |
+| Documents | any of `documents.request`, `documents.approve`, `documents.manage`, `documents.salary`, `documents.configure` |
+| Offboarding, Performance, Assets, Projects | `<module>.view`* |
 
 \* `PendingPermission`: not defined by the backend yet. Each must be added to the backend enum and role
 catalog with the same value when its module is built. Until then no real user holds them, so those
@@ -154,3 +155,13 @@ API reference: `docs/architecture/recruitment-onboarding.md` (backend). Client: 
 - **Text** (descriptions, comments, article bodies) is rendered as plain text with preserved line breaks, never as HTML.
 - **Knowledge base:** FAQs expand inline; articles open in a drawer. Managers create drafts, edit (the form appears only after the full article loads), publish, unpublish and delete.
 - **Settings:** due-by hours per priority (empty means no target; these are internal targets, not contractual service levels) and categories with restriction and named agents.
+
+## Document requests (web)
+
+`modules/documents` uses `api/documents.ts` (`DocumentsSource`, provided in `app.tsx`) against the API in `docs/architecture/document-requests.md`.
+
+- **Tabs by permission:** My requests (`documents.request`), Approvals (`documents.approve`, `documents.manage` or `documents.salary`) and Templates (`documents.configure`). Approvals defaults to open requests waiting on the user; `documents.manage` holders can switch to every request they can see.
+- **New request:** only active templates are offered; the template's questions render as typed inputs (short text, long text, date) and required ones gate submission. Employees never enter a salary figure.
+- **Request drawer:** shows the steps, answers and rejection reason, and only the actions the server's `can` flags allow: approve, reject (reason required; an approved request can only be rejected), deliver (a typed salary figure for salary letters, which is printed but never stored, or an uploaded PDF/DOCX), cancel and download. Every mutation sends the request `version`; the drawer reloads after any attempt.
+- **Templates:** name, delivery, description, up to 10 questions, letter text with the allowed placeholders listed beside it (unknown placeholders are rejected by the server), manager step, salary and active flags. Restricting a template to one legal entity is supported by the API but not yet offered on screen.
+
