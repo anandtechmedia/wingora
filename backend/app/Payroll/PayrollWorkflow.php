@@ -201,10 +201,13 @@ final class PayrollWorkflow
     {
         $lines = PayrollLine::query()->where('payroll_run_id', $run->id)->where(fn ($q) => $q->whereNotNull('loan_id')->orWhereNotNull('reimbursement_id'))->get();
         foreach ($lines->whereNotNull('loan_id') as $line) {
+            $loan = Loan::query()->lockForUpdate()->find($line->loan_id);
+            if (! $loan || (int) $line->amount_minor > $loan->outstanding()) {
+                abort(409, __('A loan in this run was repaid by another run after preparation. Recalculate the run.'));
+            }
             $repayment = new LoanRepayment;
             $repayment->forceFill(['loan_id' => $line->loan_id, 'payroll_run_id' => $run->id, 'amount_minor' => $line->amount_minor])->save();
-            $loan = $line->loan_id ? Loan::query()->lockForUpdate()->find($line->loan_id) : null;
-            if ($loan && $loan->outstanding() <= 0) {
+            if ($loan->outstanding() <= 0) {
                 $loan->forceFill(['status' => 'closed'])->save();
             }
         }

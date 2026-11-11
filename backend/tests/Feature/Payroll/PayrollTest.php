@@ -11,6 +11,7 @@ use App\Models\Loan;
 use App\Models\Reimbursement;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Payroll\PeriodGenerator;
 use App\Support\Tenancy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
@@ -219,6 +220,34 @@ class PayrollTest extends CountryTestCase
         $this->assertSame('closed', $loan->status);
         $this->assertNull($this->line($this->slips($this->startRun($periods[2]))[0], 'LOAN'));
         $this->apiAs($employeeUser, 'GET', '/api/v1/payroll/loans')->assertOk()->assertJsonPath('data.0.outstanding.amount', '0.00');
+    }
+
+    public function test_a_loan_installment_is_not_settled_twice_by_runs_prepared_together(): void
+    {
+        [, $employee] = $this->staff();
+        [, $periods] = $this->calendar(1);
+        $this->pay($employee);
+        $this->apiAs($this->preparer, 'POST', '/api/v1/payroll/loans', ['employee' => $employee->public_id, 'principal' => '500.00', 'installment' => '400.00', 'first_deduction_on' => '2027-01-01', 'reason' => 'Advance'])->assertCreated();
+
+        $first = $this->startRun($periods[0]);
+        $second = $this->startRun($periods[1]);
+        foreach ([$first, $second] as $run) {
+            $this->apiAs($this->preparer, 'POST', "/api/v1/payroll/runs/{$run}/submit")->assertOk();
+        }
+        $this->apiAs($this->approver, 'POST', "/api/v1/payroll/runs/{$first}/approve")->assertOk();
+        $this->apiAs($this->approver, 'POST', "/api/v1/payroll/runs/{$second}/approve")->assertConflict();
+
+        $loan = Tenancy::run($this->tenant, fn () => Loan::query()->first());
+        $this->assertSame(100_00, Tenancy::run($this->tenant, fn () => $loan->outstanding()));
+    }
+
+    public function test_monthly_periods_keep_their_month_end_anchor(): void
+    {
+        $this->assertSame(['2027-01-31', '2027-02-27'], PeriodGenerator::bounds('monthly', '2027-01-31', 31));
+        $this->assertSame(['2027-02-28', '2027-03-30'], PeriodGenerator::bounds('monthly', '2027-02-28', 31));
+        $this->assertSame(['2027-03-31', '2027-04-29'], PeriodGenerator::bounds('monthly', '2027-03-31', 31));
+        $this->assertSame(['2027-01-01', '2027-01-31'], PeriodGenerator::bounds('monthly', '2027-01-01'));
+        $this->assertSame(['2027-01-15', '2027-02-14'], PeriodGenerator::bounds('monthly', '2027-01-15', 15));
     }
 
     public function test_reimbursements_are_approved_by_manager_and_paid_once(): void
