@@ -55,7 +55,9 @@ class StoredFilePolicy
 
     public function delete(User $user, StoredFile $file): bool
     {
+        // Module-owned files are removed only through their own resources.
         return $this->sameTenant($user, $file)
+            && ! in_array($file->category, ['recruitment', 'onboarding', 'helpdesk'], true)
             && ($user->hasPermission(P::EmployeesManage) || (int) $file->uploaded_by === (int) $user->id);
     }
 }

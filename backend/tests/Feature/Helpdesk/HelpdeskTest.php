@@ -152,4 +152,14 @@ class HelpdeskTest extends SecurityTestCase
         $other = $this->makeUser($this->makeTenant(), 'employee');
         $this->apiAs($other, 'GET', "/api/v1/helpdesk/articles/{$faq['id']}")->assertNotFound();
     }
+
+    public function test_generic_file_endpoint_cannot_delete_ticket_attachments(): void
+    {
+        $cat = $this->category();
+        $this->apiAs($this->employee, 'POST', '/api/v1/helpdesk/tickets', ['category_id' => $cat['id'], 'subject' => 'Visa letter', 'description' => 'Need it', 'files' => [$this->pdf()]])->assertCreated();
+        $file = \App\Models\StoredFile::withoutGlobalScopes()->where('category', 'helpdesk')->firstOrFail();
+        $this->apiAs($this->employee, 'DELETE', "/api/v1/files/{$file->public_id}")->assertForbidden();
+        $this->apiAs($this->admin, 'DELETE', "/api/v1/files/{$file->public_id}")->assertForbidden();
+        $this->assertNotNull(\App\Models\StoredFile::withoutGlobalScopes()->find($file->id));
+    }
 }
