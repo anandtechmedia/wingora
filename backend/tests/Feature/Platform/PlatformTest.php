@@ -196,4 +196,14 @@ class PlatformTest extends SecurityTestCase
         $this->apiWithToken($token, 'GET', '/api/v1/organization')->assertUnauthorized();
         Tenancy::forget();
     }
+
+    public function test_deletion_and_export_mfa_attempts_are_throttled(): void
+    {
+        foreach (range(1, 5) as $i) {
+            $this->apiAs($this->owner, 'POST', '/api/v1/account/deletion', ['confirm_name' => 'Acme Corp', 'code' => '00000'.$i])->assertUnprocessable();
+        }
+        $this->apiAs($this->owner, 'POST', '/api/v1/account/deletion', ['confirm_name' => 'Acme Corp'] + $this->code($this->owner))->assertStatus(429);
+        $this->apiAs($this->owner, 'POST', '/api/v1/account/exports', $this->code($this->owner))->assertStatus(429);
+        $this->assertSame(0, DeletionRequest::query()->withoutGlobalScopes()->count());
+    }
 }

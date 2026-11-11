@@ -125,10 +125,10 @@ Route::prefix('v1')->name('v1.')->group(function () {
                 Route::post('account/support-grants', [AccountController::class, 'grantSupport']);
                 Route::post('account/support-grants/{grant}/revoke', [AccountController::class, 'revokeSupport']);
                 Route::get('account/exports', [AccountController::class, 'exports']);
-                Route::post('account/exports', [AccountController::class, 'requestExport'])->middleware('throttle:exports');
+                Route::post('account/exports', [AccountController::class, 'requestExport'])->middleware(['throttle:exports', 'throttle:mfa']);
                 Route::get('account/exports/{export}/download', [AccountController::class, 'downloadExport'])->middleware('throttle:exports');
                 Route::get('account/deletion', [AccountController::class, 'deletion']);
-                Route::post('account/deletion', [AccountController::class, 'requestDeletion']);
+                Route::post('account/deletion', [AccountController::class, 'requestDeletion'])->middleware('throttle:mfa');
                 Route::post('account/deletion/cancel', [AccountController::class, 'cancelDeletion']);
 
                 Route::get('recruitment/settings', [RecruitmentSettingsController::class, 'show']);
