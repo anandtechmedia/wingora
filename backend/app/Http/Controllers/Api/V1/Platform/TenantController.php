@@ -85,25 +85,27 @@ class TenantController extends Controller
             'reason' => ['required', 'string', 'max:500'],
             'version' => ['required', 'integer'],
         ]);
-        $subscription = Subscription::forTenant($tenant) ?? abort(404);
-        abort_if($subscription->version !== (int) $data['version'], 409, __('The subscription changed. Reload and try again.'));
-        $old = ['plan' => $subscription->plan->code, 'status' => $subscription->status, 'provider' => $subscription->provider, 'trial_ends_at' => $subscription->trial_ends_at?->toIso8601String()];
+        DB::transaction(function () use ($tenant, $data) {
+            $subscription = Subscription::query()->withoutGlobalScopes()->with('plan')->where('tenant_id', $tenant->id)->lockForUpdate()->first() ?? abort(404);
+            abort_if($subscription->version !== (int) $data['version'], 409, __('The subscription changed. Reload and try again.'));
+            $old = ['plan' => $subscription->plan->code, 'status' => $subscription->status, 'provider' => $subscription->provider, 'trial_ends_at' => $subscription->trial_ends_at?->toIso8601String()];
 
-        if ($data['action'] === 'extend_trial') {
-            abort_unless($subscription->provider === 'trial', 409, __('Only a free trial can be extended.'));
-            $from = $subscription->trial_ends_at && $subscription->trial_ends_at->isFuture() ? $subscription->trial_ends_at : now();
-            $subscription->forceFill(['status' => 'trialing', 'trial_ends_at' => $from->copy()->addDays((int) $data['days'])]);
-        } else {
-            abort_if($subscription->provider === 'stripe' && $subscription->status !== 'canceled', 409, __('This organization pays through Stripe. Change the plan in Stripe or ask the owner to change it.'));
-            $subscription->forceFill(['provider' => 'manual', 'status' => 'active', 'plan_id' => Plan::query()->where('code', $data['plan'])->value('id'),
-                'pending_plan_id' => null, 'pending_interval' => null, 'plan_change_at' => null, 'cancel_at_period_end' => false, 'canceled_at' => null,
-                'trial_ends_at' => null, 'current_period_end' => $data['ends_at'] ?? null]);
-        }
-        $subscription->forceFill(['version' => $subscription->version + 1])->saveQuietly();
-        $subscription->refresh()->load('plan');
-        AuditLog::record(AuditEvents::PLATFORM_SUBSCRIPTION_CHANGED, $subscription, $old,
-            ['plan' => $subscription->plan->code, 'status' => $subscription->status, 'provider' => $subscription->provider, 'trial_ends_at' => $subscription->trial_ends_at?->toIso8601String()],
-            ['action' => $data['action'], 'reason' => $data['reason']], tenantId: $tenant->id);
+            if ($data['action'] === 'extend_trial') {
+                abort_unless($subscription->provider === 'trial', 409, __('Only a free trial can be extended.'));
+                $from = $subscription->trial_ends_at && $subscription->trial_ends_at->isFuture() ? $subscription->trial_ends_at : now();
+                $subscription->forceFill(['status' => 'trialing', 'trial_ends_at' => $from->copy()->addDays((int) $data['days'])]);
+            } else {
+                abort_if($subscription->provider === 'stripe' && $subscription->status !== 'canceled', 409, __('This organization pays through Stripe. Change the plan in Stripe or ask the owner to change it.'));
+                $subscription->forceFill(['provider' => 'manual', 'status' => 'active', 'plan_id' => Plan::query()->where('code', $data['plan'])->value('id'),
+                    'pending_plan_id' => null, 'pending_interval' => null, 'plan_change_at' => null, 'cancel_at_period_end' => false, 'canceled_at' => null,
+                    'trial_ends_at' => null, 'current_period_end' => $data['ends_at'] ?? null]);
+            }
+            $subscription->forceFill(['version' => $subscription->version + 1])->saveQuietly();
+            $subscription->refresh()->load('plan');
+            AuditLog::record(AuditEvents::PLATFORM_SUBSCRIPTION_CHANGED, $subscription, $old,
+                ['plan' => $subscription->plan->code, 'status' => $subscription->status, 'provider' => $subscription->provider, 'trial_ends_at' => $subscription->trial_ends_at?->toIso8601String()],
+                ['action' => $data['action'], 'reason' => $data['reason']], tenantId: $tenant->id);
+        });
 
         return $this->show($tenant, app(Entitlements::class));
     }
