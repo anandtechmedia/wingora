@@ -100,9 +100,6 @@ final class Subscriptions
         $params = ['items' => [['id' => $item, 'price' => $price]], 'proration_behavior' => $upgrade ? 'always_invoice' : 'none'];
         if ($upgrade) {
             // The upgrade only takes effect in Stripe once its prorated invoice is paid.
-            if ($subscription->cancel_at_period_end) {
-                $this->stripe->post($path, ['cancel_at_period_end' => 'false']);
-            }
             $params['payment_behavior'] = 'pending_if_incomplete';
         } else {
             $params['cancel_at_period_end'] = 'false';
@@ -111,6 +108,10 @@ final class Subscriptions
         if ($upgrade && ! empty($updated['pending_update'])) {
             AuditLog::record(AuditEvents::BILLING_PAYMENT_FAILED, $subscription, metadata: ['plan' => $plan->code, 'interval' => $interval, 'reason' => 'upgrade_payment_incomplete'], outcome: 'failure');
             throw new BillingRestricted('upgrade_payment_failed', __('The payment for the upgrade did not go through, so your plan has not changed. Update your payment method and try again.'));
+        }
+        // Pending updates cannot carry other changes, so a scheduled cancellation is only lifted once the upgrade is paid.
+        if ($upgrade && $subscription->cancel_at_period_end) {
+            $this->stripe->post($path, ['cancel_at_period_end' => 'false']);
         }
 
         return DB::transaction(function () use ($subscription, $plan, $interval, $price, $upgrade) {

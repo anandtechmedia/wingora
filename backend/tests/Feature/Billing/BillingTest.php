@@ -363,12 +363,14 @@ class BillingTest extends SecurityTestCase
 
     public function test_an_upgrade_whose_payment_fails_does_not_change_the_plan(): void
     {
-        $this->setSub(['status' => 'active', 'provider' => 'stripe', 'stripe_customer_id' => 'cus_1', 'stripe_subscription_id' => 'sub_1', 'billing_interval' => 'monthly', 'currency' => 'USD'], 'growth');
+        $this->setSub(['status' => 'active', 'provider' => 'stripe', 'stripe_customer_id' => 'cus_1', 'stripe_subscription_id' => 'sub_1', 'billing_interval' => 'monthly', 'currency' => 'USD', 'cancel_at_period_end' => true], 'growth');
         Http::fake(['*/subscriptions/sub_1' => Http::sequence()->push(['id' => 'sub_1', 'items' => ['data' => [['id' => 'si_1']]]])->push(['id' => 'sub_1', 'pending_update' => ['expires_at' => now()->addDay()->getTimestamp()]])]);
         $v = $this->sub()->version;
         $this->apiAs($this->owner, 'POST', '/api/v1/billing/change', ['plan' => 'enterprise', 'interval' => 'monthly', 'version' => $v])->assertStatus(402)->assertJsonPath('code', 'upgrade_payment_failed');
         Http::assertSent(fn (HttpRequest $r) => $r->method() === 'POST' && $r['payment_behavior'] === 'pending_if_incomplete');
+        Http::assertNotSent(fn (HttpRequest $r) => isset($r['cancel_at_period_end']));
         $this->assertSame('growth', $this->sub()->effectivePlan()->code);
+        $this->assertTrue($this->sub()->cancel_at_period_end);
         // The version was claimed before calling Stripe, so a second request with the same version is refused.
         $this->apiAs($this->owner, 'POST', '/api/v1/billing/change', ['plan' => 'enterprise', 'interval' => 'monthly', 'version' => $v])->assertStatus(409);
     }
