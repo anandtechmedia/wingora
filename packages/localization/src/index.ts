@@ -1,5 +1,4 @@
 import { en, type MessageKey, type Messages } from './catalogs/en.ts';
-import { es } from './catalogs/es.ts';
 
 export type { MessageKey, Messages };
 
@@ -8,7 +7,22 @@ export const activeLocales = ['en', 'es'] as const;
 export const plannedLocales = ['ar', 'fr'] as const;
 export type ActiveLocale = (typeof activeLocales)[number];
 
-export const catalogs: Record<ActiveLocale, Messages> = { en, es };
+/** English ships in the main bundle; other catalogs are separate chunks fetched by `loadLocale`. */
+const loaders: Record<Exclude<ActiveLocale, 'en'>, () => Promise<Messages>> = {
+  es: () => import('./catalogs/es.ts').then((m) => m.es),
+};
+
+const catalogs: Partial<Record<ActiveLocale, Messages>> = { en };
+
+export function isLocaleLoaded(locale: string | undefined): boolean {
+  return catalogs[resolveLocale(locale)] !== undefined;
+}
+
+/** Fetches the locale's catalog once; until it resolves, translators fall back to English. */
+export async function loadLocale(locale: string | undefined): Promise<void> {
+  const active = resolveLocale(locale);
+  if (active !== 'en' && !catalogs[active]) catalogs[active] = await loaders[active]();
+}
 
 const rtlLanguages = new Set(['ar', 'he', 'fa', 'ur']);
 
@@ -28,7 +42,7 @@ export function textDirection(locale: string): 'ltr' | 'rtl' {
 export type Translator = (key: MessageKey, params?: Record<string, string | number>) => string;
 
 export function createTranslator(locale: string | undefined): Translator {
-  const messages = catalogs[resolveLocale(locale)];
+  const messages = catalogs[resolveLocale(locale)] ?? en;
   return (key, params) => {
     const template = messages[key] ?? en[key] ?? key;
     return params ? template.replace(/\{(\w+)\}/g, (match, name: string) => (name in params ? String(params[name]) : match)) : template;

@@ -1,5 +1,5 @@
-import { createTranslator, textDirection, type Translator } from '@wingora/localization';
-import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react';
+import { createTranslator, isLocaleLoaded, loadLocale, textDirection, type Translator } from '@wingora/localization';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 interface I18nValue {
   locale: string;
@@ -9,9 +9,24 @@ interface I18nValue {
 
 const I18nContext = createContext<I18nValue>({ locale: 'en', dir: 'ltr', t: createTranslator('en') });
 
-/** Provides translations, the active locale (for Intl formatting) and text direction; syncs <html lang/dir>. */
+/**
+ * Provides translations, the active locale (for Intl formatting) and text direction; syncs <html lang/dir>.
+ * A catalog not loaded yet (see `loadLocale` in main.tsx) is fetched here, with English shown meanwhile.
+ */
 export function I18nProvider({ locale, children }: { locale: string; children: ReactNode }) {
-  const value = useMemo<I18nValue>(() => ({ locale, dir: textDirection(locale), t: createTranslator(locale) }), [locale]);
+  const [loaded, setLoaded] = useState(() => isLocaleLoaded(locale));
+  if (loaded !== isLocaleLoaded(locale)) setLoaded(isLocaleLoaded(locale));
+
+  useEffect(() => {
+    if (isLocaleLoaded(locale)) return;
+    let active = true;
+    void loadLocale(locale).then(() => active && setLoaded(true));
+    return () => {
+      active = false;
+    };
+  }, [locale]);
+
+  const value = useMemo<I18nValue>(() => ({ locale, dir: textDirection(locale), t: createTranslator(loaded ? locale : 'en') }), [locale, loaded]);
 
   useEffect(() => {
     document.documentElement.lang = locale;
