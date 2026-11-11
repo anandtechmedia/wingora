@@ -138,6 +138,20 @@ describe('Account', () => {
     expect(exports).toHaveBeenCalledTimes(2);
   }, 15000);
 
+  it('waits for a slow export check to finish before polling again', async () => {
+    const queued = { id: 'x1', status: 'queued' as const, size: null, error: null, created_at: '2027-01-10T10:00:00Z', completed_at: null, expires_at: null };
+    const ready = { ...queued, status: 'ready' as const, size: 2048, expires_at: '2027-01-17T10:00:00Z' };
+    const exports = vi.fn(async () => {
+      if (exports.mock.calls.length === 1) return [queued];
+      await new Promise((r) => setTimeout(r, 4000));
+      return [ready];
+    });
+    setup(fakeSource(paid, { exports }));
+    await userEvent.click(await screen.findByRole('tab', { name: 'Account' }));
+    expect(await screen.findByRole('button', { name: 'Download' }, { timeout: 12000 })).toBeInTheDocument();
+    expect(exports).toHaveBeenCalledTimes(2);
+  }, 20000);
+
   it('only schedules deletion once the organization name matches, and sends recovery codes as such', async () => {
     const source = fakeSource(paid);
     const me = personas['owner@wingora.test']!;

@@ -325,12 +325,13 @@ function Exports() {
   const mfa = useMfaReady();
   const exports = useResource(useCallback((signal: AbortSignal) => source.exports(signal), [source]));
   const pending = exports.data?.some((e) => e.status === 'queued' || e.status === 'running') ?? false;
-  const reload = exports.reload;
+  const { reload, loading } = exports;
   useEffect(() => {
-    if (!pending) return;
+    // Re-arm only once the previous check has settled, so a slow response is never aborted by the next poll.
+    if (!pending || loading) return;
     const id = window.setTimeout(reload, EXPORT_POLL_MS);
     return () => window.clearTimeout(id);
-  }, [pending, reload, exports.data]);
+  }, [pending, loading, reload, exports.data]);
   if (exports.error instanceof ApiNotConnectedError) return null;
   return (
     <Card title={bt('exportTitle')} headingLevel={2} description={bt('exportHint')}
