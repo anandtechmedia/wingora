@@ -130,6 +130,26 @@ final class AuditEvents
 
     public const DATA_EXPORTED = 'export.completed';
 
+    public const EXPORT_REQUESTED = 'export.requested';
+
+    public const EXPORT_DOWNLOADED = 'export.downloaded';
+
+    public const SUPPORT_GRANTED = 'support.granted';
+
+    public const SUPPORT_REVOKED = 'support.revoked';
+
+    public const SUPPORT_ACCESSED = 'support.accessed';
+
+    public const DELETION_REQUESTED = 'account.deletion_requested';
+
+    public const DELETION_CANCELED = 'account.deletion_canceled';
+
+    public const DELETION_COMPLETED = 'account.deletion_completed';
+
+    public const PLATFORM_SUBSCRIPTION_CHANGED = 'platform.subscription_changed';
+
+    public const PLATFORM_TENANT_STATUS_CHANGED = 'platform.tenant_status_changed';
+
     public const AUDIT_EXPORTED = 'audit.exported';
 
     public const AUDIT_RETENTION_CHANGED = 'audit.retention_changed';

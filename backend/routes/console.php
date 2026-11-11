@@ -2,14 +2,19 @@
 
 use App\Audit\AuditChain;
 use App\Audit\Retention;
+use App\Models\DataExport;
 use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Platform\Health;
+use App\Platform\TenantPurger;
 use App\Security\RoleCatalog;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Schedule;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 Schedule::command('sanctum:prune-expired --hours=24')->daily();
@@ -50,3 +55,20 @@ Artisan::command('wingora:platform-user {email} {name} {--role=platform-admin}',
 })->purpose('Create a platform staff account (no password is ever printed)');
 Schedule::command('wingora:recruitment:purge')->dailyAt('03:00')->withoutOverlapping();
 Schedule::command('wingora:onboarding:reminders')->dailyAt('13:00')->withoutOverlapping();
+Schedule::call(fn () => Cache::forever(Health::HEARTBEAT_KEY, now()->getTimestamp()))->name('platform:heartbeat')->everyMinute();
+Schedule::command('wingora:tenants:purge-deleted')->dailyAt('04:00')->withoutOverlapping();
+Schedule::command('wingora:exports:expire')->hourly()->withoutOverlapping();
+
+Artisan::command('wingora:tenants:purge-deleted', function (TenantPurger $purger) {
+    $this->info($purger->purgeDue().' organization(s) deleted.');
+})->purpose('Delete organizations whose deletion waiting period has ended (skips legal holds)');
+
+Artisan::command('wingora:exports:expire', function () {
+    $count = 0;
+    DataExport::query()->withoutGlobalScopes()->where('status', 'ready')->where('expires_at', '<=', now())->each(function (DataExport $export) use (&$count) {
+        rescue(fn () => Storage::disk($export->disk)->delete($export->path), report: false);
+        $export->forceFill(['status' => 'expired', 'path' => null])->saveQuietly();
+        $count++;
+    });
+    $this->info("{$count} export(s) expired.");
+})->purpose('Remove data exports past their download window');

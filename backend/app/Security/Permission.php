@@ -13,6 +13,8 @@ enum Permission: string
     case PlatformCountryRulesApprove = 'platform.country-rules.approve';
     case PlatformBillingView = 'platform.billing.view';
     case PlatformBillingManage = 'platform.billing.manage';
+    case PlatformSupportAccess = 'platform.support.access';
+    case PlatformHealthView = 'platform.health.view';
 
     case OrganizationView = 'organization.view';
     case OrganizationManage = 'organization.manage';
@@ -72,6 +74,7 @@ enum Permission: string
     case DocumentsConfigure = 'documents.configure';
     case BillingView = 'billing.view';
     case BillingManage = 'billing.manage';
+    case AccountManage = 'account.manage';
 
     case FilesUpload = 'files.upload';
     case AuditView = 'audit.view';

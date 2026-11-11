@@ -36,10 +36,10 @@ final class RoleCatalog
         return [
             self::PLATFORM_OWNER => ['name' => 'Platform Owner', 'scope' => 'platform', 'privileged' => true, 'permissions' => [
                 P::PlatformTenantsView, P::PlatformTenantsManage, P::PlatformStaffManage, P::PlatformAuditView,
-                P::PlatformCountryRulesManage, P::PlatformCountryRulesApprove, P::PlatformAuditExport, P::PlatformBillingView, P::PlatformBillingManage,
+                P::PlatformCountryRulesManage, P::PlatformCountryRulesApprove, P::PlatformAuditExport, P::PlatformBillingView, P::PlatformBillingManage, P::PlatformSupportAccess, P::PlatformHealthView,
             ]],
             self::PLATFORM_ADMIN => ['name' => 'Platform Administrator', 'scope' => 'platform', 'privileged' => true, 'permissions' => [
-                P::PlatformTenantsView, P::PlatformTenantsManage, P::PlatformAuditView, P::PlatformCountryRulesManage, P::PlatformCountryRulesApprove, P::PlatformBillingView,
+                P::PlatformTenantsView, P::PlatformTenantsManage, P::PlatformAuditView, P::PlatformCountryRulesManage, P::PlatformCountryRulesApprove, P::PlatformBillingView, P::PlatformSupportAccess, P::PlatformHealthView,
             ]],
             self::ORGANIZATION_OWNER => ['name' => 'Organization Owner', 'scope' => 'tenant', 'privileged' => true, 'permissions' => P::tenantPermissions()],
             self::HR_ADMIN => ['name' => 'HR Administrator', 'scope' => 'tenant', 'privileged' => true, 'permissions' => [

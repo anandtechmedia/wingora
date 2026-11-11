@@ -109,7 +109,7 @@ class TenantIsolationTest extends SecurityTestCase
         $platform = $this->makeUser(null, RoleCatalog::PLATFORM_ADMIN);
         $token = $this->tokenFor($owner);
 
-        $this->apiAs($platform, 'PATCH', "/api/v1/platform/tenants/{$a->public_id}/status", ['status' => 'suspended'])->assertOk();
+        $this->apiAs($platform, 'PATCH', "/api/v1/platform/tenants/{$a->public_id}/status", ['status' => 'suspended', 'reason' => 'Fraud review'])->assertOk();
         $this->apiWithToken($token, 'GET', '/api/v1/organization')->assertUnauthorized();
         $this->assertSame(0, $owner->tokens()->count());
     }

@@ -32,7 +32,8 @@ class Tenant extends Model
 
     public function subscription(): HasOne
     {
-        return $this->hasOne(Subscription::class);
+        // Keyed by tenant_id, so it is safe to load outside a tenant context (platform console).
+        return $this->hasOne(Subscription::class)->withoutGlobalScopes();
     }
 
     public function isActive(): bool

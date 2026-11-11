@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Account\AccountController;
 use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\AttendanceRequestController;
 use App\Http\Controllers\Api\V1\AuditLogController;
@@ -41,9 +42,11 @@ use App\Http\Controllers\Api\V1\PayrollRunController;
 use App\Http\Controllers\Api\V1\PayrollSetupController;
 use App\Http\Controllers\Api\V1\PayslipController;
 use App\Http\Controllers\Api\V1\Platform\AuditLogController as PlatformAuditLogController;
+use App\Http\Controllers\Api\V1\Platform\OperationsController;
 use App\Http\Controllers\Api\V1\Platform\PlanController;
 use App\Http\Controllers\Api\V1\Platform\RuleSetController;
 use App\Http\Controllers\Api\V1\Platform\RuleVersionController;
+use App\Http\Controllers\Api\V1\Platform\SupportController;
 use App\Http\Controllers\Api\V1\Platform\TenantController;
 use App\Http\Controllers\Api\V1\PolicyController;
 use App\Http\Controllers\Api\V1\Recruitment\AiAssistController;
@@ -117,6 +120,16 @@ Route::prefix('v1')->name('v1.')->group(function () {
                 Route::post('billing/cancel', [BillingController::class, 'cancel']);
                 Route::post('billing/resume', [BillingController::class, 'resume']);
                 Route::post('billing/portal', [BillingController::class, 'portal']);
+
+                Route::get('account/support-grants', [AccountController::class, 'supportGrants']);
+                Route::post('account/support-grants', [AccountController::class, 'grantSupport']);
+                Route::post('account/support-grants/{grant}/revoke', [AccountController::class, 'revokeSupport']);
+                Route::get('account/exports', [AccountController::class, 'exports']);
+                Route::post('account/exports', [AccountController::class, 'requestExport'])->middleware('throttle:exports');
+                Route::get('account/exports/{export}/download', [AccountController::class, 'downloadExport'])->middleware('throttle:exports');
+                Route::get('account/deletion', [AccountController::class, 'deletion']);
+                Route::post('account/deletion', [AccountController::class, 'requestDeletion']);
+                Route::post('account/deletion/cancel', [AccountController::class, 'cancelDeletion']);
 
                 Route::get('recruitment/settings', [RecruitmentSettingsController::class, 'show']);
                 Route::patch('recruitment/settings', [RecruitmentSettingsController::class, 'update']);
@@ -371,7 +384,14 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::middleware('platform')->prefix('platform')->group(function () {
                 Route::get('tenants', [TenantController::class, 'index']);
                 Route::post('tenants', [TenantController::class, 'store']);
+                Route::get('tenants/{tenant}', [TenantController::class, 'show']);
                 Route::patch('tenants/{tenant}/status', [TenantController::class, 'updateStatus']);
+                Route::patch('tenants/{tenant}/subscription', [TenantController::class, 'updateSubscription']);
+                Route::get('tenants/{tenant}/support', [SupportController::class, 'status']);
+                Route::get('tenants/{tenant}/support/{section}', [SupportController::class, 'show']);
+                Route::get('subscriptions/overview', [OperationsController::class, 'subscriptions']);
+                Route::get('usage', [OperationsController::class, 'usage']);
+                Route::get('health', [OperationsController::class, 'health']);
 
                 Route::get('audit-logs', [PlatformAuditLogController::class, 'index']);
                 Route::get('audit-logs/summary', [PlatformAuditLogController::class, 'summary']);
