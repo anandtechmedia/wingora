@@ -239,7 +239,8 @@ class TicketController extends Controller
     {
         $user = $request->user();
         abort_unless(HelpdeskAccess::isStaff($user) || $user->hasPermission(P::HelpdeskConfigure), 403);
-        $users = User::query()->where('tenant_id', $user->tenant_id)->orderBy('name')->limit(500)->get()
+        // Permissions resolve from roles in PHP, so filter every user rather than a truncated slice.
+        $users = User::query()->where('tenant_id', $user->tenant_id)->with('roles')->orderBy('name')->lazy(500)
             ->filter(fn (User $u) => HelpdeskAccess::isStaff($u));
 
         return response()->json(['data' => $users->map(fn (User $u) => ['id' => $u->public_id, 'name' => $u->name])->values()]);
