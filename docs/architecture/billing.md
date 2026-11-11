@@ -32,6 +32,9 @@ Evaluated on every organization API request by `EnforceSubscription` (`Subscript
 | Trial ended (`trial_expired`), grace period over or Stripe `unpaid` (`payment_overdue`), cancelled after the paid period (`canceled`), manual term ended (`term_ended`) | **Read-only**: reads succeed; any change returns `402` with `code: subscription_inactive` and `access_reason` |
 | Organization suspended by the platform (`tenants.status = suspended`) | No sign-in at all (existing `EnsureAccountIsActive`) |
 
+The public careers site follows the same rules: it is unavailable (404) when the plan has no recruitment, and it
+refuses applications while the organization is read-only.
+
 `/api/v1/billing/*` and `/api/v1/account/*` are always reachable so an owner can pay, export data or close the
 account. Nothing is deleted because a subscription lapses.
 
@@ -53,7 +56,8 @@ account. Nothing is deleted because a subscription lapses.
 - **Checkout** (`POST billing/checkout`): creates a Stripe customer if needed and a hosted Checkout session for the
   chosen plan/interval. Remaining trial time is kept when at least 48 hours are left (Stripe's minimum).
 - **Upgrade** (higher rank, or monthly → annual on the same plan): applied immediately; Stripe invoices the prorated
-  difference (`proration_behavior=always_invoice`).
+  difference (`proration_behavior=always_invoice`) with `payment_behavior=pending_if_incomplete`, so the upgrade only takes effect
+  once that invoice is paid. If the payment fails, the plan is unchanged and the API returns `402 upgrade_payment_failed`.
 - **Downgrade**: refused if the organization has more employees than the new plan allows. Otherwise the Stripe price
   is switched without proration, so the lower price applies from the next renewal, and Wingora keeps the current
   plan's entitlements until `plan_change_at` (the period end).
@@ -73,8 +77,11 @@ account. Nothing is deleted because a subscription lapses.
    including a concurrent one, is acknowledged with `duplicate: true` and not applied. If applying fails, the
    transaction rolls back and Stripe retries.
 3. Events older than the last one applied to a subscription or invoice are ignored (`stale event`), so out-of-order
-   delivery cannot overwrite newer state.
-4. A subscription event is only matched to the organization whose Stripe customer it belongs to; another customer's
+   delivery cannot overwrite newer state. Event times are whole seconds; for an event in the same second as the last applied one, the
+   current object is fetched from Stripe and applied instead of the event payload.
+4. A completed checkout never replaces a live subscription (a second one is recorded as ignored and must be cancelled
+   in Stripe). The plan bought at checkout (session metadata) applies if Stripe reports a price no plan lists any more.
+5. A subscription event is only matched to the organization whose Stripe customer it belongs to; another customer's
    subscription is ignored.
 
 Handled: `checkout.session.completed`, `customer.subscription.*`, `invoice.*` (payment failures start the grace

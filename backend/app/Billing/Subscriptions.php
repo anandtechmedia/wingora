@@ -56,7 +56,7 @@ final class Subscriptions
             'line_items' => [['price' => $price, 'quantity' => 1]],
             'success_url' => $front.'/billing?checkout=success',
             'cancel_url' => $front.'/billing?checkout=cancelled',
-            'metadata' => ['tenant' => $tenant->public_id],
+            'metadata' => ['tenant' => $tenant->public_id, 'plan' => $plan->code, 'interval' => $interval],
             'subscription_data' => ['metadata' => ['tenant' => $tenant->public_id]],
         ];
         // Keep the remaining free trial: Stripe requires a trial end at least 48 hours away.
@@ -90,13 +90,28 @@ final class Subscriptions
             $this->guardCapacity($subscription->tenant, $plan);
         }
 
-        $remote = $this->stripe->get('subscriptions/'.$subscription->stripe_subscription_id);
+        // Claim the version before calling Stripe, so two concurrent changes cannot both reach the provider.
+        $claimed = Subscription::query()->withoutGlobalScopes()->whereKey($subscription->id)->where('version', $version)->increment('version');
+        abort_if($claimed === 0, 409, __('The subscription changed. Reload and try again.'));
+
+        $path = 'subscriptions/'.$subscription->stripe_subscription_id;
+        $remote = $this->stripe->get($path);
         $item = $remote['items']['data'][0]['id'] ?? throw new ConflictHttpException(__('The payment provider returned an unexpected subscription.'));
-        $this->stripe->post('subscriptions/'.$subscription->stripe_subscription_id, [
-            'items' => [['id' => $item, 'price' => $price]],
-            'proration_behavior' => $upgrade ? 'always_invoice' : 'none',
-            'cancel_at_period_end' => 'false',
-        ]);
+        $params = ['items' => [['id' => $item, 'price' => $price]], 'proration_behavior' => $upgrade ? 'always_invoice' : 'none'];
+        if ($upgrade) {
+            // The upgrade only takes effect in Stripe once its prorated invoice is paid.
+            if ($subscription->cancel_at_period_end) {
+                $this->stripe->post($path, ['cancel_at_period_end' => 'false']);
+            }
+            $params['payment_behavior'] = 'pending_if_incomplete';
+        } else {
+            $params['cancel_at_period_end'] = 'false';
+        }
+        $updated = $this->stripe->post($path, $params);
+        if ($upgrade && ! empty($updated['pending_update'])) {
+            AuditLog::record(AuditEvents::BILLING_PAYMENT_FAILED, $subscription, metadata: ['plan' => $plan->code, 'interval' => $interval, 'reason' => 'upgrade_payment_incomplete'], outcome: 'failure');
+            throw new BillingRestricted('upgrade_payment_failed', __('The payment for the upgrade did not go through, so your plan has not changed. Update your payment method and try again.'));
+        }
 
         return DB::transaction(function () use ($subscription, $plan, $interval, $price, $upgrade) {
             $locked = Subscription::query()->withoutGlobalScopes()->lockForUpdate()->findOrFail($subscription->id);

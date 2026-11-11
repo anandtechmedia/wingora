@@ -20,6 +20,8 @@ use Illuminate\Support\Facades\DB;
  */
 final class WebhookProcessor
 {
+    public function __construct(private readonly StripeClient $stripe) {}
+
     /** @return array<string, mixed> the verified event */
     public function verify(string $payload, string $header): array
     {
@@ -96,7 +98,18 @@ final class WebhookProcessor
         if ($subscription->stripe_customer_id && $subscription->stripe_customer_id !== ($session['customer'] ?? null)) {
             return ['ignored', 'customer mismatch', $tenant->id];
         }
-        $subscription->forceFill(['stripe_customer_id' => $session['customer'] ?? null, 'stripe_subscription_id' => $session['subscription'] ?? $subscription->stripe_subscription_id])->save();
+        $remoteId = $session['subscription'] ?? null;
+        if ($subscription->provider === 'stripe' && $subscription->status !== 'canceled' && $subscription->stripe_subscription_id && $subscription->stripe_subscription_id !== $remoteId) {
+            return ['ignored', 'second subscription for this organization; cancel it in Stripe', $tenant->id];
+        }
+        $changes = ['stripe_customer_id' => $session['customer'] ?? null, 'stripe_subscription_id' => $remoteId ?? $subscription->stripe_subscription_id];
+        // The plan bought at checkout applies when Stripe reports a price no plan lists any more (e.g. rotated meanwhile).
+        $bought = Plan::query()->where('code', $session['metadata']['plan'] ?? '')->first();
+        $interval = $session['metadata']['interval'] ?? null;
+        if ($bought && in_array($interval, Plan::INTERVALS, true) && ($subscription->stripe_price_id === null || Plan::forStripePrice($subscription->stripe_price_id) === null)) {
+            $changes += ['plan_id' => $bought->id, 'billing_interval' => $interval];
+        }
+        $subscription->forceFill($changes)->save();
 
         return ['processed', null, $tenant->id];
     }
@@ -119,6 +132,10 @@ final class WebhookProcessor
         }
         if ($subscription->stripe_synced_at !== null && $created < $subscription->stripe_synced_at) {
             return ['ignored', 'stale event', $subscription->tenant_id];
+        }
+        if ($subscription->stripe_synced_at !== null && $created === (int) $subscription->stripe_synced_at) {
+            // Event times are whole seconds, so order within a second is unknown: use Stripe's current state instead.
+            $remote = $this->stripe->get('subscriptions/'.$remote['id']);
         }
         $status = $deleted ? 'canceled' : match ($remote['status'] ?? '') {
             'trialing' => 'trialing',
@@ -172,6 +189,9 @@ final class WebhookProcessor
         }
         if ($invoice->exists && $invoice->stripe_synced_at !== null && $created < $invoice->stripe_synced_at) {
             return ['ignored', 'stale event', $subscription->tenant_id];
+        }
+        if ($invoice->exists && $created === (int) $invoice->stripe_synced_at) {
+            $remote = $this->stripe->get('invoices/'.$remote['id']);
         }
         $ts = fn ($v) => is_numeric($v) ? CarbonImmutable::createFromTimestamp((int) $v) : null;
         $url = fn ($v) => is_string($v) && str_starts_with($v, 'https://') ? mb_substr($v, 0, 1000) : null;

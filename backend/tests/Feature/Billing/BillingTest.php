@@ -350,4 +350,60 @@ class BillingTest extends SecurityTestCase
         $this->apiAs($owner, 'PATCH', "/api/v1/platform/plans/{$plan['id']}", ['active' => false])->assertOk()->assertJsonPath('data.active', false);
         $this->assertTrue(AuditLog::query()->withoutGlobalScopes()->whereNull('tenant_id')->where('event', 'platform.plan_created')->where('category', 'billing')->exists());
     }
+
+    public function test_public_careers_site_follows_the_plan_and_billing_state(): void
+    {
+        $this->apiAs($this->hr, 'PATCH', '/api/v1/recruitment/settings', ['careers_enabled' => true, 'careers_slug' => 'acme-jobs', 'retention_days' => 90])->assertOk();
+        $this->getJson('/api/v1/public/careers/acme-jobs')->assertOk();
+        $this->setSub(['status' => 'trialing', 'provider' => 'trial', 'trial_ends_at' => now()->subDay()]);
+        $this->getJson('/api/v1/public/careers/acme-jobs')->assertOk();
+        $this->setSub(['status' => 'active', 'provider' => 'manual', 'trial_ends_at' => null], 'starter');
+        $this->getJson('/api/v1/public/careers/acme-jobs')->assertNotFound();
+    }
+
+    public function test_an_upgrade_whose_payment_fails_does_not_change_the_plan(): void
+    {
+        $this->setSub(['status' => 'active', 'provider' => 'stripe', 'stripe_customer_id' => 'cus_1', 'stripe_subscription_id' => 'sub_1', 'billing_interval' => 'monthly', 'currency' => 'USD'], 'growth');
+        Http::fake(['*/subscriptions/sub_1' => Http::sequence()->push(['id' => 'sub_1', 'items' => ['data' => [['id' => 'si_1']]]])->push(['id' => 'sub_1', 'pending_update' => ['expires_at' => now()->addDay()->getTimestamp()]])]);
+        $v = $this->sub()->version;
+        $this->apiAs($this->owner, 'POST', '/api/v1/billing/change', ['plan' => 'enterprise', 'interval' => 'monthly', 'version' => $v])->assertStatus(402)->assertJsonPath('code', 'upgrade_payment_failed');
+        Http::assertSent(fn (HttpRequest $r) => $r->method() === 'POST' && $r['payment_behavior'] === 'pending_if_incomplete');
+        $this->assertSame('growth', $this->sub()->effectivePlan()->code);
+        // The version was claimed before calling Stripe, so a second request with the same version is refused.
+        $this->apiAs($this->owner, 'POST', '/api/v1/billing/change', ['plan' => 'enterprise', 'interval' => 'monthly', 'version' => $v])->assertStatus(409);
+    }
+
+    public function test_same_second_events_use_stripes_current_state(): void
+    {
+        $this->setSub(['status' => 'trialing', 'provider' => 'trial', 'trial_ends_at' => now()->addDays(3), 'stripe_customer_id' => 'cus_1'], 'growth');
+        $t = now()->getTimestamp();
+        $this->webhook($this->subEvent('evt_a', 'past_due', 'price_growthm', $t))->assertOk();
+        $current = $this->subEvent('x', 'active', 'price_growthm', $t)['data']['object'];
+        Http::fake(['*/subscriptions/sub_1' => Http::response($current)]);
+        // Older update with the same second arrives last: the current Stripe state wins.
+        $this->webhook($this->subEvent('evt_b', 'past_due', 'price_growthm', $t))->assertOk();
+        $this->assertSame('active', $this->sub()->status);
+    }
+
+    public function test_a_second_checkout_cannot_replace_the_live_subscription(): void
+    {
+        $this->setSub(['status' => 'active', 'provider' => 'stripe', 'stripe_customer_id' => 'cus_1', 'stripe_subscription_id' => 'sub_1'], 'growth');
+        $session = fn (string $id, string $sub) => ['id' => $id, 'type' => 'checkout.session.completed', 'created' => now()->getTimestamp(), 'data' => ['object' => [
+            'id' => 'cs_'.$id, 'mode' => 'subscription', 'customer' => 'cus_1', 'subscription' => $sub, 'client_reference_id' => $this->tenant->public_id,
+            'metadata' => ['tenant' => $this->tenant->public_id, 'plan' => 'enterprise', 'interval' => 'annual']]]];
+        $this->webhook($session('evt_c2', 'sub_2'))->assertOk()->assertJsonPath('outcome', 'ignored');
+        $this->assertSame('sub_1', $this->sub()->stripe_subscription_id);
+    }
+
+    public function test_the_plan_bought_at_checkout_applies_when_its_price_was_rotated(): void
+    {
+        $this->setSub(['status' => 'trialing', 'provider' => 'trial', 'trial_ends_at' => now()->addDays(3)], 'growth');
+        $t = now()->getTimestamp();
+        $this->webhook(['id' => 'evt_s', 'type' => 'checkout.session.completed', 'created' => $t, 'data' => ['object' => [
+            'id' => 'cs_1', 'mode' => 'subscription', 'customer' => 'cus_1', 'subscription' => 'sub_1', 'client_reference_id' => $this->tenant->public_id,
+            'metadata' => ['tenant' => $this->tenant->public_id, 'plan' => 'enterprise', 'interval' => 'annual']]]])->assertOk();
+        $this->webhook($this->subEvent('evt_r', 'active', 'price_retired', $t + 1))->assertOk();
+        $s = $this->sub();
+        $this->assertSame(['active', 'enterprise', 'annual'], [$s->status, $s->plan->code, $s->billing_interval]);
+    }
 }

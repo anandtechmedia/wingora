@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Recruitment;
 
 use App\Audit\AuditEvents;
+use App\Billing\Feature;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Candidate;
@@ -11,6 +12,7 @@ use App\Models\JobApplication;
 use App\Models\JobOpening;
 use App\Models\PipelineStage;
 use App\Models\RecruitmentSetting;
+use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Recruitment\PrivateUpload;
 use App\Support\Tenancy;
@@ -99,6 +101,10 @@ class PublicCareersController extends Controller
         $settings = RecruitmentSetting::withoutGlobalScopes()->where('careers_slug', $slug)->where('careers_enabled', true)->first();
         $tenant = $settings ? Tenant::query()->whereKey($settings->tenant_id)->where('status', 'active')->first() : null;
         abort_unless($tenant, 404);
+        // The careers site follows the organization's plan and billing state, like the signed-in API.
+        $subscription = Subscription::forTenant($tenant);
+        abort_unless($subscription && $subscription->effectivePlan()->includes(Feature::Recruitment)
+            && (request()->isMethodSafe() || $subscription->access()['mode'] === 'full'), 404);
 
         return Tenancy::run($tenant, fn () => $then($settings, $tenant));
     }
