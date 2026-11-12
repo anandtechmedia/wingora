@@ -1,0 +1,35 @@
+@import 'tailwindcss';
+@import '@wingora/design-tokens/tokens.css';
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    color: var(--color-fg);
+    background-color: var(--color-canvas);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    font-size: var(--text-sm);
+    line-height: var(--text-sm--line-height);
+  }
+
+  /* One consistent, high-contrast focus indicator for every interactive element. */
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@utility focus-ring {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
