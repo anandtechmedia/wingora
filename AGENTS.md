@@ -213,7 +213,8 @@ deploy/           Non-container deployment templates
 - **Production:**
   - Deploys from a version tag (`vX.Y.Z`) with **manual approval** in the GitHub `production` environment, and only from builds that passed staging.
   - Releases are zero-downtime and symlink-based (no containers): build, upload to `releases/<ts>`, `migrate --force`, switch the symlink, reload PHP-FPM, then `queue:restart`.
-- Details: `docs/architecture/` (environments and deployment).
+- **Workflows:** `backend`, `web`, `secret-scan` on every PR; `deploy` for staging, production and on-demand development.
+- Details: `docs/architecture/environments.md` (environments, hosting, deployment, rollback).
 
 ## 16. Backup and recovery
 
@@ -222,6 +223,7 @@ deploy/           Non-container deployment templates
 - **Targets:** RPO 15 min or less, RTO 4 h or less. **Restore drills quarterly** into an isolated environment, with documented results.
 - **Data copies:** production data is never copied to development or staging; use synthetic or anonymised data.
 - **Encryption keys:** `APP_KEY` and other keys are backed up separately from data. Losing them makes encrypted columns unrecoverable.
+- **Current shoestring hosting** meets these targets only partly (daily dumps, same account and region). The gaps and the upgrade path are listed in `docs/architecture/environments.md`.
 
 ## 17. Mobile and web shared-code requirements
 

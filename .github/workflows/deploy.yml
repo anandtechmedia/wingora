@@ -1,0 +1,116 @@
+name: deploy
+
+# main -> staging (automatic). vX.Y.Z tag on main -> production (waits for approval in the GitHub
+# "production" environment). Manual run -> development or staging from any branch.
+# Each GitHub environment holds DEPLOY_HOST, DEPLOY_SSH_KEY and DEPLOY_KNOWN_HOSTS. App secrets stay on the server.
+on:
+  push:
+    branches: [main]
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        options: [development, staging]
+        default: development
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    outputs:
+      environment: ${{ steps.target.outputs.environment }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - id: target
+        run: |
+          if [ "${{ github.event_name }}" = workflow_dispatch ]; then env='${{ inputs.environment }}'
+          elif [ "${{ github.ref_type }}" = tag ]; then env=production
+          else env=staging; fi
+          if [ "$env" = production ] && ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::Production tags must point at a commit on main (already deployed to staging)."; exit 1
+          fi
+          echo "environment=$env" >> "$GITHUB_OUTPUT"
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, intl, bcmath, pdo_sqlite, pdo_mysql, zip, gd, redis
+          coverage: none
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - name: Backend tests
+        working-directory: backend
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ':memory:'
+        run: |
+          composer install --no-interaction --no-progress --prefer-dist
+          cp .env.example .env && php artisan key:generate
+          php artisan test
+          rm .env
+          composer install --no-dev --optimize-autoloader --no-interaction --no-progress --prefer-dist
+      - name: Web checks and build
+        env:
+          VITE_API_MODE: live
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm lint && pnpm typecheck && pnpm test
+          pnpm build
+          find apps/web/dist -name '*.map' -delete
+      - name: Package release
+        run: |
+          mkdir -p pkg/web
+          cp -r apps/web/dist/. pkg/web/
+          rsync -a --exclude tests --exclude node_modules --exclude storage --exclude '.env*' --exclude 'database/*.sqlite' backend/ pkg/backend/
+          mkdir -p pkg/backend/bootstrap/cache && cp -r deploy pkg/deploy
+          echo "$GITHUB_SHA" > pkg/REVISION
+          tar -czf wingora-release.tgz -C pkg .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wingora-release
+          path: wingora-release.tgz
+          retention-days: 7
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: ${{ needs.build.outputs.environment }}
+    concurrency:
+      group: deploy-${{ needs.build.outputs.environment }}
+      cancel-in-progress: false
+    env:
+      TARGET: ${{ needs.build.outputs.environment }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: wingora-release
+      - name: Upload and activate
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          REMOTE="wingora-$TARGET@$DEPLOY_HOST"
+          RELEASE="$(date -u +%Y%m%d%H%M%S)-${GITHUB_SHA::7}"
+          SSH="ssh -i ~/.ssh/deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes"
+          scp -i ~/.ssh/deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes wingora-release.tgz "$REMOTE:releases/$RELEASE.tgz"
+          $SSH "$REMOTE" "set -e; mkdir releases/$RELEASE; tar -xzf releases/$RELEASE.tgz -C releases/$RELEASE; rm releases/$RELEASE.tgz; releases/$RELEASE/deploy/server/release.sh $TARGET \$HOME/releases/$RELEASE"
+      - name: Health check
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          case "$TARGET" in development) sub=dev ;; staging) sub=staging ;; production) sub=app ;; esac
+          url="https://$sub.${DEPLOY_HOST//./-}.sslip.io/up"
+          for i in 1 2 3 4 5 6; do curl -fsS -o /dev/null "$url" && { echo "healthy: $url"; exit 0; }; sleep 10; done
+          echo "::error::$url did not become healthy"; exit 1
