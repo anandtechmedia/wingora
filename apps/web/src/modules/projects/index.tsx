@@ -331,8 +331,8 @@ function ProjectDetail({ project: p, onChanged }: { project: Project; onChanged:
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [key, setKey] = useState(0);
   const [taskPage, setTaskPage] = useState(1);
-  const tasks = useResource(useCallback((signal: AbortSignal) => source.tasks(p.id, taskPage, signal), [source, p.id, key, taskPage]));
-  useClampPage(tasks.data?.meta, taskPage, setTaskPage); // eslint-disable-line react-hooks/exhaustive-deps
+  const tasks = useResource(useCallback((signal: AbortSignal) => source.tasks(p.id, taskPage, signal), [source, p.id, key, taskPage])); // eslint-disable-line react-hooks/exhaustive-deps
+  useClampPage(tasks.data?.meta, taskPage, setTaskPage);
   const changed = () => { setDialog(null); setEditingTask(null); toast({ title: pt('saved'), tone: 'success' }); setKey((k) => k + 1); onChanged(); };
   const open = p.status !== 'completed' && p.status !== 'cancelled';
   return (
