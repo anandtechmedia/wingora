@@ -237,4 +237,37 @@ class PerformanceTest extends SecurityTestCase
         $this->apiAs($this->employee, 'GET', '/api/v1/performance/history')
             ->assertOk()->assertJsonPath('data.employee.id', $this->employeeRecord->public_id);
     }
+
+    public function test_edits_keep_check_in_history_and_validate_against_saved_values(): void
+    {
+        $okr = $this->apiAs($this->employee, 'POST', '/api/v1/performance/objectives', [
+            'kind' => 'okr', 'title' => 'Grow usage', 'starts_on' => '2027-01-01', 'due_on' => '2027-03-31',
+            'key_results' => [['title' => 'Signups', 'target_value' => 10], ['title' => 'Retention', 'target_value' => 10]],
+        ])->assertCreated()->json('data');
+        $okr = $this->apiAs($this->employee, 'POST', "/api/v1/performance/objectives/{$okr['id']}/check-ins", ['key_result_id' => $okr['key_results'][0]['id'], 'value' => 5])
+            ->assertCreated()->json('data');
+
+        $kept = $okr['key_results'][1];
+        $okr = $this->apiAs($this->employee, 'PATCH', "/api/v1/performance/objectives/{$okr['id']}", [
+            'version' => $okr['version'], 'key_results' => [['id' => $kept['id'], 'title' => $kept['title'], 'target_value' => 10]],
+        ])->assertOk()->json('data');
+        $this->assertCount(1, $okr['check_ins']);
+        $this->assertNull($okr['check_ins'][0]['key_result']);
+
+        $this->apiAs($this->employee, 'PATCH', "/api/v1/performance/objectives/{$okr['id']}", ['version' => $okr['version'], 'key_results' => []])
+            ->assertStatus(422)->assertJsonValidationErrors('key_results');
+        $this->apiAs($this->employee, 'PATCH', "/api/v1/performance/objectives/{$okr['id']}", ['version' => $okr['version'], 'starts_on' => '2027-06-01'])
+            ->assertStatus(422)->assertJsonValidationErrors('due_on');
+
+        $done = $this->apiAs($this->employee, 'POST', '/api/v1/performance/objectives', ['kind' => 'objective', 'title' => 'Certify', 'status' => 'completed', 'progress' => 100])
+            ->assertCreated()->json('data');
+        $this->assertSame(100, $done['progress']);
+        $this->assertNotNull($done['completed_at']);
+
+        $cycle = $this->apiAs($this->admin, 'POST', '/api/v1/performance/cycles', [
+            'name' => 'H2 2027', 'starts_on' => '2027-07-01', 'ends_on' => '2027-12-31', 'questions' => [['key' => 'wins', 'label' => 'Wins', 'type' => 'text']],
+        ])->assertCreated()->json('data');
+        $this->apiAs($this->admin, 'PATCH', "/api/v1/performance/cycles/{$cycle['id']}", ['version' => $cycle['version'], 'starts_on' => '2028-01-15'])
+            ->assertStatus(422)->assertJsonValidationErrors('ends_on');
+    }
 }
