@@ -40,8 +40,8 @@ class HistoryController extends Controller
             'objectives' => $objectives->map(fn ($o) => ['id' => $o->public_id, 'title' => $o->title, 'kind' => $o->kind, 'status' => $o->status, 'progress' => $o->progress,
                 'due_on' => $o->due_on?->toDateString(), 'cycle' => $o->cycle?->name])->values(),
             'summary' => [
-                'objectives_completed' => $objectives->where('status', 'completed')->count(),
-                'objectives_active' => $objectives->where('status', 'active')->count(),
+                'objectives_completed' => PerformanceObjective::query()->where('employee_id', $employee->id)->where('status', 'completed')->count(),
+                'objectives_active' => PerformanceObjective::query()->where('employee_id', $employee->id)->where('status', 'active')->count(),
                 'meetings_completed' => PerformanceMeeting::query()->where('employee_id', $employee->id)->where('status', 'completed')->count(),
                 'feedback_received' => PerformanceFeedback::query()->whereIn('review_id', PerformanceReview::query()->where('employee_id', $employee->id)->select('id'))->where('status', 'submitted')->count(),
             ],
