@@ -29,6 +29,17 @@ export function MfaSetupPage() {
     startMfaSetup().then(setSetup, () => setLoadFailed(true));
   };
 
+  // Recovery codes are shown once; MFA is already on, so warn before a reload or close loses them.
+  useEffect(() => {
+    if (!codes) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [codes]);
+
   useEffect(() => {
     if (!needsSetup || started.current) return;
     started.current = true;
