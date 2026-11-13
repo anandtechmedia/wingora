@@ -11,6 +11,7 @@ import { CareersSourceProvider, disconnectedCareersSource, disconnectedRecruitme
 import { disconnectedHelpdeskSource, HelpdeskSourceProvider, httpHelpdeskSource } from '@/api/helpdesk';
 import { DocumentsSourceProvider, disconnectedDocumentsSource, httpDocumentsSource } from '@/api/documents';
 import { AssetsSourceProvider, disconnectedAssetsSource, httpAssetsSource } from '@/api/assets';
+import { disconnectedProjectsSource, httpProjectsSource, ProjectsSourceProvider } from '@/api/projects';
 import { BillingSourceProvider, disconnectedBillingSource, httpBillingSource } from '@/api/billing';
 import { disconnectedPlatformSource, httpPlatformSource, PlatformSourceProvider } from '@/api/platform';
 import { createLiveGateway } from '@/auth/live-gateway';
@@ -33,6 +34,7 @@ const careersSource = live ? httpCareersSource : disconnectedCareersSource;
 const helpdeskSource = live ? httpHelpdeskSource : disconnectedHelpdeskSource;
 const documentsSource = live ? httpDocumentsSource : disconnectedDocumentsSource;
 const assetsSource = live ? httpAssetsSource : disconnectedAssetsSource;
+const projectsSource = live ? httpProjectsSource : disconnectedProjectsSource;
 const billingSource = live ? httpBillingSource : disconnectedBillingSource;
 const platformSource = live ? httpPlatformSource : disconnectedPlatformSource;
 
@@ -52,6 +54,7 @@ export function App() {
                       <HelpdeskSourceProvider value={helpdeskSource}>
                         <DocumentsSourceProvider value={documentsSource}>
                         <AssetsSourceProvider value={assetsSource}>
+<ProjectsSourceProvider value={projectsSource}>
                           <BillingSourceProvider value={billingSource}>
                             <PlatformSourceProvider value={platformSource}>
                               <WorkspaceProvider live={live}>
@@ -59,7 +62,8 @@ export function App() {
                               </WorkspaceProvider>
                             </PlatformSourceProvider>
                           </BillingSourceProvider>
-                        </AssetsSourceProvider>
+                        </ProjectsSourceProvider>
+</AssetsSourceProvider>
                         </DocumentsSourceProvider>
                       </HelpdeskSourceProvider>
                     </CareersSourceProvider>
