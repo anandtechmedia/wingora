@@ -1677,6 +1677,8 @@ export const es: Messages = {
   "platform.checkName.webhooks": "Webhooks de Stripe",
   "platform.checkName.data": "Exportaciones y eliminaciones",
   "performance.subtitle": "Objetivos, evaluaciones, retroalimentación y reuniones uno a uno en un solo lugar.",
+  "performance.cycleClosed": "Este ciclo de evaluación está cerrado.",
+  "performance.meetingCancelled": "Esta reunión uno a uno fue cancelada.",
   "performance.objectives": "Objetivos",
   "performance.objective": "Objetivo",
   "performance.reviews": "Evaluaciones",

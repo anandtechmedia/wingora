@@ -106,6 +106,20 @@ function MeetingNotes({ meeting: m, onSaved }: { meeting: Meeting; onSaved: () =
     await source.saveMeeting({ version: m.version, agenda: agenda || null, shared_notes: shared || null, action_items: items, ...(m.is_manager ? { private_notes: secret || null } : {}), ...(status ? { status } : {}) }, m.id);
     onSaved();
   });
+  if (m.status === 'cancelled') {
+    return (
+      <div className="space-y-6">
+        <StatusBadge status={m.status} />
+        <p className="text-sm text-fg-muted">{pt('meetingCancelled')}</p>
+        {([['agenda', m.agenda], ['sharedNotes', m.shared_notes], ...(m.is_manager ? [['privateNotes', m.private_notes]] : [])] as [string, string | null | undefined][]).map(([label, text]) => text ? (
+          <Section key={label} title={pt(label)}><p className="whitespace-pre-wrap text-sm text-fg">{text}</p></Section>
+        ) : null)}
+        {(m.action_items ?? []).length > 0 && (
+          <Section title={pt('actionItems')}><ul className="list-disc space-y-1 ps-5 text-sm text-fg">{(m.action_items ?? []).map((a, i) => <li key={i}>{a.text} · {pt(`owner.${a.owner}`)}</li>)}</ul></Section>
+        )}
+      </div>
+    );
+  }
   return (
     <div className="space-y-6">
       <StatusBadge status={m.status} />

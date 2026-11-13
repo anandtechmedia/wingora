@@ -90,22 +90,22 @@ function ReviewDrawer({ id, onClose, onChanged }: { id: string; onClose: () => v
                 {r.rating !== null && <span className="text-sm text-fg">{pt('ratingOf', { rating: r.rating, scale })}</span>}</div>
               <FormError message={formError(error, pt('saveError'))} />
               <Section title={pt('selfAssessment')}>
-                {r.self_answers ? <AnswerList questions={questions} answers={r.self_answers} /> : r.can_self ? (
+                {r.self_answers ? <AnswerList questions={questions} answers={r.self_answers} /> : r.can_self && r.cycle.status === 'open' ? (
                   <div className="space-y-3">
                     <AnswerFields questions={questions} scale={scale} answers={answers} onChange={setAnswers} errors={errors} />
                     <Button loading={busy} onClick={() => save(async () => { await source.submitSelf(r.id, r.version, answers); done(); })}>{pt('submitSelf')}</Button>
                   </div>
-                ) : <p className="text-sm text-fg-muted">{pt('awaitingSelf')}</p>}
+                ) : <p className="text-sm text-fg-muted">{pt(r.cycle.status === 'closed' ? 'cycleClosed' : 'awaitingSelf')}</p>}
               </Section>
               <Section title={pt('managerAssessment')}>
-                {r.manager_answers ? <AnswerList questions={questions} answers={r.manager_answers} /> : r.can_manage && r.status === 'pending_manager' ? (
+                {r.manager_answers ? <AnswerList questions={questions} answers={r.manager_answers} /> : r.can_manage && r.status === 'pending_manager' && r.cycle.status === 'open' ? (
                   <div className="space-y-3">
                     <AnswerFields questions={questions} scale={scale} answers={answers} onChange={setAnswers} errors={errors} />
                     <Select label={pt('overallRating')} required value={rating} placeholder={pt('chooseRating')} error={errors.rating} onChange={(e) => setRating(e.target.value)}
                       options={Array.from({ length: scale }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }))} />
                     <Button loading={busy} disabled={!rating} onClick={() => save(async () => { await source.submitManager(r.id, r.version, answers, Number(rating)); done(); })}>{pt('submitManager')}</Button>
                   </div>
-                ) : <p className="text-sm text-fg-muted">{pt(r.status === 'pending_self' || r.status === 'pending_manager' ? 'awaitingManager' : 'hidden')}</p>}
+                ) : <p className="text-sm text-fg-muted">{pt(r.status === 'pending_self' || r.status === 'pending_manager' ? (r.cycle.status === 'closed' ? 'cycleClosed' : 'awaitingManager') : 'hidden')}</p>}
               </Section>
               <Section title={pt('feedback360')}>
                 {(r.feedback ?? []).length === 0 ? <p className="text-sm text-fg-muted">{pt('noFeedback')}</p> : (

@@ -1676,6 +1676,8 @@ export const en = {
   "platform.checkName.webhooks": "Stripe webhooks",
   "platform.checkName.data": "Exports and deletions",
   "performance.subtitle": "Objectives, reviews, feedback and one-to-ones in one place.",
+  "performance.cycleClosed": "This review cycle is closed.",
+  "performance.meetingCancelled": "This one-to-one was cancelled.",
   "performance.objectives": "Objectives",
   "performance.objective": "Objective",
   "performance.reviews": "Reviews",
