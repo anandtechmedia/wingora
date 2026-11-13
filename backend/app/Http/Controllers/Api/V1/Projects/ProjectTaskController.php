@@ -37,7 +37,9 @@ class ProjectTaskController extends Controller
     {
         $this->viewer($request);
         $data = $request->validate(['include_done' => ['nullable', 'boolean'], 'per_page' => ['nullable', 'integer', 'between:1,100']]);
-        $page = ProjectTask::query()->with(['project', 'assignee'])->where('assignee_employee_id', $this->me($request) ?? 0)
+        $me = $this->me($request) ?? 0;
+        $page = ProjectTask::query()->with(['project', 'assignee'])->where('assignee_employee_id', $me)
+            ->whereIn('project_id', ProjectMember::query()->where('employee_id', $me)->select('project_id'))
             ->when(! ($data['include_done'] ?? false), fn ($q) => $q->where('status', '!=', 'done'))
             ->orderByRaw('due_on is null')->orderBy('due_on')->orderBy('id')
             ->paginate((int) ($data['per_page'] ?? 25));

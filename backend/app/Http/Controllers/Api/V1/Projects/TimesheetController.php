@@ -129,8 +129,8 @@ class TimesheetController extends Controller
 
     public function show(Request $request, Timesheet $timesheet): JsonResponse
     {
-        $this->viewer($request);
-        abort_unless((int) $timesheet->employee_id === $this->me($request) || $this->canApprove($request, $timesheet), 404);
+        $own = $this->me($request) !== null && (int) $timesheet->employee_id === $this->me($request);
+        abort_unless(($own && ($request->user()->hasPermission(P::ProjectsView) || $this->canManage($request))) || $this->canApprove($request, $timesheet), 404);
 
         return response()->json(['data' => $this->detail($timesheet)]);
     }
@@ -165,8 +165,11 @@ class TimesheetController extends Controller
     {
         $me = $this->me($request);
 
-        return $request->user()->hasPermission(P::TimesheetsApprove) && $me !== null && (int) $t->employee_id !== $me
-            && ($this->canManage($request) || Employee::query()->whereKey($t->employee_id)->where('manager_id', $me)->exists());
+        if (! $request->user()->hasPermission(P::TimesheetsApprove) || ($me !== null && (int) $t->employee_id === $me)) {
+            return false;
+        }
+
+        return $this->canManage($request) || ($me !== null && Employee::query()->whereKey($t->employee_id)->where('manager_id', $me)->exists());
     }
 
     private function employeeId(Request $request): int

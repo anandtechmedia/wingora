@@ -159,6 +159,19 @@ class ProjectsTest extends SecurityTestCase
         $own = $this->apiAs($this->admin, 'PUT', '/api/v1/timesheets/mine/'.self::WEEK, ['version' => 0, 'entries' => $this->entries($project)])->assertOk()->json('data');
         $ownSubmitted = $this->apiAs($this->admin, 'POST', "/api/v1/timesheets/{$own['id']}/submit", ['version' => $own['version']])->assertOk()->json('data');
         $this->apiAs($this->admin, 'POST', "/api/v1/timesheets/{$own['id']}/approve", ['version' => $ownSubmitted['version']])->assertForbidden();
+
+        // An owner without an employee profile can still review and decide.
+        $owner = $this->makeUser($this->tenant, 'organization-owner');
+        $mine = $this->apiAs($this->employee, 'PUT', '/api/v1/timesheets/mine/'.self::WEEK, ['version' => 0, 'entries' => $this->entries($project)])->assertOk()->json('data');
+        $mineSubmitted = $this->apiAs($this->employee, 'POST', "/api/v1/timesheets/{$mine['id']}/submit", ['version' => $mine['version']])->assertOk()->json('data');
+        $this->apiAs($owner, 'GET', "/api/v1/timesheets/{$mine['id']}")->assertOk();
+        $this->apiAs($owner, 'POST', "/api/v1/timesheets/{$mine['id']}/approve", ['version' => $mineSubmitted['version']])->assertOk();
+
+        // Former members lose sight of their finished tasks on the project.
+        $this->apiAs($this->admin, 'POST', "/api/v1/projects/{$project['id']}/tasks", ['title' => 'Done work', 'assignee_id' => $this->employeeRecord->public_id, 'status' => 'done'])->assertCreated();
+        $this->apiAs($this->employee, 'GET', '/api/v1/projects/tasks/mine?include_done=1')->assertOk()->assertJsonPath('meta.total', 1);
+        $this->apiAs($this->admin, 'DELETE', "/api/v1/projects/{$project['id']}/members/{$this->employeeRecord->public_id}")->assertSuccessful();
+        $this->apiAs($this->employee, 'GET', '/api/v1/projects/tasks/mine?include_done=1')->assertOk()->assertJsonPath('meta.total', 0);
     }
 
     public function test_tenant_isolation_and_plan_gate(): void
