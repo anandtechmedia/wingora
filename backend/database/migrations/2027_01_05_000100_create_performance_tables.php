@@ -159,7 +159,7 @@ return new class extends Migration
             $table->unsignedInteger('version')->default(1);
             $table->timestamps();
             $table->index(['tenant_id', 'employee_id', 'scheduled_at']);
-            $table->index(['tenant_id', 'manager_employee_id', 'scheduled_at']);
+            $table->index(['tenant_id', 'manager_employee_id', 'scheduled_at'], 'performance_meetings_manager_scheduled_index');
             $tenantFk($table, 'manager_employee_id', 'employees');
             $tenantFk($table, 'employee_id', 'employees');
         });
