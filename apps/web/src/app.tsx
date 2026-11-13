@@ -12,6 +12,7 @@ import { disconnectedHelpdeskSource, HelpdeskSourceProvider, httpHelpdeskSource 
 import { DocumentsSourceProvider, disconnectedDocumentsSource, httpDocumentsSource } from '@/api/documents';
 import { BillingSourceProvider, disconnectedBillingSource, httpBillingSource } from '@/api/billing';
 import { disconnectedPlatformSource, httpPlatformSource, PlatformSourceProvider } from '@/api/platform';
+import { disconnectedSettingsSource, httpSettingsSource, SettingsSourceProvider } from '@/api/settings';
 import { createLiveGateway } from '@/auth/live-gateway';
 import { createMockGateway } from '@/mocks/mock-gateway';
 import { WorkspaceProvider } from '@/shell/workspace';
@@ -33,6 +34,7 @@ const helpdeskSource = live ? httpHelpdeskSource : disconnectedHelpdeskSource;
 const documentsSource = live ? httpDocumentsSource : disconnectedDocumentsSource;
 const billingSource = live ? httpBillingSource : disconnectedBillingSource;
 const platformSource = live ? httpPlatformSource : disconnectedPlatformSource;
+const settingsSource = live ? httpSettingsSource : disconnectedSettingsSource;
 
 export function App() {
   const router = useMemo(() => createBrowserRouter(createRoutes({ prototypeHint: !live })), []);
@@ -51,9 +53,11 @@ export function App() {
                         <DocumentsSourceProvider value={documentsSource}>
                           <BillingSourceProvider value={billingSource}>
                             <PlatformSourceProvider value={platformSource}>
-                              <WorkspaceProvider live={live}>
-                                <RouterProvider router={router} />
-                              </WorkspaceProvider>
+                              <SettingsSourceProvider value={settingsSource}>
+                                <WorkspaceProvider live={live}>
+                                  <RouterProvider router={router} />
+                                </WorkspaceProvider>
+                              </SettingsSourceProvider>
                             </PlatformSourceProvider>
                           </BillingSourceProvider>
                         </DocumentsSourceProvider>
