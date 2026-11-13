@@ -141,7 +141,7 @@ class ReviewController extends Controller
         DB::transaction(function () use ($review, $data, $from, $apply, $answers) {
             $r = PerformanceReview::query()->lockForUpdate()->findOrFail($review->id);
             $this->checkVersion($r, (int) $data['version']);
-            abort_unless($r->status === $from && $review->cycle->status === 'open', 422, __('This review is not waiting for that step.'));
+            abort_unless($r->status === $from && PerformanceReviewCycle::query()->whereKey($r->review_cycle_id)->sharedLock()->value('status') === 'open', 422, __('This review is not waiting for that step.'));
             $apply($r, $answers);
             $r->version = $r->version + 1;
             $r->save();

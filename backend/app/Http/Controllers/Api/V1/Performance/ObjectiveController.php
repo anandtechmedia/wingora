@@ -60,7 +60,9 @@ class ObjectiveController extends Controller
         abort_unless(PerformanceAccess::canEditObjectives($user, $employee), 403);
         $objective = DB::transaction(function () use ($data, $employee, $user) {
             $o = new PerformanceObjective;
-            $o->forceFill(['employee_id' => $employee->id, 'kind' => $data['kind'], 'status' => $data['status'] ?? 'active', 'created_by' => $user->id]);
+            $status = $data['status'] ?? 'active';
+            $o->forceFill(['employee_id' => $employee->id, 'kind' => $data['kind'], 'status' => $status, 'created_by' => $user->id,
+                'progress' => $data['kind'] === 'objective' ? ($data['progress'] ?? 0) : 0, 'completed_at' => $status === 'completed' ? now() : null]);
             $this->fill($o, $data, $user);
             $o->save();
             $this->syncKeyResults($o, $data['key_results'] ?? []);
@@ -77,7 +79,7 @@ class ObjectiveController extends Controller
         $user = $request->user();
         $this->visible($request, $objective);
         abort_unless(PerformanceAccess::canEditObjectives($user, $objective->employee), 403);
-        $data = $this->validated($request, false);
+        $data = $this->validated($request, false, $objective->kind);
         DB::transaction(function () use ($objective, $data, $user) {
             $o = PerformanceObjective::query()->lockForUpdate()->findOrFail($objective->id);
             $this->checkVersion($o, (int) $data['version']);
@@ -105,7 +107,6 @@ class ObjectiveController extends Controller
         $user = $request->user();
         $this->visible($request, $objective);
         abort_unless(PerformanceAccess::canEditObjectives($user, $objective->employee), 403);
-        abort_unless($objective->status === 'active', 422, __('Only active objectives take check-ins.'));
         $data = $request->validate([
             'key_result_id' => ['sometimes', 'nullable', 'string', 'max:26'],
             'value' => ['required_with:key_result_id', 'nullable', 'numeric', 'between:-999999999999,999999999999'],
@@ -114,6 +115,7 @@ class ObjectiveController extends Controller
         ]);
         DB::transaction(function () use ($objective, $data, $user) {
             $o = PerformanceObjective::query()->lockForUpdate()->findOrFail($objective->id);
+            abort_unless($o->status === 'active', 422, __('Only active objectives take check-ins.'));
             $kr = null;
             if (! empty($data['key_result_id'])) {
                 $kr = $o->keyResults()->where('public_id', $data['key_result_id'])->firstOr(fn () => throw ValidationException::withMessages(['key_result_id' => __('Choose a key result of this objective.')]));
@@ -139,9 +141,10 @@ class ObjectiveController extends Controller
         abort_unless(PerformanceAccess::any($request->user()) && PerformanceAccess::canView($request->user(), $objective->employee), 404);
     }
 
-    private function validated(Request $request, bool $creating): array
+    private function validated(Request $request, bool $creating, ?string $kind = null): array
     {
         $req = $creating ? 'required' : 'sometimes';
+        $kind = $creating ? $request->input('kind') : $kind;
 
         return $request->validate([
             'version' => [$creating ? 'prohibited' : 'required', 'integer'],
@@ -152,10 +155,10 @@ class ObjectiveController extends Controller
             'status' => ['sometimes', Rule::in(PerformanceObjective::STATUSES)],
             'progress' => ['sometimes', 'integer', 'between:0,100'],
             'starts_on' => ['sometimes', 'nullable', 'date'],
-            'due_on' => ['sometimes', 'nullable', 'date', 'after_or_equal:starts_on'],
+            'due_on' => ['sometimes', 'nullable', 'date'],
             'parent_id' => ['sometimes', 'nullable', 'string', 'max:26'],
             'cycle_id' => ['sometimes', 'nullable', 'string', 'max:26'],
-            'key_results' => [$creating && $request->input('kind') === 'okr' ? 'required' : 'sometimes', 'array', $request->input('kind') === 'okr' ? 'min:1' : 'min:0', 'max:10'],
+            'key_results' => [$creating && $kind === 'okr' ? 'required' : 'sometimes', 'array', $kind === 'okr' ? 'min:1' : 'min:0', 'max:10'],
             'key_results.*.id' => ['sometimes', 'string', 'max:26'],
             'key_results.*.title' => ['required', 'string', 'max:200'],
             'key_results.*.start_value' => ['sometimes', 'numeric', 'between:-999999999999,999999999999'],
@@ -178,6 +181,9 @@ class ObjectiveController extends Controller
         if (array_key_exists('cycle_id', $data)) {
             $o->review_cycle_id = $data['cycle_id'] === null ? null
                 : PerformanceReviewCycle::query()->where('public_id', $data['cycle_id'])->value('id') ?? throw ValidationException::withMessages(['cycle_id' => __('Choose an existing review cycle.')]);
+        }
+        if ($o->starts_on && $o->due_on && $o->due_on->lt($o->starts_on)) {
+            throw ValidationException::withMessages(['due_on' => __('The due date must be on or after the start date.')]);
         }
     }
 

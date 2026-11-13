@@ -43,6 +43,7 @@ class CycleController extends Controller
         $cycle = new PerformanceReviewCycle;
         $cycle->forceFill(['status' => 'draft', 'version' => 1, 'created_by' => $request->user()->id]);
         $this->fill($cycle, $data);
+        $this->checkPeriod($cycle);
         $cycle->save();
 
         return response()->json(['data' => $this->present($cycle->loadCount('reviews'))], 201);
@@ -52,13 +53,19 @@ class CycleController extends Controller
     {
         abort_unless($request->user()->hasPermission(P::PerformanceConfigure), 403);
         $data = $this->validated($request, false);
-        $this->checkVersion($cycle, (int) $data['version']);
-        if ($cycle->status !== 'draft' && array_intersect(array_keys($data), ['questions', 'rating_scale', 'starts_on', 'ends_on'])) {
-            throw ValidationException::withMessages(['questions' => __('Questions, scale and period can only change before the cycle is launched.')]);
-        }
-        $this->fill($cycle, $data);
-        $cycle->version = $cycle->version + 1;
-        $cycle->save();
+        $cycle = DB::transaction(function () use ($cycle, $data) {
+            $c = PerformanceReviewCycle::query()->lockForUpdate()->findOrFail($cycle->id);
+            $this->checkVersion($c, (int) $data['version']);
+            if ($c->status !== 'draft' && array_intersect(array_keys($data), ['questions', 'rating_scale', 'starts_on', 'ends_on'])) {
+                throw ValidationException::withMessages(['questions' => __('Questions, scale and period can only change before the cycle is launched.')]);
+            }
+            $this->fill($c, $data);
+            $this->checkPeriod($c);
+            $c->version = $c->version + 1;
+            $c->save();
+
+            return $c;
+        });
 
         return response()->json(['data' => $this->present($cycle->loadCount('reviews'))]);
     }
@@ -97,9 +104,14 @@ class CycleController extends Controller
     {
         abort_unless($request->user()->hasPermission(P::PerformanceConfigure), 403);
         $data = $request->validate(['version' => ['required', 'integer']]);
-        $this->checkVersion($cycle, (int) $data['version']);
-        abort_unless($cycle->status === 'open', 422, __('Only an open cycle can be closed.'));
-        $cycle->forceFill(['status' => 'closed', 'version' => $cycle->version + 1])->save();
+        $cycle = DB::transaction(function () use ($cycle, $data) {
+            $c = PerformanceReviewCycle::query()->lockForUpdate()->findOrFail($cycle->id);
+            $this->checkVersion($c, (int) $data['version']);
+            abort_unless($c->status === 'open', 422, __('Only an open cycle can be closed.'));
+            $c->forceFill(['status' => 'closed', 'version' => $c->version + 1])->save();
+
+            return $c;
+        });
 
         return response()->json(['data' => $this->present($cycle->loadCount('reviews'))]);
     }
@@ -111,7 +123,7 @@ class CycleController extends Controller
             'version' => [$creating ? 'prohibited' : 'required', 'integer'],
             'name' => [$req, 'string', 'max:120'],
             'starts_on' => [$req, 'date'],
-            'ends_on' => [$req, 'date', 'after_or_equal:starts_on'],
+            'ends_on' => [$req, 'date'],
             'self_due_on' => ['sometimes', 'nullable', 'date'],
             'manager_due_on' => ['sometimes', 'nullable', 'date'],
             'rating_scale' => ['sometimes', 'integer', Rule::in([3, 4, 5, 10])],
@@ -125,6 +137,13 @@ class CycleController extends Controller
         }
 
         return $data;
+    }
+
+    private function checkPeriod(PerformanceReviewCycle $cycle): void
+    {
+        if ($cycle->ends_on->lt($cycle->starts_on)) {
+            throw ValidationException::withMessages(['ends_on' => __('The end date must be on or after the start date.')]);
+        }
     }
 
     private function fill(PerformanceReviewCycle $cycle, array $data): void

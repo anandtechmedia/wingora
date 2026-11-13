@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Performance;
 
 use App\Http\Controllers\Controller;
 use App\Models\PerformanceFeedback;
+use App\Models\PerformanceReviewCycle;
 use App\Performance\PerformanceAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -51,7 +52,7 @@ class FeedbackController extends Controller
         abort_unless($feedback->reviewer_id === $request->user()->id && PerformanceAccess::any($request->user()), 404);
         DB::transaction(function () use ($feedback, $apply) {
             $f = PerformanceFeedback::query()->lockForUpdate()->findOrFail($feedback->id);
-            abort_unless($f->status === 'requested' && $feedback->review->cycle->status === 'open', 422, __('This feedback request is no longer open.'));
+            abort_unless($f->status === 'requested' && PerformanceReviewCycle::query()->whereKey($feedback->review->review_cycle_id)->sharedLock()->value('status') === 'open', 422, __('This feedback request is no longer open.'));
             $apply($f);
             $f->save();
         });
