@@ -1,0 +1,125 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  Wingora shoestring stack (us-east-1): one Lightsail server hosting the development, staging and
+  production environments side by side, a private versioned S3 bucket for nightly backups, a
+  put-only IAM user for the server's backup job, and a monthly cost budget with email alerts.
+  No containers. See docs/architecture/environments.md.
+
+Parameters:
+  BundleId:
+    Type: String
+    Default: small_3_0
+    Description: Lightsail bundle. small_3_0 is 2 GB RAM / 2 vCPU / 60 GB SSD with IPv4.
+  AlertEmail:
+    Type: String
+    Description: Address that receives budget alerts.
+  MonthlyBudgetUsd:
+    Type: Number
+    Default: 15
+  BackupRetentionDays:
+    Type: Number
+    Default: 35
+
+Resources:
+  Server:
+    Type: AWS::Lightsail::Instance
+    Properties:
+      InstanceName: wingora-1
+      AvailabilityZone: !Sub '${AWS::Region}a'
+      BlueprintId: ubuntu_24_04
+      BundleId: !Ref BundleId
+      Networking:
+        Ports:
+          - { FromPort: 22, ToPort: 22, Protocol: tcp }
+          - { FromPort: 80, ToPort: 80, Protocol: tcp }
+          - { FromPort: 443, ToPort: 443, Protocol: tcp }
+      Tags:
+        - { Key: project, Value: wingora }
+
+  ServerIp:
+    Type: AWS::Lightsail::StaticIp
+    Properties:
+      StaticIpName: wingora-1-ip
+      AttachedTo: !Ref Server
+
+  BackupBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub 'wingora-backups-${AWS::AccountId}'
+      VersioningConfiguration: { Status: Enabled }
+      OwnershipControls:
+        Rules: [{ ObjectOwnership: BucketOwnerEnforced }]
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault: { SSEAlgorithm: AES256 }
+      LifecycleConfiguration:
+        Rules:
+          - Id: expire-backups
+            Status: Enabled
+            ExpirationInDays: !Ref BackupRetentionDays
+            NoncurrentVersionExpiration: { NoncurrentDays: 7 }
+            AbortIncompleteMultipartUpload: { DaysAfterInitiation: 1 }
+      Tags:
+        - { Key: project, Value: wingora }
+
+  BackupBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref BackupBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource: [!GetAtt BackupBucket.Arn, !Sub '${BackupBucket.Arn}/*']
+            Condition: { Bool: { 'aws:SecureTransport': 'false' } }
+
+  # The server can add backups and escrow keys but not read, delete or list them, so a compromised
+  # server cannot destroy history (versioning keeps overwritten objects).
+  BackupWriter:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: wingora-backup-writer
+      Policies:
+        - PolicyName: put-backups
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: 's3:PutObject'
+                Resource: !Sub '${BackupBucket.Arn}/*'
+              # Escrow of APP_KEY and AUDIT_HMAC_KEY, kept apart from the data backups. Write-only.
+              - Effect: Allow
+                Action: 'ssm:PutParameter'
+                Resource: !Sub 'arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/wingora/*'
+
+  CostBudget:
+    Type: AWS::Budgets::Budget
+    Properties:
+      Budget:
+        BudgetName: wingora-monthly
+        BudgetType: COST
+        TimeUnit: MONTHLY
+        BudgetLimit: { Amount: !Ref MonthlyBudgetUsd, Unit: USD }
+      NotificationsWithSubscribers:
+        - Notification: { NotificationType: ACTUAL, ComparisonOperator: GREATER_THAN, Threshold: 80, ThresholdType: PERCENTAGE }
+          Subscribers: [{ SubscriptionType: EMAIL, Address: !Ref AlertEmail }]
+        - Notification: { NotificationType: FORECASTED, ComparisonOperator: GREATER_THAN, Threshold: 100, ThresholdType: PERCENTAGE }
+          Subscribers: [{ SubscriptionType: EMAIL, Address: !Ref AlertEmail }]
+
+Outputs:
+  StaticIp:
+    Value: !GetAtt ServerIp.IpAddress
+  BackupBucketName:
+    Value: !Ref BackupBucket
+  BackupWriterUser:
+    Value: !Ref BackupWriter

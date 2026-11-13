@@ -1,0 +1,16 @@
+{
+    "Validation failed": "Validation failed",
+    "The given data was invalid.": "The given data was invalid.",
+    "Unauthenticated": "Unauthenticated",
+    "Authentication is required.": "Authentication is required.",
+    "Forbidden": "Forbidden",
+    "You are not allowed to perform this action.": "You are not allowed to perform this action.",
+    "Not found": "Not found",
+    "The requested resource was not found.": "The requested resource was not found.",
+    "CSRF token mismatch": "CSRF token mismatch",
+    "Refresh the CSRF cookie and retry.": "Refresh the CSRF cookie and retry.",
+    "Too many requests": "Too many requests",
+    "Slow down and retry later.": "Slow down and retry later.",
+    "Server error": "Server error",
+    "The selected :attribute is invalid.": "The selected :attribute is invalid."
+}
