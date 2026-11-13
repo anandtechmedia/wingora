@@ -52,6 +52,7 @@ final class RoleCatalog
                 P::RecruitmentView, P::RecruitmentManage, P::RecruitmentConfigure, P::RecruitmentOffers, P::RecruitmentInterview, P::OnboardingView, P::OnboardingManage, P::OnboardingConfigure, P::OnboardingTasksSelf,
                 P::HelpdeskSubmit, P::HelpdeskAgent, P::HelpdeskManage, P::HelpdeskConfigure,
                 P::DocumentsRequest, P::DocumentsManage, P::DocumentsConfigure,
+                P::PerformanceView, P::PerformanceManage, P::PerformanceConfigure,
             ]],
             self::HR_MANAGER => ['name' => 'HR Manager', 'scope' => 'tenant', 'privileged' => true, 'permissions' => [
                 P::OrganizationView, P::UsersView, P::DepartmentsView, P::EmployeesViewAll, P::EmployeesManage, P::FilesUpload, P::HolidaysManage,
@@ -60,22 +61,24 @@ final class RoleCatalog
                 P::PayslipsViewSelf, P::ReimbursementsSubmit,
                 P::RecruitmentView, P::RecruitmentManage, P::RecruitmentInterview, P::OnboardingView, P::OnboardingManage, P::OnboardingTasksSelf,
                 P::HelpdeskSubmit, P::HelpdeskAgent, P::HelpdeskManage, P::DocumentsRequest, P::DocumentsManage,
+                P::PerformanceView, P::PerformanceManage,
             ]],
             self::DEPARTMENT_MANAGER => ['name' => 'Department Manager', 'scope' => 'tenant', 'privileged' => false, 'permissions' => [
                 P::OrganizationView, P::EmployeesViewDepartment, P::EmployeesViewSelf, P::FilesUpload,
                 P::AttendanceView, P::AttendanceClock, P::LeaveView, P::LeaveApply, P::AttendanceApprove, P::LeaveApprove,
                 P::PayslipsViewSelf, P::ReimbursementsSubmit, P::ReimbursementsApprove,
                 P::RecruitmentView, P::RecruitmentInterview, P::OnboardingTasksSelf, P::HelpdeskSubmit, P::DocumentsRequest, P::DocumentsApprove,
+                P::PerformanceView, P::PerformanceReview,
             ]],
             self::EMPLOYEE => ['name' => 'Employee', 'scope' => 'tenant', 'privileged' => false, 'permissions' => [
                 P::OrganizationView, P::EmployeesViewSelf, P::FilesUpload, P::AttendanceView, P::AttendanceClock, P::LeaveView, P::LeaveApply,
                 P::PayslipsViewSelf, P::ReimbursementsSubmit,
-                P::RecruitmentInterview, P::OnboardingTasksSelf, P::HelpdeskSubmit, P::DocumentsRequest,
+                P::RecruitmentInterview, P::OnboardingTasksSelf, P::HelpdeskSubmit, P::DocumentsRequest, P::PerformanceView,
             ]],
             self::PAYROLL_ADMIN => ['name' => 'Payroll Administrator', 'scope' => 'tenant', 'privileged' => true, 'permissions' => [
                 P::OrganizationView, P::EmployeesViewAll, P::EmployeesSensitiveView, P::PayrollView, P::PayrollManage, P::FilesUpload, P::AttendanceView, P::AttendanceClock, P::LeaveView, P::LeaveApply,
                 P::PayrollConfigure, P::PayrollApprove, P::PayrollExport, P::PayslipsViewSelf, P::ReimbursementsSubmit, P::ReimbursementsApprove,
-                P::HelpdeskSubmit, P::DocumentsRequest, P::DocumentsSalary,
+                P::HelpdeskSubmit, P::DocumentsRequest, P::DocumentsSalary, P::PerformanceView,
             ]],
             self::AUDITOR => ['name' => 'Auditor', 'scope' => 'tenant', 'privileged' => true, 'permissions' => [
                 P::OrganizationView, P::UsersView, P::AuditView, P::AuditExport, P::SecurityEventsView,
