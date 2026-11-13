@@ -291,9 +291,15 @@ function AssignDialog({ asset, onClose, onDone }: { asset: Asset; onClose: () =>
           <Select label={at('employee')} required placeholder={at('chooseEmployee')} value={employeeId} error={fields.employee_id} onChange={(e) => setEmployeeId(e.target.value)}
             options={(people.data?.data ?? []).map((p) => ({ value: p.id, label: `${p.preferred_name || p.first_name} ${p.last_name} · ${p.employee_number}` }))} />
         </div>
+        {people.error ? (
+          <div role="alert" className="flex flex-wrap items-center gap-2 text-sm text-danger-fg sm:col-span-2">
+            {errorMessage(people.error, at('peopleError'))}
+            <Button size="sm" variant="secondary" onClick={people.reload}>{t('ui.retry')}</Button>
+          </div>
+        ) : null}
         <Input label={at('assignedOn')} type="date" value={dates.assigned_on} error={fields.assigned_on} onChange={(e) => setDates({ ...dates, assigned_on: e.target.value })} />
         <Input label={at('dueBack')} type="date" value={dates.due_back_on} error={fields.due_back_on} onChange={(e) => setDates({ ...dates, due_back_on: e.target.value })} />
-        <TextArea label={at('notes')} value={dates.notes} onChange={(v) => setDates({ ...dates, notes: v })} />
+        <TextArea label={at('notes')} value={dates.notes} error={fields.notes} onChange={(v) => setDates({ ...dates, notes: v })} />
         <FormError message={error ? formError(error, at('saveFailed')) : null} />
       </div>
     </Modal>
@@ -317,7 +323,7 @@ function ReturnDialog({ asset, onClose, onDone }: { asset: Asset; onClose: () =>
         <Select label={at('returnCondition')} required value={f.condition} error={fields.condition} onChange={(e) => setF({ ...f, condition: e.target.value as AssetCondition })}
           options={CONDITIONS.map((c) => ({ value: c, label: at(`conditions.${c}`) }))} />
         <Input label={at('returnedOnLabel')} type="date" value={f.returned_on} error={fields.returned_on} onChange={(e) => setF({ ...f, returned_on: e.target.value })} />
-        <TextArea label={at('notes')} value={f.notes} onChange={(v) => setF({ ...f, notes: v })} />
+        <TextArea label={at('notes')} value={f.notes} error={fields.notes} onChange={(v) => setF({ ...f, notes: v })} />
         <FormError message={error ? formError(error, at('saveFailed')) : null} />
       </div>
     </Modal>
@@ -328,6 +334,8 @@ function Maintenance({ records, onChanged }: { records: MaintenanceRecord[]; onC
   const { at, day, money } = useAssetsT();
   const source = useAssetsSource();
   const { busy, run } = useAction();
+  const [cancelling, setCancelling] = useState<MaintenanceRecord | null>(null);
+  const move = (m: MaintenanceRecord, status: MaintenanceStatus) => run(`${m.id}:${status}`, () => source.updateMaintenance(m.id, status, m.version)).then((ok) => { if (ok) onChanged(); });
   return (
     <section aria-labelledby="asset-maintenance" className="space-y-2">
       <h3 id="asset-maintenance" className="text-sm font-semibold text-fg">{at('maintenance')}</h3>
@@ -345,7 +353,7 @@ function Maintenance({ records, onChanged }: { records: MaintenanceRecord[]; onC
                 <div className="flex flex-wrap gap-2 pt-1">
                   {NEXT[m.status].map((s) => (
                     <Button key={s} size="sm" variant={s === 'cancelled' ? 'tertiary' : 'secondary'} loading={busy === `${m.id}:${s}`}
-                      onClick={() => void run(`${m.id}:${s}`, () => source.updateMaintenance(m.id, s, m.version)).then((ok) => { if (ok) onChanged(); })}>
+                      onClick={() => (s === 'cancelled' ? setCancelling(m) : void move(m, s))}>
                       {at(`move.${s}`)}
                     </Button>
                   ))}
@@ -355,6 +363,9 @@ function Maintenance({ records, onChanged }: { records: MaintenanceRecord[]; onC
           ))}
         </ul>
       )}
+      <ConfirmationDialog open={cancelling !== null} title={at('cancelWorkTitle')} description={at('cancelWorkDescription')} confirmLabel={at('cancelWorkConfirm')}
+        onCancel={() => setCancelling(null)}
+        onConfirm={async () => { if (cancelling) await move(cancelling, 'cancelled'); setCancelling(null); }} />
     </section>
   );
 }

@@ -115,6 +115,11 @@ describe('Assets for HR', () => {
     const drawer = await openAsset();
     await userEvent.click(await within(drawer).findByRole('button', { name: 'Start work' }));
     await waitFor(() => expect(source.updateMaintenance).toHaveBeenCalledWith('m1', 'in_progress', 1));
+    await userEvent.click(within(drawer).getByRole('button', { name: 'Cancel' }));
+    const cancel = await screen.findByRole('alertdialog', { name: 'Cancel this maintenance job?' });
+    expect(source.updateMaintenance).toHaveBeenCalledTimes(1);
+    await userEvent.click(within(cancel).getByRole('button', { name: 'Cancel job' }));
+    await waitFor(() => expect(source.updateMaintenance).toHaveBeenCalledWith('m1', 'cancelled', 1));
     await userEvent.click(within(drawer).getByRole('button', { name: 'Retire' }));
     const confirm = await screen.findByRole('alertdialog');
     expect(source.setStatus).not.toHaveBeenCalled();
