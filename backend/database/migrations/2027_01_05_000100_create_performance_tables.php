@@ -95,7 +95,8 @@ return new class extends Migration
             $table->timestamps();
             $table->index(['tenant_id', 'objective_id', 'created_at']);
             $tenantFk($table, 'objective_id', 'performance_objectives', 'cascade');
-            $tenantFk($table, 'key_result_id', 'performance_key_results', 'cascade');
+            // Removing a key result keeps its check-ins as history.
+            $table->foreign('key_result_id')->references('id')->on('performance_key_results')->nullOnDelete();
         });
 
         Schema::create('performance_reviews', function (Blueprint $table) use ($tenantFk) {
