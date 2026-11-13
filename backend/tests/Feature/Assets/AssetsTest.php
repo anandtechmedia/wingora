@@ -49,6 +49,18 @@ class AssetsTest extends SecurityTestCase
         ])->assertCreated()->json('data');
     }
 
+    public function test_purchase_cost_and_currency_stay_paired_on_update(): void
+    {
+        $asset = $this->asset();
+        $url = "/api/v1/assets/{$asset['id']}";
+        $v = $this->apiAs($this->admin, 'PATCH', $url, ['purchase_cost' => '2100.00', 'version' => $asset['version']])->assertOk()->json('data');
+        $this->assertSame(['2100.00', 'USD'], [$v['purchase_cost'], $v['currency']]);
+        $this->apiAs($this->admin, 'PATCH', $url, ['purchase_cost' => null, 'version' => $v['version']])->assertStatus(422)->assertJsonValidationErrors('purchase_cost');
+        $this->apiAs($this->admin, 'PATCH', $url, ['currency' => null, 'version' => $v['version']])->assertStatus(422)->assertJsonValidationErrors('currency');
+        $cleared = $this->apiAs($this->admin, 'PATCH', $url, ['purchase_cost' => null, 'currency' => null, 'version' => $v['version']])->assertOk()->json('data');
+        $this->assertSame([null, null], [$cleared['purchase_cost'], $cleared['currency']]);
+    }
+
     public function test_assignment_lifecycle_history_and_audit(): void
     {
         $asset = $this->asset();

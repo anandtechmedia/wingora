@@ -98,6 +98,10 @@ class AssetController extends Controller
         $asset = DB::transaction(function () use ($asset, $data) {
             $a = Asset::query()->lockForUpdate()->findOrFail($asset->id);
             $this->checkVersion($a, $data['version']);
+            $this->checkMoneyPair(
+                array_key_exists('purchase_cost', $data) ? $data['purchase_cost'] : $a->purchase_cost,
+                array_key_exists('currency', $data) ? $data['currency'] : $a->currency,
+            );
             if (isset($data['status']) && $data['status'] !== $a->status) {
                 // Retiring and reinstating are the only direct status changes; assigned or in-maintenance assets must be returned or finished first.
                 abort_unless(in_array($a->status, ['available', 'retired'], true), 422, __('Return the asset or finish its maintenance first.'));
@@ -200,8 +204,8 @@ class AssetController extends Controller
             'serial_number' => ['nullable', 'string', 'max:120'],
             'condition' => ['sometimes', Rule::in(self::CONDITIONS)],
             'purchased_on' => ['nullable', 'date'],
-            'purchase_cost' => ['nullable', 'numeric', 'between:0,9999999999.99', 'required_with:currency'],
-            'currency' => ['nullable', Rule::in(self::CURRENCIES), 'required_with:purchase_cost'],
+            'purchase_cost' => ['nullable', 'numeric', 'between:0,9999999999.99', ...($creating ? ['required_with:currency'] : [])],
+            'currency' => ['nullable', Rule::in(self::CURRENCIES), ...($creating ? ['required_with:purchase_cost'] : [])],
             'warranty_ends_on' => ['nullable', 'date'],
             'notes' => ['nullable', 'string', 'max:2000'],
         ]);
@@ -210,6 +214,17 @@ class AssetController extends Controller
         }
 
         return $data;
+    }
+
+    /** On update the amount and currency are checked after merging with the stored values, so either can change alone. */
+    private function checkMoneyPair(mixed $cost, ?string $currency): void
+    {
+        if ($cost !== null && $currency === null) {
+            throw ValidationException::withMessages(['currency' => __('Choose the currency of the purchase cost.')]);
+        }
+        if ($cost === null && $currency !== null) {
+            throw ValidationException::withMessages(['purchase_cost' => __('Enter the purchase cost, or clear the currency too.')]);
+        }
     }
 
     private function checkWarranty(array $values): void
