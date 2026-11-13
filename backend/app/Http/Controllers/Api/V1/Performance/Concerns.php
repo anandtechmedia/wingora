@@ -40,7 +40,7 @@ trait Concerns
         $me = $user->employee?->id;
 
         return match ($scope) {
-            'mine' => $query->where($column, $me ?? 0),
+            'mine' => $query->whereIn($column, PerformanceAccess::employees($user)->where('employees.id', $me ?? 0)->select('employees.id')),
             'team' => $query->whereIn($column, PerformanceAccess::employees($user)->where('employees.id', '!=', $me ?? 0)->select('employees.id')),
             default => $query->whereIn($column, PerformanceAccess::employees($user)->select('employees.id')),
         };
