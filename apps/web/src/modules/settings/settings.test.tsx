@@ -70,6 +70,13 @@ describe('Settings', { timeout: 20_000 }, () => {
     await userEvent.click(within(dialog).getByRole('checkbox', { name: 'Auditor' }));
     await userEvent.click(within(dialog).getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(source.updateRoles).toHaveBeenCalledWith('usr_hr', ['hr-manager', 'auditor']));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+    await userEvent.click(screen.getAllByRole('button', { name: 'Disable Priya Nair' })[0]!);
+    const confirm = await screen.findByRole('alertdialog', { name: 'Disable Priya Nair?' });
+    expect(source.updateStatus).not.toHaveBeenCalled();
+    await userEvent.click(within(confirm).getByRole('button', { name: 'Disable' }));
+    await waitFor(() => expect(source.updateStatus).toHaveBeenCalledWith('usr_hr', 'disabled'));
   });
 
   it('lists legal entities and regenerates recovery codes with an authenticator code', async () => {

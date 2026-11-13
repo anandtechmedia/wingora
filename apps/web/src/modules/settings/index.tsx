@@ -5,7 +5,7 @@ import { ApiNotConnectedError } from '@/api/dashboard';
 import {
   useSettingsSource, type ApiToken, type LegalEntity, type LegalEntityInput, type TenantUser, type WorkLocation, type WorkLocationInput,
 } from '@/api/settings';
-import { Badge, Button, Card, Checkbox, DataTable, EmptyState, Input, Modal, Select, Tabs, useToast, type DataTableColumn } from '@/components/ui';
+import { Badge, Button, Card, Checkbox, ConfirmationDialog, DataTable, EmptyState, Input, Modal, Select, Tabs, useToast, type DataTableColumn } from '@/components/ui';
 import { PageHeader } from '@/shell/page-header';
 import { useSession } from '@/auth/session';
 import { useI18n } from '@/i18n/i18n';
@@ -53,6 +53,7 @@ function OrganizationTab() {
   const source = useSettingsSource();
   const can = useCan();
   const { toast } = useToast();
+  const { refresh } = useSession();
   const org = useResource(useCallback((signal: AbortSignal) => source.organization(signal), [source]));
   const [name, setName] = useState<string | null>(null);
   const { error, busy, save } = useSave();
@@ -65,7 +66,13 @@ function OrganizationTab() {
           <Card title={st('profile')} headingLevel={2}>
             <form className="grid items-end gap-4 sm:grid-cols-[minmax(0,1fr)_auto]" onSubmit={(e) => {
               e.preventDefault();
-              void save(async () => { await source.updateOrganization((name ?? o.name).trim()); toast({ title: st('saved'), tone: 'success' }); setName(null); org.reload(); });
+              void save(async () => {
+                await source.updateOrganization((name ?? o.name).trim());
+                toast({ title: st('saved'), tone: 'success' });
+                setName(null);
+                org.reload();
+                await refresh().catch(() => undefined);
+              });
             }}>
               <Input label={st('organizationName')} required maxLength={160} value={name ?? o.name} disabled={!can(P.OrganizationManage)}
                 error={validationErrors(error).name} onChange={(e) => setName(e.target.value)} />
@@ -98,7 +105,9 @@ function UsersTab() {
   const users = useResource(useCallback((signal: AbortSignal) => source.users(page, signal), [source, page]));
   const [editing, setEditing] = useState<TenantUser | 'new' | null>(null);
   const status = useAction();
+  const [disabling, setDisabling] = useState<TenantUser | null>(null);
   const self = (u: TenantUser) => u.id === me?.user.id;
+  const setStatus = (u: TenantUser, next: 'active' | 'disabled') => status.run(u.id, () => source.updateStatus(u.id, next), st('saved')).then(users.reload);
   const columns: DataTableColumn<TenantUser>[] = [
     { id: 'name', header: st('name'), primary: true, cell: (u) => <div><span className="font-medium text-fg">{u.name}</span><span className="block text-xs text-fg-muted">{u.email}</span></div> },
     { id: 'roles', header: st('roles'), cell: (u) => u.roles.map(role).join(', ') || '—' },
@@ -111,7 +120,7 @@ function UsersTab() {
           {can(P.RolesAssign) && <Button size="sm" variant="tertiary" aria-label={st('editRolesFor', { name: u.name })} onClick={() => setEditing(u)}>{st('editRoles')}</Button>}
           {can(P.UsersManage) && (
             <Button size="sm" variant="tertiary" loading={status.busy === u.id} aria-label={st(u.status === 'active' ? 'disableNamed' : 'enableNamed', { name: u.name })}
-              onClick={() => void status.run(u.id, () => source.updateStatus(u.id, u.status === 'active' ? 'disabled' : 'active'), st('saved')).then(users.reload)}>
+              onClick={() => (u.status === 'active' ? setDisabling(u) : void setStatus(u, 'active'))}>
               {st(u.status === 'active' ? 'disable' : 'enable')}
             </Button>
           )}
@@ -131,6 +140,8 @@ function UsersTab() {
         </>
       )}
       {editing && <UserDialog user={editing === 'new' ? null : editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); users.reload(); }} />}
+      <ConfirmationDialog open={disabling !== null} title={st('disableTitle', { name: disabling?.name ?? '' })} description={st('disableConfirm')} confirmLabel={st('disable')}
+        onCancel={() => setDisabling(null)} onConfirm={async () => { if (disabling) await setStatus(disabling, 'disabled'); setDisabling(null); }} />
     </Card>
   );
 }
@@ -245,17 +256,20 @@ function EntityDialog({ entity, onClose, onSaved }: { entity: LegalEntity | null
     set({ country_code: c, subdivision_code: '', currency_code: found?.default_currency_code ?? '', default_language_code: found?.default_language_code ?? '' });
   };
   const valid = input.name.trim() && input.legal_name.trim() && input.country_code && input.currency_code && input.default_language_code;
-  return (
-    <Modal open onClose={onClose} size="lg" title={st(entity ? 'editEntity' : 'newEntity')}
-      footer={<><Button variant="secondary" onClick={onClose}>{t('ui.cancel')}</Button>
-        <Button loading={busy} disabled={!valid} onClick={() => save(async () => {
+  const deactivating = entity?.status === 'active' && input.status === 'inactive';
+  const [confirming, setConfirming] = useState(false);
+  const submit = () => save(async () => {
           const { country_code, status, ...rest } = blankToNull(input);
           const body: LegalEntityInput = entity ? { ...rest, status } : { ...rest, country_code };
           if (entity && !('registration_number' in entity)) { delete body.registration_number; delete body.tax_identifier; }
           await source.saveLegalEntity(body, entity?.id);
           toast({ title: st('saved'), tone: 'success' });
           onSaved();
-        })}>{st('save')}</Button></>}>
+        });
+  return (
+    <Modal open onClose={onClose} size="lg" title={st(entity ? 'editEntity' : 'newEntity')}
+      footer={<><Button variant="secondary" onClick={onClose}>{t('ui.cancel')}</Button>
+        <Button loading={busy} disabled={!valid} onClick={() => (deactivating ? setConfirming(true) : void submit())}>{st('save')}</Button></>}>
       <div className="grid gap-4 sm:grid-cols-2">
         <Input label={st('name')} required maxLength={160} value={input.name} error={fields.name} onChange={(e) => set({ name: e.target.value })} />
         <Input label={st('legalName')} required maxLength={200} value={input.legal_name} error={fields.legal_name} onChange={(e) => set({ legal_name: e.target.value })} />
@@ -276,6 +290,8 @@ function EntityDialog({ entity, onClose, onSaved }: { entity: LegalEntity | null
         <Input label={st('postalCode')} optional maxLength={20} value={input.postal_code ?? ''} error={fields.postal_code} onChange={(e) => set({ postal_code: e.target.value })} />
         {entity && <Select label={st('status')} value={input.status} options={[{ value: 'active', label: st('active') }, { value: 'inactive', label: st('inactive') }]}
           onChange={(e) => set({ status: e.target.value as 'active' | 'inactive' })} />}
+        <ConfirmationDialog open={confirming} title={st('deactivateTitle', { name: entity?.name ?? '' })} description={st('deactivateConfirm')} confirmLabel={st('deactivate')}
+          onCancel={() => setConfirming(false)} onConfirm={async () => { setConfirming(false); await submit(); }} />
         <FormError message={error ? formError(error, st('saveFailed')) : null} />
       </div>
     </Modal>
@@ -297,16 +313,19 @@ function LocationDialog({ location, entities, onClose, onSaved }: { location: Wo
   const fields = validationErrors(error);
   const set = (patch: Partial<typeof input>) => setInput({ ...input, ...patch });
   const valid = input.name.trim() && input.timezone && (location !== null || (input.legal_entity_id && input.subdivision_code));
-  return (
-    <Modal open onClose={onClose} size="lg" title={st(location ? 'editLocation' : 'newLocation')}
-      footer={<><Button variant="secondary" onClick={onClose}>{t('ui.cancel')}</Button>
-        <Button loading={busy} disabled={!valid} onClick={() => save(async () => {
+  const deactivating = location?.status === 'active' && input.status === 'inactive';
+  const [confirming, setConfirming] = useState(false);
+  const submit = () => save(async () => {
           const { legal_entity_id, subdivision_code, status, ...rest } = blankToNull(input);
           const body: WorkLocationInput = location ? { ...rest, status } : { ...rest, legal_entity_id: legal_entity_id ?? undefined, subdivision_code: subdivision_code ?? undefined };
           await source.saveWorkLocation(body, location?.id);
           toast({ title: st('saved'), tone: 'success' });
           onSaved();
-        })}>{st('save')}</Button></>}>
+        });
+  return (
+    <Modal open onClose={onClose} size="lg" title={st(location ? 'editLocation' : 'newLocation')}
+      footer={<><Button variant="secondary" onClick={onClose}>{t('ui.cancel')}</Button>
+        <Button loading={busy} disabled={!valid} onClick={() => (deactivating ? setConfirming(true) : void submit())}>{st('save')}</Button></>}>
       <div className="grid gap-4 sm:grid-cols-2">
         <Select label={st('legalEntity')} required disabled={location !== null} value={input.legal_entity_id} error={fields.legal_entity_id}
           options={(location?.legal_entity ? [location.legal_entity] : entities).map((e) => ({ value: e.id, label: e.name }))}
@@ -323,6 +342,8 @@ function LocationDialog({ location, entities, onClose, onSaved }: { location: Wo
         <Checkbox label={st('remote')} checked={input.is_remote} onChange={(e) => set({ is_remote: e.target.checked })} />
         {location && <Select label={st('status')} value={input.status} options={[{ value: 'active', label: st('active') }, { value: 'inactive', label: st('inactive') }]}
           onChange={(e) => set({ status: e.target.value as 'active' | 'inactive' })} />}
+        <ConfirmationDialog open={confirming} title={st('deactivateTitle', { name: location?.name ?? '' })} description={st('deactivateConfirm')} confirmLabel={st('deactivate')}
+          onCancel={() => setConfirming(false)} onConfirm={async () => { setConfirming(false); await submit(); }} />
         <FormError message={error ? formError(error, st('saveFailed')) : null} />
       </div>
     </Modal>
@@ -332,10 +353,11 @@ function LocationDialog({ location, entities, onClose, onSaved }: { location: Wo
 /* ---------------- My account ---------------- */
 
 function AccountTab() {
-  return <div className="space-y-6"><PasswordCard /><MfaCard /><TokensCard /></div>;
+  const [tokensVersion, setTokensVersion] = useState(0);
+  return <div className="space-y-6"><PasswordCard onChanged={() => setTokensVersion((v) => v + 1)} /><MfaCard /><TokensCard key={tokensVersion} /></div>;
 }
 
-function PasswordCard() {
+function PasswordCard({ onChanged }: { onChanged: () => void }) {
   const { st } = useSettingsT();
   const source = useSettingsSource();
   const { toast } = useToast();
@@ -347,7 +369,7 @@ function PasswordCard() {
     <Card title={st('password')} headingLevel={2} description={st('passwordHint')}>
       <form className="grid items-end gap-4 sm:grid-cols-3" onSubmit={(e) => {
         e.preventDefault();
-        void save(async () => { await source.changePassword(input); setInput(blank); toast({ title: st('passwordChanged'), tone: 'success' }); });
+        void save(async () => { await source.changePassword(input); setInput(blank); onChanged(); toast({ title: st('passwordChanged'), tone: 'success' }); });
       }}>
         <Input label={st('currentPassword')} type="password" autoComplete="current-password" required value={input.current_password} error={fields.current_password} onChange={(e) => setInput({ ...input, current_password: e.target.value })} />
         <Input label={st('newPassword')} type="password" autoComplete="new-password" required value={input.password} error={fields.password} onChange={(e) => setInput({ ...input, password: e.target.value })} />
@@ -398,6 +420,7 @@ function TokensCard() {
   const source = useSettingsSource();
   const tokens = useResource(useCallback((signal: AbortSignal) => source.tokens(signal), [source]));
   const revoke = useAction();
+  const [revoking, setRevoking] = useState<ApiToken | null>(null);
   const columns: DataTableColumn<ApiToken>[] = [
     { id: 'name', header: st('name'), primary: true, cell: (k) => <span className="font-medium text-fg">{k.name}{k.current && <Badge className="ms-2" size="sm">{st('thisToken')}</Badge>}</span> },
     { id: 'abilities', header: st('abilities'), hideBelow: 'md', cell: (k) => k.abilities.join(', ') },
@@ -405,7 +428,7 @@ function TokensCard() {
     { id: 'expires', header: st('expires'), hideBelow: 'lg', cell: (k) => when(k.expires_at) },
     { id: 'revoke', header: <span className="sr-only">{st('revoke')}</span>, align: 'end', cell: (k) => (
       <Button size="sm" variant="tertiary" loading={revoke.busy === String(k.id)} aria-label={st('revokeNamed', { name: k.name })}
-        onClick={() => void revoke.run(String(k.id), () => source.revokeToken(k.id), st('revoked')).then(tokens.reload)}>{st('revoke')}</Button>
+        onClick={() => setRevoking(k)}>{st('revoke')}</Button>
     ) },
   ];
   return (
@@ -415,6 +438,9 @@ function TokensCard() {
           loading={tokens.loading && tokens.data === undefined} error={tokens.error ? errorMessage(tokens.error, st('loadError')) : null} onRetry={tokens.reload}
           empty={<EmptyState title={st('noTokens')} />} />
       )}
+      <ConfirmationDialog open={revoking !== null} title={st('revokeTitle', { name: revoking?.name ?? '' })} description={st('revokeConfirm')} confirmLabel={st('revoke')}
+        onCancel={() => setRevoking(null)}
+        onConfirm={async () => { if (revoking) await revoke.run(String(revoking.id), () => source.revokeToken(revoking.id), st('revoked')).then(tokens.reload); setRevoking(null); }} />
     </Card>
   );
 }

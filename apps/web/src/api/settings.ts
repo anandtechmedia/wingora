@@ -48,7 +48,15 @@ async function write<T>(method: 'POST' | 'PUT' | 'PATCH' | 'DELETE', path: strin
   await ensureCsrfCookie();
   return apiRequest<T>(method, path, { body });
 }
-const list = { per_page: '100' };
+/** Loads every page of a paginated collection, so settings lists never stop at the first page. */
+async function allPages<T>(path: string, signal?: AbortSignal): Promise<T[]> {
+  const rows: T[] = [];
+  for (let page = 1; ; page++) {
+    const r = await apiRequest<Page<T>>('GET', path, { query: { per_page: '100', page: String(page) }, signal });
+    rows.push(...r.data);
+    if (page >= r.meta.last_page) return rows;
+  }
+}
 
 export const httpSettingsSource: SettingsSource = {
   organization: (signal) => data(apiRequest('GET', `${v1}/organization`, { signal })),
@@ -58,9 +66,9 @@ export const httpSettingsSource: SettingsSource = {
   inviteUser: (input) => data(write('POST', `${v1}/users`, input)),
   updateRoles: (id, roles) => data(write('PUT', `${v1}/users/${id}/roles`, { roles })),
   updateStatus: (id, status) => data(write('PATCH', `${v1}/users/${id}/status`, { status })),
-  legalEntities: (signal) => data(apiRequest('GET', `${v1}/legal-entities`, { query: list, signal })),
+  legalEntities: (signal) => allPages(`${v1}/legal-entities`, signal),
   saveLegalEntity: (input, id) => data(id ? write('PATCH', `${v1}/legal-entities/${id}`, input) : write('POST', `${v1}/legal-entities`, input)),
-  workLocations: (signal) => data(apiRequest('GET', `${v1}/work-locations`, { query: list, signal })),
+  workLocations: (signal) => allPages(`${v1}/work-locations`, signal),
   saveWorkLocation: (input, id) => data(id ? write('PATCH', `${v1}/work-locations/${id}`, input) : write('POST', `${v1}/work-locations`, input)),
   countries: (signal) => data(apiRequest('GET', `${v1}/reference/countries`, { signal })),
   country: (code, signal) => data(apiRequest('GET', `${v1}/reference/countries/${code}`, { signal })),
