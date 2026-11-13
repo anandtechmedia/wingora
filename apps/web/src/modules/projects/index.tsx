@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Permission as P } from '@wingora/permissions';
 import type { MessageKey } from '@wingora/localization';
 import { ApiNotConnectedError } from '@/api/dashboard';
@@ -63,6 +63,10 @@ export default function Projects() {
 
 interface Row { key: number; project_id: string; task_id: string; hours: string[]; note: string }
 let rowKey = 0;
+/** Steps back when the current page empties (e.g. its last item was approved), since the pager hides once one page is left. */
+function useClampPage(meta: { last_page: number } | undefined, page: number, setPage: (p: number) => void) {
+  useEffect(() => { if (meta && page > meta.last_page) setPage(meta.last_page); }, [meta, page, setPage]);
+}
 function toRows(sheet: Timesheet): Row[] {
   const rows = new Map<string, Row>();
   for (const e of sheet.entries ?? []) {
@@ -178,6 +182,7 @@ function MyTasks() {
   const source = useProjectsSource();
   const [page, setPage] = useState(1);
   const tasks = useResource(useCallback((signal: AbortSignal) => source.myTasks(page, signal), [source, page]));
+  useClampPage(tasks.data?.meta, page, setPage);
   const { busy, run } = useAction();
   const columns: DataTableColumn<Task>[] = [
     { id: 'title', header: pt('task'), primary: true, cell: (x) => <span className="font-medium">{x.title}</span> },
@@ -326,7 +331,8 @@ function ProjectDetail({ project: p, onChanged }: { project: Project; onChanged:
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [key, setKey] = useState(0);
   const [taskPage, setTaskPage] = useState(1);
-  const tasks = useResource(useCallback((signal: AbortSignal) => source.tasks(p.id, taskPage, signal), [source, p.id, key, taskPage])); // eslint-disable-line react-hooks/exhaustive-deps
+  const tasks = useResource(useCallback((signal: AbortSignal) => source.tasks(p.id, taskPage, signal), [source, p.id, key, taskPage]));
+  useClampPage(tasks.data?.meta, taskPage, setTaskPage); // eslint-disable-line react-hooks/exhaustive-deps
   const changed = () => { setDialog(null); setEditingTask(null); toast({ title: pt('saved'), tone: 'success' }); setKey((k) => k + 1); onChanged(); };
   const open = p.status !== 'completed' && p.status !== 'cancelled';
   return (
@@ -487,6 +493,7 @@ function Approvals() {
   const source = useProjectsSource();
   const [page, setPage] = useState(1);
   const list = useResource(useCallback((signal: AbortSignal) => source.approvals(page, signal), [source, page]));
+  useClampPage(list.data?.meta, page, setPage);
   const [open, setOpen] = useState<string | null>(null);
   const columns: DataTableColumn<Timesheet>[] = [
     { id: 'employee', header: pt('employee'), primary: true, cell: (s) => (
