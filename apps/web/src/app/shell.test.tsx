@@ -73,6 +73,9 @@ describe('authentication flow', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Turn on two-step verification' }));
     expect(await screen.findByRole('heading', { name: 'Save your recovery codes' })).toBeInTheDocument();
     expect(within(screen.getByRole('list', { name: 'Save your recovery codes' })).getAllByRole('listitem')).toHaveLength(10);
+    const unload = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(unload);
+    expect(unload.defaultPrevented).toBe(true);
     expect(router.state.location.pathname).toBe('/mfa/setup');
 
     await userEvent.click(screen.getByRole('button', { name: "I've saved them, continue" }));
