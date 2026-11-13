@@ -22,6 +22,7 @@ enum AuditCategory: string
     case Onboarding = 'onboarding';
     case Helpdesk = 'helpdesk';
     case Documents = 'documents';
+    case Assets = 'assets';
     case Billing = 'billing';
 
     public static function forEvent(string $event, ?Model $subject = null): self
@@ -38,6 +39,7 @@ enum AuditCategory: string
             $starts('onboarding.') => self::Onboarding,
             $starts('helpdesk.') => self::Helpdesk,
             $starts('documents.') => self::Documents,
+            $starts('assets.') => self::Assets,
             $starts('billing.', 'platform.plan_', 'platform.subscription_') => self::Billing,
             $starts('support.', 'account.') => self::Administration,
             $starts('leave.') => self::Leave,

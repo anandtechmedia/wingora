@@ -23,6 +23,7 @@ const screens: Partial<Record<ModuleId, ModuleComponent>> = {
   onboarding: lazy(() => import('@/modules/onboarding')),
   helpdesk: lazy(() => import('@/modules/helpdesk')),
   documents: lazy(() => import('@/modules/documents')),
+  assets: lazy(() => import('@/modules/assets')),
   billing: lazy(() => import('@/modules/billing')),
   platform: lazy(() => import('@/modules/platform')),
 };

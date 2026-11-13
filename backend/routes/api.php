@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\Controllers\Api\V1\Account\AccountController;
+use App\Http\Controllers\Api\V1\Assets\AssetCategoryController;
+use App\Http\Controllers\Api\V1\Assets\AssetController;
+use App\Http\Controllers\Api\V1\Assets\AssetMaintenanceController;
 use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\AttendanceRequestController;
 use App\Http\Controllers\Api\V1\AuditLogController;
@@ -216,6 +219,21 @@ Route::prefix('v1')->name('v1.')->group(function () {
                 Route::post('document-requests/{documentRequest}/cancel', [DocumentRequestController::class, 'cancel']);
                 Route::post('document-requests/{documentRequest}/deliver', [DocumentRequestController::class, 'deliver'])->middleware('throttle:uploads');
                 Route::get('document-requests/{documentRequest}/document', [DocumentRequestController::class, 'download']);
+
+                Route::get('assets/mine', [AssetController::class, 'mine']);
+                Route::get('assets/categories', [AssetCategoryController::class, 'index']);
+                Route::post('assets/categories', [AssetCategoryController::class, 'store']);
+                Route::patch('assets/categories/{category}', [AssetCategoryController::class, 'update']);
+                Route::patch('assets/maintenance/{record}', [AssetMaintenanceController::class, 'update']);
+                Route::get('assets', [AssetController::class, 'index']);
+                Route::post('assets', [AssetController::class, 'store']);
+                Route::get('assets/{asset}', [AssetController::class, 'show']);
+                Route::patch('assets/{asset}', [AssetController::class, 'update']);
+                Route::post('assets/{asset}/assign', [AssetController::class, 'assign']);
+                Route::post('assets/{asset}/return', [AssetController::class, 'return']);
+                Route::get('assets/{asset}/history', [AssetController::class, 'history']);
+                Route::get('assets/{asset}/maintenance', [AssetMaintenanceController::class, 'index']);
+                Route::post('assets/{asset}/maintenance', [AssetMaintenanceController::class, 'store']);
 
                 Route::get('organization', [OrganizationController::class, 'show']);
                 Route::patch('organization', [OrganizationController::class, 'update']);

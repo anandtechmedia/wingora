@@ -72,6 +72,8 @@ enum Permission: string
     case DocumentsManage = 'documents.manage';
     case DocumentsSalary = 'documents.salary';
     case DocumentsConfigure = 'documents.configure';
+    case AssetsView = 'assets.view';
+    case AssetsManage = 'assets.manage';
     case BillingView = 'billing.view';
     case BillingManage = 'billing.manage';
     case AccountManage = 'account.manage';

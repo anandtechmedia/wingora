@@ -24,10 +24,10 @@ export const personas: Record<string, MeResponse> = {
     P.OrganizationView, P.UsersView, P.DepartmentsView, P.EmployeesViewAll, P.EmployeesManage, P.FilesUpload,
     P.EmployeesDisciplinaryView, P.EmployeesDisciplinaryManage, P.EmployeesExport,
     P.AttendanceView, P.AttendanceClock, P.AttendanceApprove, P.AttendanceManage, P.LeaveView, P.LeaveApply, P.LeaveApprove, P.LeaveManage,
-    P.RecruitmentView, P.RecruitmentManage, P.RecruitmentInterview, P.OnboardingView, P.OnboardingManage, P.OnboardingTasksSelf, P.HelpdeskSubmit, P.HelpdeskAgent, P.HelpdeskManage, P.DocumentsRequest, P.DocumentsManage, PP.OffboardingView, PP.PerformanceView, PP.ReportsView,
+    P.RecruitmentView, P.RecruitmentManage, P.RecruitmentInterview, P.OnboardingView, P.OnboardingManage, P.OnboardingTasksSelf, P.HelpdeskSubmit, P.HelpdeskAgent, P.HelpdeskManage, P.DocumentsRequest, P.DocumentsManage, P.AssetsView, P.AssetsManage, PP.OffboardingView, PP.PerformanceView, PP.ReportsView,
   ], true),
   'employee@wingora.test': persona('usr_employee', 'Jordan Lee', 'employee@wingora.test', ['employee'], [
-    P.OrganizationView, P.EmployeesViewSelf, P.FilesUpload, P.AttendanceView, P.AttendanceClock, P.LeaveView, P.LeaveApply, P.PayslipsViewSelf, P.ReimbursementsSubmit, P.RecruitmentInterview, P.OnboardingTasksSelf, P.HelpdeskSubmit, P.DocumentsRequest,
+    P.OrganizationView, P.EmployeesViewSelf, P.FilesUpload, P.AttendanceView, P.AttendanceClock, P.LeaveView, P.LeaveApply, P.PayslipsViewSelf, P.ReimbursementsSubmit, P.RecruitmentInterview, P.OnboardingTasksSelf, P.HelpdeskSubmit, P.DocumentsRequest, P.AssetsView,
   ], false),
   // Platform staff belong to no organization: they see only the platform console.
   'platform@wingora.test': { ...persona('usr_platform', 'Sam Rivera', 'platform@wingora.test', ['platform-admin'], [
