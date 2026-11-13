@@ -1,4 +1,4 @@
-import { act, screen, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { describe, expect, it } from 'vitest';
@@ -52,6 +52,38 @@ describe('authentication flow', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Verify' }));
     expect(await screen.findByRole('heading', { name: 'Payroll' })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/payroll');
+  });
+
+  it('sends privileged users without MFA to enrolment before any module', async () => {
+    const { router } = setup('/employees');
+    await userEvent.type(await screen.findByLabelText(/Work email/), 'newhr@wingora.test');
+    await userEvent.type(screen.getByLabelText(/^Password/), 'correct horse');
+    await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+    expect(await screen.findByRole('heading', { name: 'Set up two-step verification' })).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/mfa/setup');
+    expect(await screen.findByRole('img', { name: 'QR code for your authenticator app' })).toHaveAttribute('src', expect.stringMatching(/^data:image\/svg\+xml;base64,/));
+    expect(screen.getByText('JBSW Y3DP EHPK 3PXP JBSW Y3DP EHPK 3PXP')).toBeInTheDocument();
+
+    await userEvent.type(screen.getByLabelText(/Authentication code/), '000000');
+    await userEvent.click(screen.getByRole('button', { name: 'Turn on two-step verification' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('The code is invalid or has expired.');
+
+    await userEvent.clear(screen.getByLabelText(/Authentication code/));
+    await userEvent.type(screen.getByLabelText(/Authentication code/), '123456');
+    await userEvent.click(screen.getByRole('button', { name: 'Turn on two-step verification' }));
+    expect(await screen.findByRole('heading', { name: 'Save your recovery codes' })).toBeInTheDocument();
+    expect(within(screen.getByRole('list', { name: 'Save your recovery codes' })).getAllByRole('listitem')).toHaveLength(10);
+    expect(router.state.location.pathname).toBe('/mfa/setup');
+
+    await userEvent.click(screen.getByRole('button', { name: "I've saved them, continue" }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/employees'));
+    expect(await screen.findAllByRole('navigation', { name: 'Main navigation' })).not.toHaveLength(0);
+    expect(screen.queryByRole('heading', { name: 'Set up two-step verification' })).not.toBeInTheDocument();
+  });
+
+  it('MFA setup without a session goes back to sign-in', async () => {
+    setup('/mfa/setup');
+    expect(await screen.findByRole('heading', { name: 'Sign in to Wingora' })).toBeInTheDocument();
   });
 
   it('forgot password never reveals whether the account exists', async () => {

@@ -3,6 +3,10 @@
 namespace App\Security;
 
 use App\Models\User;
+use BaconQrCode\Renderer\Image\SvgImageBackEnd;
+use BaconQrCode\Renderer\ImageRenderer;
+use BaconQrCode\Renderer\RendererStyle\RendererStyle;
+use BaconQrCode\Writer;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use PragmaRX\Google2FA\Google2FA;
@@ -19,6 +23,14 @@ class TwoFactor
     public function otpauthUrl(User $user, string $secret): string
     {
         return $this->engine->getQRCodeUrl((string) config('security.mfa.issuer'), $user->email, $secret);
+    }
+
+    /** The otpauth URL as an SVG QR code data URI, rendered server-side so the secret never leaves this response. */
+    public function qrCodeDataUri(string $otpauthUrl): string
+    {
+        $svg = (new Writer(new ImageRenderer(new RendererStyle(192, 1), new SvgImageBackEnd)))->writeString($otpauthUrl);
+
+        return 'data:image/svg+xml;base64,'.base64_encode($svg);
     }
 
     /** Verifies a TOTP code and rejects reuse of the same or an older time step. */

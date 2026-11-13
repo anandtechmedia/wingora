@@ -29,6 +29,8 @@ export const personas: Record<string, MeResponse> = {
   'employee@wingora.test': persona('usr_employee', 'Jordan Lee', 'employee@wingora.test', ['employee'], [
     P.OrganizationView, P.EmployeesViewSelf, P.FilesUpload, P.AttendanceView, P.AttendanceClock, P.LeaveView, P.LeaveApply, P.PayslipsViewSelf, P.ReimbursementsSubmit, P.RecruitmentInterview, P.OnboardingTasksSelf, P.HelpdeskSubmit, P.DocumentsRequest,
   ], false),
+  // Privileged role without MFA yet: must enrol before reaching any module.
+  'newhr@wingora.test': { ...persona('usr_newhr', 'Casey Doyle', 'newhr@wingora.test', ['hr-manager'], [P.OrganizationView, P.EmployeesViewAll, PP.ReportsView], false), mfa_enrollment_required: true },
   // Platform staff belong to no organization: they see only the platform console.
   'platform@wingora.test': { ...persona('usr_platform', 'Sam Rivera', 'platform@wingora.test', ['platform-admin'], [
     P.PlatformTenantsView, P.PlatformTenantsManage, P.PlatformAuditView, P.PlatformCountryRulesManage, P.PlatformCountryRulesApprove,
