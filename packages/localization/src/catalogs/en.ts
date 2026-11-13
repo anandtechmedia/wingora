@@ -1268,6 +1268,7 @@ export const en = {
   'projects.taskRow': 'Task, row {n}',
   'projects.chooseProject': 'Choose a project',
   'projects.noTask': 'No specific task',
+  'projects.invalidHours': 'Enter hours as a number, for example 7.5.',
   'projects.hoursOn': 'Hours, row {row}, {day}',
   'projects.removeRow': 'Remove row',
   'projects.addRow': 'Add row',

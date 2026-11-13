@@ -85,6 +85,16 @@ describe('Projects module', () => {
     expect(source.saveWeek).toHaveBeenCalledWith('2027-03-01', [{ project_id: 'p1', task_id: 't1', work_date: '2027-03-01', minutes: 450, note: null }], 0);
   });
 
+  it('blocks saving when an hours cell is not a number', async () => {
+    const source = fakeSource();
+    setup('employee@wingora.test', source);
+    await userEvent.click(await screen.findByRole('button', { name: 'Add row' }));
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Project, row 1' }), 'p1');
+    await userEvent.type(screen.getAllByLabelText(/^Hours, row 1/)[0]!, '7..5');
+    expect(screen.getAllByText('Enter hours as a number, for example 7.5.').length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: 'Save draft' })).toBeDisabled();
+  });
+
   it('lets an assignee move their task status', async () => {
     const source = fakeSource();
     setup('employee@wingora.test', source);

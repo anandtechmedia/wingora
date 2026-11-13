@@ -48,13 +48,13 @@ export interface ProjectsSource {
   addMember(id: string, employeeId: string): Promise<Project>;
   removeMember(id: string, employeeId: string): Promise<Project>;
   report(id: string, range: { from?: string; to?: string }, signal?: AbortSignal): Promise<ProjectReport>;
-  tasks(projectId: string, signal?: AbortSignal): Promise<Page<Task>>;
-  myTasks(signal?: AbortSignal): Promise<Page<Task>>;
+  tasks(projectId: string, page: number, signal?: AbortSignal): Promise<Page<Task>>;
+  myTasks(page: number, signal?: AbortSignal): Promise<Page<Task>>;
   saveTask(input: Partial<TaskInput> & { status?: TaskStatus }, projectId: string, id?: string, version?: number): Promise<Task>;
   myWeek(week: string, signal?: AbortSignal): Promise<MyWeek>;
   saveWeek(week: string, entries: EntryInput[], version: number): Promise<Timesheet>;
   submit(id: string, version: number): Promise<Timesheet>;
-  approvals(signal?: AbortSignal): Promise<Page<Timesheet>>;
+  approvals(page: number, signal?: AbortSignal): Promise<Page<Timesheet>>;
   timesheet(id: string, signal?: AbortSignal): Promise<Timesheet>;
   decide(id: string, decision: 'approve' | 'reject', version: number, note: string | null): Promise<Timesheet>;
 }
@@ -73,13 +73,13 @@ export const httpProjectsSource: ProjectsSource = {
   addMember: (id, employeeId) => write('POST', `${v1}/projects/${id}/members`, { employee_id: employeeId }),
   removeMember: (id, employeeId) => write('DELETE', `${v1}/projects/${id}/members/${employeeId}`),
   report: (id, range, signal) => data(apiRequest('GET', `${v1}/projects/${id}/report`, { query: { from: range.from || undefined, to: range.to || undefined }, signal })),
-  tasks: (projectId, signal) => apiRequest('GET', `${v1}/projects/${projectId}/tasks`, { query: { per_page: '100' }, signal }),
-  myTasks: (signal) => apiRequest('GET', `${v1}/projects/tasks/mine`, { query: { per_page: '100' }, signal }),
+  tasks: (projectId, page, signal) => apiRequest('GET', `${v1}/projects/${projectId}/tasks`, { query: { page: String(page) }, signal }),
+  myTasks: (page, signal) => apiRequest('GET', `${v1}/projects/tasks/mine`, { query: { page: String(page) }, signal }),
   saveTask: (input, projectId, id, version) => (id ? write('PATCH', `${v1}/projects/tasks/${id}`, { ...input, version }) : write('POST', `${v1}/projects/${projectId}/tasks`, input)),
   myWeek: (week, signal) => data(apiRequest('GET', `${v1}/timesheets/mine`, { query: { week }, signal })),
   saveWeek: (week, entries, version) => write('PUT', `${v1}/timesheets/mine/${week}`, { entries, version }),
   submit: (id, version) => write('POST', `${v1}/timesheets/${id}/submit`, { version }),
-  approvals: (signal) => apiRequest('GET', `${v1}/timesheets/approvals`, { query: { per_page: '100' }, signal }),
+  approvals: (page, signal) => apiRequest('GET', `${v1}/timesheets/approvals`, { query: { page: String(page) }, signal }),
   timesheet: (id, signal) => data(apiRequest('GET', `${v1}/timesheets/${id}`, { signal })),
   decide: (id, decision, version, note) => write('POST', `${v1}/timesheets/${id}/${decision}`, { version, note }),
 };

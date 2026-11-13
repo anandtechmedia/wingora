@@ -69,7 +69,8 @@ function toRows(sheet: Timesheet): Row[] {
     const id = `${e.project.id}:${e.task?.id ?? ''}`;
     const row = rows.get(id) ?? { key: ++rowKey, project_id: e.project.id, task_id: e.task?.id ?? '', hours: Array(7).fill(''), note: e.note ?? '' };
     const i = Math.round((Date.parse(`${e.work_date}T00:00:00Z`) - Date.parse(`${sheet.week_start}T00:00:00Z`)) / 86_400_000);
-    row.hours[i] = String(Math.round((e.minutes / 60) * 100) / 100);
+    const before = Math.round(Number(row.hours[i] || 0) * 60);
+    row.hours[i] = String(Math.round(((before + e.minutes) / 60) * 100) / 100);
     rows.set(id, row);
   }
   return [...rows.values()];
@@ -102,6 +103,9 @@ function WeekGrid({ data, onSaved }: { data: MyWeek; onSaved: () => void }) {
   const fields = validationErrors(error);
   const days = Array.from({ length: 7 }, (_, i) => addDays(sheet.week_start, i));
   const minutes = (v: string) => Math.round(Number(v.replace(',', '.')) * 60);
+  const badHours = (v: string) => v.trim() !== '' && !(Number.isFinite(Number(v.replace(',', '.'))) && Number(v.replace(',', '.')) >= 0);
+  const invalid = rows.some((r) => r.hours.some(badHours));
+  const otherError = Object.entries(fields).find(([k]) => !/^entries\.\d+\.minutes$/.test(k))?.[1];
   const entries: EntryInput[] = rows.flatMap((r) => r.hours.flatMap((h, i) => (r.project_id && h.trim() !== '' && minutes(h) > 0
     ? [{ project_id: r.project_id, task_id: r.task_id || null, work_date: days[i] as string, minutes: minutes(h), note: blank(r.note) }] : [])));
   const total = entries.reduce((sum, e) => sum + e.minutes, 0);
@@ -145,7 +149,7 @@ function WeekGrid({ data, onSaved }: { data: MyWeek; onSaved: () => void }) {
                       : sheet.entries?.find((e) => e.task?.id === r.task_id)?.task?.title ?? '—'}</td>
                     {days.map((d, i) => (
                       <td key={d} className="w-20 p-2">{editable ? <Input label={pt('hoursOn', { row: n + 1, day: weekday(d) })} hideLabel inputMode="decimal" size="sm" value={r.hours[i]}
-                        error={fields[`entries.${entries.findIndex((e) => e.project_id === r.project_id && e.work_date === d && (e.task_id ?? '') === r.task_id)}.minutes`]}
+                        error={badHours(r.hours[i] ?? '') ? pt('invalidHours') : fields[`entries.${entries.findIndex((e) => e.project_id === r.project_id && e.work_date === d && (e.task_id ?? '') === r.task_id)}.minutes`]}
                         onChange={(e) => update(r.key, { hours: r.hours.map((h, j) => (j === i ? e.target.value : h)) })} /> : (r.hours[i] || '—')}</td>
                     ))}
                     {editable && <td className="p-2"><Button size="sm" variant="tertiary" onClick={() => setRows(rows.filter((x) => x.key !== r.key))}>{pt('removeRow')}</Button></td>}
@@ -159,11 +163,11 @@ function WeekGrid({ data, onSaved }: { data: MyWeek; onSaved: () => void }) {
       {editable && (
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" disabled={data.projects.length === 0} onClick={() => setRows([...rows, { key: ++rowKey, project_id: '', task_id: '', hours: Array(7).fill(''), note: '' }])}>{pt('addRow')}</Button>
-          <Button variant="secondary" loading={busy} onClick={persist}>{pt('saveDraft')}</Button>
-          <Button loading={busy} disabled={total === 0} onClick={submit}>{pt('submitWeek')}</Button>
+          <Button variant="secondary" loading={busy} disabled={invalid} onClick={persist}>{pt('saveDraft')}</Button>
+          <Button loading={busy} disabled={total === 0 || invalid} onClick={submit}>{pt('submitWeek')}</Button>
         </div>
       )}
-      <FormError message={error ? formError(error, pt('saveFailed')) : null} />
+      <FormError message={invalid ? pt('invalidHours') : error ? (otherError ?? formError(error, pt('saveFailed'))) : null} />
       {!editable && <p className="text-sm text-fg-muted">{sheet.status === 'approved' ? pt('approvedBy', { name: sheet.decided_by ?? '—' }) : pt('awaitingApproval')}</p>}
     </div>
   );
@@ -172,7 +176,8 @@ function WeekGrid({ data, onSaved }: { data: MyWeek; onSaved: () => void }) {
 function MyTasks() {
   const { pt, day } = useProjectsT();
   const source = useProjectsSource();
-  const tasks = useResource(useCallback((signal: AbortSignal) => source.myTasks(signal), [source]));
+  const [page, setPage] = useState(1);
+  const tasks = useResource(useCallback((signal: AbortSignal) => source.myTasks(page, signal), [source, page]));
   const { busy, run } = useAction();
   const columns: DataTableColumn<Task>[] = [
     { id: 'title', header: pt('task'), primary: true, cell: (x) => <span className="font-medium">{x.title}</span> },
@@ -190,6 +195,7 @@ function MyTasks() {
       <DataTable caption={pt('myTasks')} hideCaption columns={columns} rows={tasks.data?.data ?? []} getRowId={(x) => x.id}
         loading={tasks.loading && tasks.data === undefined} error={tasks.error ? errorMessage(tasks.error, pt('loadError')) : null} onRetry={tasks.reload}
         empty={<EmptyState title={pt('noTasks')} />} />
+      <Pager meta={tasks.data?.meta} onPage={setPage} />
     </Card>
   );
 }
@@ -319,7 +325,8 @@ function ProjectDetail({ project: p, onChanged }: { project: Project; onChanged:
   const [removing, setRemoving] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [key, setKey] = useState(0);
-  const tasks = useResource(useCallback((signal: AbortSignal) => source.tasks(p.id, signal), [source, p.id, key])); // eslint-disable-line react-hooks/exhaustive-deps
+  const [taskPage, setTaskPage] = useState(1);
+  const tasks = useResource(useCallback((signal: AbortSignal) => source.tasks(p.id, taskPage, signal), [source, p.id, key, taskPage])); // eslint-disable-line react-hooks/exhaustive-deps
   const changed = () => { setDialog(null); setEditingTask(null); toast({ title: pt('saved'), tone: 'success' }); setKey((k) => k + 1); onChanged(); };
   const open = p.status !== 'completed' && p.status !== 'cancelled';
   return (
@@ -368,6 +375,7 @@ function ProjectDetail({ project: p, onChanged }: { project: Project; onChanged:
             </ul>
           )}
         </ResourceView>
+        <Pager meta={tasks.data?.meta} onPage={setTaskPage} />
       </section>
       {p.can_manage && <Report project={p} />}
       {dialog === 'edit' && <ProjectForm project={p} onClose={() => setDialog(null)} onSaved={changed} />}
@@ -477,7 +485,8 @@ function Report({ project }: { project: Project }) {
 function Approvals() {
   const { pt, day, hours } = useProjectsT();
   const source = useProjectsSource();
-  const list = useResource(useCallback((signal: AbortSignal) => source.approvals(signal), [source]));
+  const [page, setPage] = useState(1);
+  const list = useResource(useCallback((signal: AbortSignal) => source.approvals(page, signal), [source, page]));
   const [open, setOpen] = useState<string | null>(null);
   const columns: DataTableColumn<Timesheet>[] = [
     { id: 'employee', header: pt('employee'), primary: true, cell: (s) => (
@@ -493,6 +502,7 @@ function Approvals() {
       <DataTable caption={pt('approvals')} hideCaption columns={columns} rows={list.data?.data ?? []} getRowId={(s) => s.id ?? s.week_start}
         loading={list.loading && list.data === undefined} error={list.error ? errorMessage(list.error, pt('loadError')) : null} onRetry={list.reload}
         empty={<EmptyState title={pt('noApprovals')} />} />
+      <Pager meta={list.data?.meta} onPage={setPage} />
       {open && <ReviewDialog id={open} onClose={() => setOpen(null)} onDone={() => { setOpen(null); list.reload(); }} />}
     </Card>
   );
