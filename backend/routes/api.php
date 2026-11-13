@@ -246,6 +246,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
                 Route::post('performance/meetings', [PerformanceMeetingController::class, 'store']);
                 Route::get('performance/meetings/{meeting}', [PerformanceMeetingController::class, 'show']);
                 Route::patch('performance/meetings/{meeting}', [PerformanceMeetingController::class, 'update']);
+                Route::get('performance/history', [PerformanceHistoryController::class, 'mine']);
                 Route::get('performance/employees/{employee}/history', [PerformanceHistoryController::class, 'show']);
 
                 Route::get('organization', [OrganizationController::class, 'show']);

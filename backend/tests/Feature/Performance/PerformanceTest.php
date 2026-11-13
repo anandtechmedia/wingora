@@ -231,4 +231,10 @@ class PerformanceTest extends SecurityTestCase
         Subscription::forTenant($this->tenant)->forceFill(['plan_id' => Plan::query()->where('code', 'starter')->value('id')])->saveQuietly();
         $this->apiAs($this->employee, 'GET', '/api/v1/performance/objectives')->assertStatus(402);
     }
+
+    public function test_own_history_resolves_the_signed_in_employee(): void
+    {
+        $this->apiAs($this->employee, 'GET', '/api/v1/performance/history')
+            ->assertOk()->assertJsonPath('data.employee.id', $this->employeeRecord->public_id);
+    }
 }

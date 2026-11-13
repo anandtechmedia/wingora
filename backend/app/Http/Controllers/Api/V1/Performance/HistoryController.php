@@ -17,6 +17,11 @@ class HistoryController extends Controller
 {
     use Concerns;
 
+    public function mine(Request $request): JsonResponse
+    {
+        return $this->show($request, $this->self($request));
+    }
+
     public function show(Request $request, Employee $employee): JsonResponse
     {
         $user = $request->user();
