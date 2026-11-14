@@ -24,10 +24,10 @@ export const personas: Record<string, MeResponse> = {
     P.OrganizationView, P.UsersView, P.DepartmentsView, P.EmployeesViewAll, P.EmployeesManage, P.FilesUpload,
     P.EmployeesDisciplinaryView, P.EmployeesDisciplinaryManage, P.EmployeesExport,
     P.AttendanceView, P.AttendanceClock, P.AttendanceApprove, P.AttendanceManage, P.LeaveView, P.LeaveApply, P.LeaveApprove, P.LeaveManage,
-    P.RecruitmentView, P.RecruitmentManage, P.RecruitmentInterview, P.OnboardingView, P.OnboardingManage, P.OnboardingTasksSelf, P.HelpdeskSubmit, P.HelpdeskAgent, P.HelpdeskManage, P.DocumentsRequest, P.DocumentsManage, PP.OffboardingView, PP.PerformanceView, PP.ReportsView,
+    P.RecruitmentView, P.RecruitmentManage, P.RecruitmentInterview, P.OnboardingView, P.OnboardingManage, P.OnboardingTasksSelf, P.HelpdeskSubmit, P.HelpdeskAgent, P.HelpdeskManage, P.DocumentsRequest, P.DocumentsManage, PP.OffboardingView, P.PerformanceView, P.PerformanceReview, P.PerformanceManage, P.PerformanceConfigure, PP.ReportsView,
   ], true),
   'employee@wingora.test': persona('usr_employee', 'Jordan Lee', 'employee@wingora.test', ['employee'], [
-    P.OrganizationView, P.EmployeesViewSelf, P.FilesUpload, P.AttendanceView, P.AttendanceClock, P.LeaveView, P.LeaveApply, P.PayslipsViewSelf, P.ReimbursementsSubmit, P.RecruitmentInterview, P.OnboardingTasksSelf, P.HelpdeskSubmit, P.DocumentsRequest,
+    P.OrganizationView, P.EmployeesViewSelf, P.PerformanceView, P.FilesUpload, P.AttendanceView, P.AttendanceClock, P.LeaveView, P.LeaveApply, P.PayslipsViewSelf, P.ReimbursementsSubmit, P.RecruitmentInterview, P.OnboardingTasksSelf, P.HelpdeskSubmit, P.DocumentsRequest,
   ], false),
   // Platform staff belong to no organization: they see only the platform console.
   'platform@wingora.test': { ...persona('usr_platform', 'Sam Rivera', 'platform@wingora.test', ['platform-admin'], [
@@ -58,6 +58,6 @@ export interface NotificationItem { id: string; title: string; body: string; min
 
 export const notifications: NotificationItem[] = [
   { id: 'n1', title: 'Leave request awaiting approval', body: 'Ana Ruiz · 2 days · Guadalajara', minutesAgo: 12, read: false, moduleId: 'leave' },
-  { id: 'n2', title: 'Review cycle opens Monday', body: 'Q1 performance reviews for Austin', minutesAgo: 95, read: false, moduleId: 'performance' },
+  { id: 'n2', title: 'Laptop return due Friday', body: 'Asset WG-0142 is due back to IT', minutesAgo: 95, read: false, moduleId: 'assets' },
   { id: 'n3', title: 'Policy document updated', body: 'UAE annual leave policy v2 is ready for review', minutesAgo: 60 * 26, read: true, moduleId: 'documents' },
 ];

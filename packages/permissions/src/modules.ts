@@ -25,7 +25,7 @@ export const modules: readonly ModuleDefinition[] = [
   { id: 'recruitment', path: 'recruitment', group: 'talent', requires: { anyOf: [P.RecruitmentView, P.RecruitmentInterview, P.RecruitmentConfigure] } },
   { id: 'onboarding', path: 'onboarding', group: 'talent', requires: { anyOf: [P.OnboardingView, P.OnboardingTasksSelf, P.OnboardingConfigure] } },
   { id: 'offboarding', path: 'offboarding', group: 'talent', requires: { anyOf: [PP.OffboardingView] } },
-  { id: 'performance', path: 'performance', group: 'talent', requires: { anyOf: [PP.PerformanceView] } },
+  { id: 'performance', path: 'performance', group: 'talent', requires: { anyOf: [P.PerformanceView, P.PerformanceReview, P.PerformanceManage, P.PerformanceConfigure] } },
   { id: 'assets', path: 'assets', group: 'operations', requires: { anyOf: [PP.AssetsView] } },
   { id: 'helpdesk', path: 'helpdesk', group: 'operations', requires: { anyOf: [P.HelpdeskSubmit, P.HelpdeskAgent, P.HelpdeskManage, P.HelpdeskConfigure] } },
   { id: 'projects', path: 'projects', group: 'operations', requires: { anyOf: [PP.ProjectsView] } },

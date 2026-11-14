@@ -68,6 +68,10 @@ export const Permission = {
   DocumentsManage: 'documents.manage',
   DocumentsSalary: 'documents.salary',
   DocumentsConfigure: 'documents.configure',
+  PerformanceView: 'performance.view',
+  PerformanceReview: 'performance.review',
+  PerformanceManage: 'performance.manage',
+  PerformanceConfigure: 'performance.configure',
   BillingView: 'billing.view',
   BillingManage: 'billing.manage',
   AccountManage: 'account.manage',
@@ -82,7 +86,6 @@ export const Permission = {
  */
 export const PendingPermission = {
   OffboardingView: 'offboarding.view',
-  PerformanceView: 'performance.view',
   AssetsView: 'assets.view',
   ProjectsView: 'projects.view',
   ReportsView: 'reports.view',
