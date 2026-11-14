@@ -24,10 +24,10 @@ export const personas: Record<string, MeResponse> = {
     P.OrganizationView, P.UsersView, P.DepartmentsView, P.EmployeesViewAll, P.EmployeesManage, P.FilesUpload,
     P.EmployeesDisciplinaryView, P.EmployeesDisciplinaryManage, P.EmployeesExport,
     P.AttendanceView, P.AttendanceClock, P.AttendanceApprove, P.AttendanceManage, P.LeaveView, P.LeaveApply, P.LeaveApprove, P.LeaveManage,
-    P.RecruitmentView, P.RecruitmentManage, P.RecruitmentInterview, P.OnboardingView, P.OnboardingManage, P.OnboardingTasksSelf, P.HelpdeskSubmit, P.HelpdeskAgent, P.HelpdeskManage, P.DocumentsRequest, P.DocumentsManage, PP.OffboardingView, P.PerformanceView, P.PerformanceReview, P.PerformanceManage, P.PerformanceConfigure, PP.ReportsView,
+    P.RecruitmentView, P.RecruitmentManage, P.RecruitmentInterview, P.OnboardingView, P.OnboardingManage, P.OnboardingTasksSelf, P.HelpdeskSubmit, P.HelpdeskAgent, P.HelpdeskManage, P.DocumentsRequest, P.DocumentsManage, P.AssetsView, P.AssetsManage, P.ProjectsView, P.ProjectsManage, P.TimesheetsApprove, PP.OffboardingView, P.PerformanceView, P.PerformanceReview, P.PerformanceManage, P.PerformanceConfigure, PP.ReportsView,
   ], true),
   'employee@wingora.test': persona('usr_employee', 'Jordan Lee', 'employee@wingora.test', ['employee'], [
-    P.OrganizationView, P.EmployeesViewSelf, P.PerformanceView, P.FilesUpload, P.AttendanceView, P.AttendanceClock, P.LeaveView, P.LeaveApply, P.PayslipsViewSelf, P.ReimbursementsSubmit, P.RecruitmentInterview, P.OnboardingTasksSelf, P.HelpdeskSubmit, P.DocumentsRequest,
+    P.OrganizationView, P.EmployeesViewSelf, P.PerformanceView, P.FilesUpload, P.AttendanceView, P.AttendanceClock, P.LeaveView, P.LeaveApply, P.PayslipsViewSelf, P.ReimbursementsSubmit, P.RecruitmentInterview, P.OnboardingTasksSelf, P.HelpdeskSubmit, P.DocumentsRequest, P.AssetsView, P.ProjectsView,
   ], false),
   // Privileged role without MFA yet: must enrol before reaching any module.
   'newhr@wingora.test': { ...persona('usr_newhr', 'Casey Doyle', 'newhr@wingora.test', ['hr-manager'], [P.OrganizationView, P.EmployeesViewAll, PP.ReportsView], false), mfa_enrollment_required: true },
@@ -60,6 +60,6 @@ export interface NotificationItem { id: string; title: string; body: string; min
 
 export const notifications: NotificationItem[] = [
   { id: 'n1', title: 'Leave request awaiting approval', body: 'Ana Ruiz · 2 days · Guadalajara', minutesAgo: 12, read: false, moduleId: 'leave' },
-  { id: 'n2', title: 'Laptop return due Friday', body: 'Asset WG-0142 is due back to IT', minutesAgo: 95, read: false, moduleId: 'assets' },
+  { id: 'n2', title: 'Exit interview scheduled', body: 'Sam Patel · Thursday 10:00', minutesAgo: 95, read: false, moduleId: 'offboarding' },
   { id: 'n3', title: 'Policy document updated', body: 'UAE annual leave policy v2 is ready for review', minutesAgo: 60 * 26, read: true, moduleId: 'documents' },
 ];
