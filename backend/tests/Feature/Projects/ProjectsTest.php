@@ -172,6 +172,8 @@ class ProjectsTest extends SecurityTestCase
         // Former members lose sight of their finished tasks on the project.
         $this->apiAs($this->admin, 'POST', "/api/v1/projects/{$project['id']}/tasks", ['title' => 'Done work', 'assignee_id' => $this->employeeRecord->public_id, 'status' => 'done'])->assertCreated();
         $this->apiAs($this->employee, 'GET', '/api/v1/projects/tasks/mine?include_done=1')->assertOk()->assertJsonPath('meta.total', 1);
+        $week = $this->apiAs($this->employee, 'GET', '/api/v1/timesheets/mine?week='.self::WEEK)->assertOk()->json('data.projects');
+        $this->assertContains('Done work', array_column(collect($week)->firstWhere('id', $project['id'])['tasks'], 'title'));
         $this->apiAs($this->admin, 'DELETE', "/api/v1/projects/{$project['id']}/members/{$this->employeeRecord->public_id}")->assertSuccessful();
         $this->apiAs($this->employee, 'GET', '/api/v1/projects/tasks/mine?include_done=1')->assertOk()->assertJsonPath('meta.total', 0);
     }

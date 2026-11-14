@@ -45,7 +45,7 @@ class TimesheetController extends Controller
         $sheet = Timesheet::query()->with(['entries.project', 'entries.task', 'decider'])->where('employee_id', $me)->whereDate('week_start', $week)->first();
         $projects = Project::query()->where('status', 'active')
             ->where(fn ($w) => $w->where('manager_employee_id', $me)->orWhereHas('members', fn ($m) => $m->where('employee_id', $me)))
-            ->with(['tasks' => fn ($q) => $q->where('status', '!=', 'done')->orderBy('title')])->orderBy('name')->limit(100)->get();
+            ->with(['tasks' => fn ($q) => $q->orderBy('title')])->orderBy('name')->limit(100)->get();
 
         return response()->json(['data' => [
             'timesheet' => $sheet ? $this->detail($sheet) : ['id' => null, 'week_start' => $week->toDateString(), 'status' => 'draft', 'total_minutes' => 0, 'version' => 0, 'entries' => []],
