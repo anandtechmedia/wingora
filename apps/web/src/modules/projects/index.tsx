@@ -70,7 +70,7 @@ function useClampPage(meta: { last_page: number } | undefined, page: number, set
 function toRows(sheet: Timesheet): Row[] {
   const rows = new Map<string, Row>();
   for (const e of sheet.entries ?? []) {
-    const id = `${e.project.id}:${e.task?.id ?? ''}`;
+    const id = `${e.project.id}:${e.task?.id ?? ''}:${e.note ?? ''}`;
     const row = rows.get(id) ?? { key: ++rowKey, project_id: e.project.id, task_id: e.task?.id ?? '', hours: Array(7).fill(''), note: e.note ?? '' };
     const i = Math.round((Date.parse(`${e.work_date}T00:00:00Z`) - Date.parse(`${sheet.week_start}T00:00:00Z`)) / 86_400_000);
     const before = Math.round(Number(row.hours[i] || 0) * 60);
