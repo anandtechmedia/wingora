@@ -95,6 +95,20 @@ describe('Projects module', () => {
     expect(screen.getByRole('button', { name: 'Save draft' })).toBeDisabled();
   });
 
+  it('saves with the new version after a failed submit', async () => {
+    const source = fakeSource();
+    vi.mocked(source.submit).mockRejectedValueOnce(new Error('boom'));
+    setup('employee@wingora.test', source);
+    await userEvent.click(await screen.findByRole('button', { name: 'Add row' }));
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Project, row 1' }), 'p1');
+    await userEvent.type(screen.getAllByLabelText(/^Hours, row 1/)[0]!, '2');
+    await userEvent.click(screen.getByRole('button', { name: 'Submit week' }));
+    await waitFor(() => expect(source.submit).toHaveBeenCalled());
+    await userEvent.click(screen.getByRole('button', { name: 'Save draft' }));
+    await waitFor(() => expect(source.saveWeek).toHaveBeenCalledTimes(2));
+    expect(vi.mocked(source.saveWeek).mock.calls[1]![2]).toBe(1);
+  });
+
   it('blocks saving hours that have no project', async () => {
     setup('employee@wingora.test', fakeSource());
     await userEvent.click(await screen.findByRole('button', { name: 'Add row' }));
