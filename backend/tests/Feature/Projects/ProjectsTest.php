@@ -118,6 +118,8 @@ class ProjectsTest extends SecurityTestCase
         $put = fn (array $entries, string $week = self::WEEK) => $this->apiAs($this->employee, 'PUT', "/api/v1/timesheets/mine/{$week}", ['version' => 0, 'entries' => $entries]);
 
         $put([], '2027-03-02')->assertStatus(422)->assertJsonValidationErrors('week');
+        $put([], 'not-a-date')->assertStatus(422)->assertJsonValidationErrors('week');
+        $put([], '2027-02-30')->assertStatus(422)->assertJsonValidationErrors('week');
         $put([['project_id' => $foreign['id'], 'work_date' => '2027-03-01', 'minutes' => 60]])->assertStatus(422)->assertJsonValidationErrors('entries.0.project_id');
         $put([['project_id' => $closed['id'], 'work_date' => '2027-03-01', 'minutes' => 60]])->assertStatus(422)->assertJsonValidationErrors('entries.0.project_id');
         $put([['project_id' => $project['id'], 'work_date' => '2027-03-08', 'minutes' => 60]])->assertStatus(422)->assertJsonValidationErrors('entries.0.work_date');

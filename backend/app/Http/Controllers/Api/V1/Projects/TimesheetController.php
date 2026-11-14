@@ -41,7 +41,7 @@ class TimesheetController extends Controller
     {
         $this->viewer($request);
         $me = $this->employeeId($request);
-        $week = $this->week($request->validate(['week' => ['nullable', 'date']])['week'] ?? now()->toDateString(), false);
+        $week = $this->week($request->validate(['week' => ['nullable', 'date_format:Y-m-d']])['week'] ?? now()->toDateString(), false);
         $sheet = Timesheet::query()->with(['entries.project', 'entries.task', 'decider'])->where('employee_id', $me)->whereDate('week_start', $week)->first();
         $projects = Project::query()->where('status', 'active')
             ->where(fn ($w) => $w->where('manager_employee_id', $me)->orWhereHas('members', fn ($m) => $m->where('employee_id', $me)))
@@ -179,7 +179,10 @@ class TimesheetController extends Controller
 
     private function week(string $date, bool $mustBeMonday): Carbon
     {
-        $day = Carbon::parse($date)->startOfDay();
+        $day = preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) ? Carbon::createFromFormat('!Y-m-d', $date) : false;
+        if (! $day || $day->toDateString() !== $date) {
+            throw ValidationException::withMessages(['week' => __('Enter a valid date.')]);
+        }
         if ($mustBeMonday && ! $day->isMonday()) {
             throw ValidationException::withMessages(['week' => __('Weeks start on Monday.')]);
         }
