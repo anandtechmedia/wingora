@@ -60,6 +60,6 @@ export interface NotificationItem { id: string; title: string; body: string; min
 
 export const notifications: NotificationItem[] = [
   { id: 'n1', title: 'Leave request awaiting approval', body: 'Ana Ruiz · 2 days · Guadalajara', minutesAgo: 12, read: false, moduleId: 'leave' },
-  { id: 'n2', title: 'Laptop return due Friday', body: 'Asset WG-0142 is due back to IT', minutesAgo: 95, read: false, moduleId: 'assets' },
+  { id: 'n2', title: 'Exit interview scheduled', body: 'Sam Patel · Thursday 10:00', minutesAgo: 95, read: false, moduleId: 'offboarding' },
   { id: 'n3', title: 'Policy document updated', body: 'UAE annual leave policy v2 is ready for review', minutesAgo: 60 * 26, read: true, moduleId: 'documents' },
 ];

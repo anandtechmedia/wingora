@@ -151,7 +151,7 @@ describe('permission-based navigation', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Notifications, 1 unread' }));
     const drawer = screen.getByRole('dialog', { name: 'Notifications' });
     expect(within(drawer).getByText('Leave request awaiting approval')).toBeInTheDocument();
-    expect(within(drawer).queryByText('Laptop return due Friday')).not.toBeInTheDocument();
+    expect(within(drawer).queryByText('Exit interview scheduled')).not.toBeInTheDocument();
     await userEvent.click(within(drawer).getByRole('button', { name: 'Mark all as read' }));
     expect(within(drawer).queryByText('New')).not.toBeInTheDocument();
   });
