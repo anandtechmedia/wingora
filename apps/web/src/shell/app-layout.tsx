@@ -96,15 +96,34 @@ function EntitySelector({ className }: { className?: string }) {
   );
 }
 
+/** Display names of the signed-in user's roles, falling back to the role key. */
+function useRoleLabel(): string {
+  const { t } = useI18n();
+  const { me } = useSession();
+  return (me?.user.roles ?? []).map((r) => {
+    const key = `role.${r}`;
+    const label = t(key as Parameters<typeof t>[0]);
+    return label === key ? r : label;
+  }).join(', ');
+}
+
+function RoleBadge() {
+  const { t } = useI18n();
+  const role = useRoleLabel();
+  if (!role) return null;
+  return <Badge tone="accent" size="sm" className="hidden max-w-48 truncate sm:inline-flex"><span className="sr-only">{t('shell.role')}: </span>{role}</Badge>;
+}
+
 function ProfileMenu() {
   const { t } = useI18n();
   const { me, signOut } = useSession();
   const navigate = useNavigate();
+  const role = useRoleLabel();
   if (!me) return null;
   return (
     <Dropdown label={t('shell.account')} variant="tertiary" triggerClassName="inline-flex rounded-full" menuClassName="w-64"
       trigger={<Avatar name={me.user.name} size="sm" decorative />}
-      header={<><p className="text-2xs text-fg-muted">{t('shell.signedInAs')}</p><p className="truncate text-sm font-medium text-fg">{me.user.name}</p><p className="truncate text-xs text-fg-secondary">{me.user.email}</p></>}
+      header={<><p className="text-2xs text-fg-muted">{t('shell.signedInAs')}</p><p className="truncate text-sm font-medium text-fg">{me.user.name}</p><p className="truncate text-xs text-fg-secondary">{me.user.email}</p>{role && <Badge tone="accent" size="sm" className="mt-2"><span className="sr-only">{t('shell.role')}: </span>{role}</Badge>}</>}
       items={[
         { id: 'profile', label: t('shell.profile'), icon: <UserIcon />, onSelect: () => navigate('/employees') },
         { type: 'separator', id: 'sep' },
@@ -197,6 +216,7 @@ export function AppLayout() {
               <IconButton label={t('notifications.trigger', { count: notifications.unread })} icon={<BellIcon size={18} />} onClick={() => setNotificationsOpen(true)} aria-haspopup="dialog" />
               {notifications.unread > 0 && <span aria-hidden="true" className="pointer-events-none absolute end-1.5 top-1.5 size-2 rounded-full bg-danger-solid ring-2 ring-surface" />}
             </span>
+            <RoleBadge />
             <ProfileMenu />
           </div>
         </header>

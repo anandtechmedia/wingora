@@ -137,6 +137,8 @@ describe('shell', () => {
     await screen.findByRole('heading', { name: /Welcome back/ });
     await userEvent.click(screen.getByRole('button', { name: 'Account' }));
     expect(screen.getByRole('menu')).toHaveTextContent('hr@wingora.test');
+    expect(screen.getByRole('menu')).toHaveTextContent('Role: HR Manager');
+    expect(screen.getAllByRole('banner').some((b) => within(b).queryAllByText('HR Manager').length > 0)).toBe(true);
     await userEvent.click(screen.getByRole('menuitem', { name: 'Sign out' }));
     expect(await screen.findByRole('heading', { name: 'Sign in to Wingora' })).toBeInTheDocument();
   });
