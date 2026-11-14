@@ -95,6 +95,14 @@ describe('Projects module', () => {
     expect(screen.getByRole('button', { name: 'Save draft' })).toBeDisabled();
   });
 
+  it('blocks saving hours that have no project', async () => {
+    setup('employee@wingora.test', fakeSource());
+    await userEvent.click(await screen.findByRole('button', { name: 'Add row' }));
+    await userEvent.type(screen.getAllByLabelText(/^Hours, row 1/)[0]!, '4');
+    expect(screen.getByText('Choose a project for these hours.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save draft' })).toBeDisabled();
+  });
+
   it('lets an assignee move their task status', async () => {
     const source = fakeSource();
     setup('employee@wingora.test', source);

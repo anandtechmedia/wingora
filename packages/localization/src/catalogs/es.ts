@@ -1411,6 +1411,7 @@ export const es: Messages = {
   'projects.taskRow': 'Tarea, fila {n}',
   'projects.chooseProject': 'Elige un proyecto',
   'projects.noTask': 'Sin tarea específica',
+  'projects.projectRequired': 'Elige un proyecto para estas horas.',
   'projects.invalidHours': 'Escribe las horas como número, por ejemplo 7.5.',
   'projects.hoursOn': 'Horas, fila {row}, {day}',
   'projects.removeRow': 'Quitar fila',

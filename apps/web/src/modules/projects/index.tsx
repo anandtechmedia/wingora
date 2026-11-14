@@ -108,7 +108,8 @@ function WeekGrid({ data, onSaved }: { data: MyWeek; onSaved: () => void }) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(sheet.week_start, i));
   const minutes = (v: string) => Math.round(Number(v.replace(',', '.')) * 60);
   const badHours = (v: string) => v.trim() !== '' && !(Number.isFinite(Number(v.replace(',', '.'))) && Number(v.replace(',', '.')) >= 0);
-  const invalid = rows.some((r) => r.hours.some(badHours));
+  const needsProject = (r: Row) => !r.project_id && r.hours.some((h) => h.trim() !== '');
+  const invalid = rows.some((r) => r.hours.some(badHours) || needsProject(r));
   const otherError = Object.entries(fields).find(([k]) => !/^entries\.\d+\.minutes$/.test(k))?.[1];
   const entries: EntryInput[] = rows.flatMap((r) => r.hours.flatMap((h, i) => (r.project_id && h.trim() !== '' && minutes(h) > 0
     ? [{ project_id: r.project_id, task_id: r.task_id || null, work_date: days[i] as string, minutes: minutes(h), note: blank(r.note) }] : [])));
@@ -147,6 +148,7 @@ function WeekGrid({ data, onSaved }: { data: MyWeek; onSaved: () => void }) {
                 return (
                   <tr key={r.key} className="border-t border-line align-top">
                     <td className="p-2">{editable ? <Select label={pt('projectRow', { n: n + 1 })} hideLabel placeholder={pt('chooseProject')} value={r.project_id}
+                      error={needsProject(r) ? pt('projectRequired') : undefined}
                       onChange={(e) => update(r.key, { project_id: e.target.value, task_id: '' })} options={projectOptions} /> : label}</td>
                     <td className="p-2">{editable ? <Select label={pt('taskRow', { n: n + 1 })} hideLabel value={r.task_id} disabled={!project}
                       onChange={(e) => update(r.key, { task_id: e.target.value })} options={[{ value: '', label: pt('noTask') }, ...(project?.tasks ?? []).map((x) => ({ value: x.id, label: x.title }))]} />
