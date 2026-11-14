@@ -12,6 +12,7 @@ import { disconnectedHelpdeskSource, HelpdeskSourceProvider, httpHelpdeskSource 
 import { DocumentsSourceProvider, disconnectedDocumentsSource, httpDocumentsSource } from '@/api/documents';
 import { AssetsSourceProvider, disconnectedAssetsSource, httpAssetsSource } from '@/api/assets';
 import { disconnectedProjectsSource, httpProjectsSource, ProjectsSourceProvider } from '@/api/projects';
+import { PerformanceSourceProvider, disconnectedPerformanceSource, httpPerformanceSource } from '@/api/performance';
 import { BillingSourceProvider, disconnectedBillingSource, httpBillingSource } from '@/api/billing';
 import { disconnectedPlatformSource, httpPlatformSource, PlatformSourceProvider } from '@/api/platform';
 import { createLiveGateway } from '@/auth/live-gateway';
@@ -35,6 +36,7 @@ const helpdeskSource = live ? httpHelpdeskSource : disconnectedHelpdeskSource;
 const documentsSource = live ? httpDocumentsSource : disconnectedDocumentsSource;
 const assetsSource = live ? httpAssetsSource : disconnectedAssetsSource;
 const projectsSource = live ? httpProjectsSource : disconnectedProjectsSource;
+const performanceSource = live ? httpPerformanceSource : disconnectedPerformanceSource;
 const billingSource = live ? httpBillingSource : disconnectedBillingSource;
 const platformSource = live ? httpPlatformSource : disconnectedPlatformSource;
 
@@ -55,6 +57,7 @@ export function App() {
                         <DocumentsSourceProvider value={documentsSource}>
                         <AssetsSourceProvider value={assetsSource}>
 <ProjectsSourceProvider value={projectsSource}>
+                        <PerformanceSourceProvider value={performanceSource}>
                           <BillingSourceProvider value={billingSource}>
                             <PlatformSourceProvider value={platformSource}>
                               <WorkspaceProvider live={live}>
@@ -62,6 +65,7 @@ export function App() {
                               </WorkspaceProvider>
                             </PlatformSourceProvider>
                           </BillingSourceProvider>
+                        </PerformanceSourceProvider>
                         </ProjectsSourceProvider>
 </AssetsSourceProvider>
                         </DocumentsSourceProvider>

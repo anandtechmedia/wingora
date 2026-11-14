@@ -17,6 +17,7 @@ enum Feature: string
     case Documents = 'documents';
     case Assets = 'assets';
     case Projects = 'projects';
+    case Performance = 'performance';
 
     /** @return list<string> path patterns, `*` matches one segment */
     public function paths(): array
@@ -31,6 +32,7 @@ enum Feature: string
             self::Documents => ['document-templates', 'document-requests'],
             self::Assets => ['assets'],
             self::Projects => ['projects', 'timesheets'],
+            self::Performance => ['performance'],
         };
     }
 

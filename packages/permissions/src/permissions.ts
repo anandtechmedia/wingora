@@ -73,6 +73,10 @@ export const Permission = {
   ProjectsView: 'projects.view',
   ProjectsManage: 'projects.manage',
   TimesheetsApprove: 'timesheets.approve',
+  PerformanceView: 'performance.view',
+  PerformanceReview: 'performance.review',
+  PerformanceManage: 'performance.manage',
+  PerformanceConfigure: 'performance.configure',
   BillingView: 'billing.view',
   BillingManage: 'billing.manage',
   AccountManage: 'account.manage',
@@ -87,7 +91,6 @@ export const Permission = {
  */
 export const PendingPermission = {
   OffboardingView: 'offboarding.view',
-  PerformanceView: 'performance.view',
   ReportsView: 'reports.view',
 } as const;
 

@@ -78,7 +78,7 @@ describe('permission-based navigation', () => {
   it('an Employee sees only permitted modules and gets 403 on others', async () => {
     setup('/dashboard', 'employee@wingora.test');
     expect(await screen.findByRole('heading', { name: /Welcome back, Jordan/ })).toBeInTheDocument();
-    expect(navLinks()).toEqual(['Dashboard', 'Employees', 'Attendance', 'Leave', 'Payroll', 'Recruitment', 'Onboarding', 'Assets', 'Helpdesk', 'Projects', 'Documents']);
+    expect(navLinks()).toEqual(['Dashboard', 'Employees', 'Attendance', 'Leave', 'Payroll', 'Recruitment', 'Onboarding', 'Performance', 'Assets', 'Helpdesk', 'Projects', 'Documents']);
     expect(navLinks()).not.toContain('Settings');
   });
 
@@ -116,7 +116,7 @@ describe('permission-based navigation', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Notifications, 1 unread' }));
     const drawer = screen.getByRole('dialog', { name: 'Notifications' });
     expect(within(drawer).getByText('Leave request awaiting approval')).toBeInTheDocument();
-    expect(within(drawer).queryByText('Review cycle opens Monday')).not.toBeInTheDocument();
+    expect(within(drawer).queryByText('Laptop return due Friday')).not.toBeInTheDocument();
     await userEvent.click(within(drawer).getByRole('button', { name: 'Mark all as read' }));
     expect(within(drawer).queryByText('New')).not.toBeInTheDocument();
   });
@@ -137,6 +137,8 @@ describe('shell', () => {
     await screen.findByRole('heading', { name: /Welcome back/ });
     await userEvent.click(screen.getByRole('button', { name: 'Account' }));
     expect(screen.getByRole('menu')).toHaveTextContent('hr@wingora.test');
+    expect(screen.getByRole('menu')).toHaveTextContent('Role: HR Manager');
+    expect(screen.getAllByRole('banner').some((b) => within(b).queryAllByText('HR Manager').length > 0)).toBe(true);
     await userEvent.click(screen.getByRole('menuitem', { name: 'Sign out' }));
     expect(await screen.findByRole('heading', { name: 'Sign in to Wingora' })).toBeInTheDocument();
   });
