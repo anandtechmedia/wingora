@@ -157,7 +157,7 @@ function WeekGrid({ data, onSaved }: { data: MyWeek; onSaved: () => void }) {
                       : sheet.entries?.find((e) => e.task?.id === r.task_id)?.task?.title ?? '—'}</td>
                     {days.map((d, i) => (
                       <td key={d} className="w-20 p-2">{editable ? <Input label={pt('hoursOn', { row: n + 1, day: weekday(d) })} hideLabel inputMode="decimal" size="sm" value={r.hours[i]}
-                        error={badHours(r.hours[i] ?? '') ? pt('invalidHours') : fields[`entries.${entries.findIndex((e) => e.project_id === r.project_id && e.work_date === d && (e.task_id ?? '') === r.task_id)}.minutes`]}
+                        error={badHours(r.hours[i] ?? '') ? pt('invalidHours') : fields[`entries.${entries.findIndex((e) => e.project_id === r.project_id && e.work_date === d && (e.task_id ?? '') === r.task_id && e.note === blank(r.note))}.minutes`]}
                         onChange={(e) => update(r.key, { hours: r.hours.map((h, j) => (j === i ? e.target.value : h)) })} /> : (r.hours[i] || '—')}</td>
                     ))}
                     {editable && <td className="p-2"><Button size="sm" variant="tertiary" onClick={() => setRows(rows.filter((x) => x.key !== r.key))}>{pt('removeRow')}</Button></td>}
