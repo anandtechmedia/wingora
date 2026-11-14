@@ -103,6 +103,7 @@ function WeekGrid({ data, onSaved }: { data: MyWeek; onSaved: () => void }) {
   const sheet = data.timesheet;
   const editable = sheet.status === 'draft' || sheet.status === 'rejected';
   const [rows, setRows] = useState<Row[]>(() => toRows(sheet));
+  const [version, setVersion] = useState(sheet.version);
   const { error, busy, save } = useSave();
   const fields = validationErrors(error);
   const days = Array.from({ length: 7 }, (_, i) => addDays(sheet.week_start, i));
@@ -117,9 +118,10 @@ function WeekGrid({ data, onSaved }: { data: MyWeek; onSaved: () => void }) {
   const update = (key: number, patch: Partial<Row>) => setRows(rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
   const projectOptions = data.projects.map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }));
   const knownProject = (id: string) => data.projects.find((p) => p.id === id);
-  const persist = () => save(async () => { await source.saveWeek(sheet.week_start, entries, sheet.version); toast({ title: pt('saved'), tone: 'success' }); onSaved(); });
+  const persist = () => save(async () => { await source.saveWeek(sheet.week_start, entries, version); toast({ title: pt('saved'), tone: 'success' }); onSaved(); });
   const submit = () => save(async () => {
-    const saved = await source.saveWeek(sheet.week_start, entries, sheet.version);
+    const saved = await source.saveWeek(sheet.week_start, entries, version);
+    setVersion(saved.version);
     await source.submit(saved.id as string, saved.version);
     toast({ title: pt('submitted'), tone: 'success' });
     onSaved();
