@@ -206,3 +206,16 @@ Backed by `api/platform.ts` (`PlatformSource`), which mirrors the platform admin
   currency and never converted. The audit export needs `platform.audit.export`.
 
 As everywhere else, the console only hides what the server would refuse; the server enforces every rule.
+
+## Settings
+
+`apps/web/src/modules/settings` replaces the Settings placeholder. Each tab appears only when the user holds its permission, and the server enforces every action again (`TenantPolicy`, `UserPolicy`, `LegalEntityPolicy`, `WorkLocationPolicy`):
+
+| Tab | Shown with | Endpoints |
+|---|---|---|
+| Organization | `organization.view` (edit: `organization.manage`; MFA policy: `organization.security.manage`) | `GET/PATCH /organization`, `PATCH /organization/security` |
+| Users and roles | `users.view` (invite/disable: `users.manage`; roles: `roles.assign`; never your own account) | `/users`, `/users/{id}/roles`, `/users/{id}/status` |
+| Entities and locations | `organization.view` (edit: `organization.entities.manage`) | `/legal-entities`, `/work-locations`, `/reference/*` |
+| My account | always | `PUT /auth/password`, `POST /auth/mfa/recovery-codes` (needs a current authenticator code), `/auth/tokens` |
+
+The Settings module is still only in the navigation for administrators (`packages/permissions/src/modules.ts`). The profile menu opens Settings for them, and the Employees page for everyone else.

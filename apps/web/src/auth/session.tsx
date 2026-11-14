@@ -11,6 +11,10 @@ interface SessionValue {
   signIn: (email: string, password: string) => Promise<'mfa' | 'signed-in'>;
   verifyMfa: AuthGateway['verifyMfa'];
   requestPasswordReset: AuthGateway['requestPasswordReset'];
+  startMfaSetup: AuthGateway['startMfaSetup'];
+  confirmMfaSetup: AuthGateway['confirmMfaSetup'];
+  /** Reloads the session after enrolment so the app sees the new MFA state. */
+  refresh: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -37,6 +41,10 @@ export function SessionProvider({ gateway, initial, children }: { gateway: AuthG
     return me;
   }, [gateway]);
 
+  const refresh = useCallback(async () => {
+    setState({ status: 'signed-in', me: await gateway.me() });
+  }, [gateway]);
+
   const signOut = useCallback(async () => {
     await gateway.signOut();
     setState({ status: 'signed-out' });
@@ -46,9 +54,10 @@ export function SessionProvider({ gateway, initial, children }: { gateway: AuthG
     const me = state.status === 'signed-in' ? state.me : null;
     return {
       state, me, permissions: me ? new Set(me.permissions) : noPermissions,
-      signIn, verifyMfa, signOut, requestPasswordReset: (email) => gateway.requestPasswordReset(email),
+      signIn, verifyMfa, signOut, refresh, requestPasswordReset: (email) => gateway.requestPasswordReset(email),
+      startMfaSetup: () => gateway.startMfaSetup(), confirmMfaSetup: (code) => gateway.confirmMfaSetup(code),
     };
-  }, [state, signIn, verifyMfa, signOut, gateway]);
+  }, [state, signIn, verifyMfa, signOut, refresh, gateway]);
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }
@@ -59,18 +68,21 @@ export function useSession(): SessionValue {
   return value;
 }
 
-/** Sends signed-out users to sign-in, remembering where they were going. */
+/** Sends signed-out users to sign-in, and users whose role requires MFA to enrolment, remembering where they were going. */
 export function RequireAuth({ children }: { children: ReactNode }) {
   const { state } = useSession();
   const location = useLocation();
-  if (state.status !== 'signed-in') return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
+  const from = location.pathname + location.search;
+  if (state.status !== 'signed-in') return <Navigate to="/login" replace state={{ from }} />;
+  if (state.me.mfa_enrollment_required) return <Navigate to="/mfa/setup" replace state={{ from }} />;
   return children;
 }
 
 /** Keeps signed-in users out of the sign-in pages. */
 export function PublicOnly({ children }: { children: ReactNode }) {
   const { state } = useSession();
-  if (state.status === 'signed-in') return <Navigate to="/" replace />;
+  const location = useLocation();
+  if (state.status === 'signed-in') return <Navigate to={safeRedirect((location.state as { from?: unknown } | null)?.from)} replace />;
   return children;
 }
 

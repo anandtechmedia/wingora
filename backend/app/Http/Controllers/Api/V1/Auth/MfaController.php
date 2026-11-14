@@ -23,7 +23,9 @@ class MfaController extends Controller
         $user->forceFill(['mfa_secret' => $secret, 'mfa_confirmed_at' => null, 'mfa_last_timestep' => null])->saveQuietly();
         SecurityEvent::record('auth.mfa_setup_started', 'info', $user);
 
-        return response()->json(['secret' => $secret, 'otpauth_url' => $this->mfa->otpauthUrl($user, $secret)]);
+        $url = $this->mfa->otpauthUrl($user, $secret);
+
+        return response()->json(['secret' => $secret, 'otpauth_url' => $url, 'qr_code' => $this->mfa->qrCodeDataUri($url)]);
     }
 
     public function confirm(Request $request): JsonResponse
