@@ -118,7 +118,10 @@ class AuthenticationTest extends SecurityTestCase
         $hr = $this->makeUser($this->tenant, RoleCatalog::HR_MANAGER, mfa: false);
         $token = $this->tokenFor($hr);
 
-        $secret = $this->apiWithToken($token, 'POST', '/api/v1/auth/mfa/setup')->assertOk()->json('secret');
+        $setup = $this->apiWithToken($token, 'POST', '/api/v1/auth/mfa/setup')->assertOk();
+        $secret = $setup->json('secret');
+        $this->assertStringStartsWith('data:image/svg+xml;base64,', $setup->json('qr_code'));
+        $this->assertStringContainsString('<svg', base64_decode(substr($setup->json('qr_code'), 26)));
         $this->assertNotSame($secret, \DB::table('users')->where('id', $hr->id)->value('mfa_secret'));
 
         $codes = $this->apiWithToken($token, 'POST', '/api/v1/auth/mfa/confirm', ['code' => (new Google2FA)->getCurrentOtp($secret)])

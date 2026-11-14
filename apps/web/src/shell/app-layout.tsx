@@ -1,7 +1,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { BillingBanner } from './billing-banner';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router';
-import { modules, navigationFor, type ModuleDefinition } from '@wingora/permissions';
+import { canAccessModule, findModule, modules, navigationFor, type ModuleDefinition } from '@wingora/permissions';
 import {
   Avatar, Badge, BellIcon, Breadcrumbs, BuildingIcon, ChevronDownIcon, Drawer, Dropdown, GlobeIcon, IconButton, LoadingState,
   LogOutIcon, MenuIcon, SearchIcon, SidebarIcon, UserIcon,
@@ -116,7 +116,7 @@ function RoleBadge() {
 
 function ProfileMenu() {
   const { t } = useI18n();
-  const { me, signOut } = useSession();
+  const { me, signOut, permissions } = useSession();
   const navigate = useNavigate();
   const role = useRoleLabel();
   if (!me) return null;
@@ -125,7 +125,7 @@ function ProfileMenu() {
       trigger={<Avatar name={me.user.name} size="sm" decorative />}
       header={<><p className="text-2xs text-fg-muted">{t('shell.signedInAs')}</p><p className="truncate text-sm font-medium text-fg">{me.user.name}</p><p className="truncate text-xs text-fg-secondary">{me.user.email}</p>{role && <Badge tone="accent" size="sm" className="mt-2"><span className="sr-only">{t('shell.role')}: </span>{role}</Badge>}</>}
       items={[
-        { id: 'profile', label: t('shell.profile'), icon: <UserIcon />, onSelect: () => navigate('/employees') },
+        { id: 'profile', label: t('shell.profile'), icon: <UserIcon />, onSelect: () => navigate(canAccessModule(permissions, findModule('settings')!) ? '/settings' : '/employees') },
         { type: 'separator', id: 'sep' },
         { id: 'sign-out', label: t('shell.signOut'), icon: <LogOutIcon />, onSelect: () => { void signOut().then(() => navigate('/login', { replace: true })); } },
       ]} />

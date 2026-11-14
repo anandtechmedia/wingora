@@ -27,6 +27,14 @@ export class AuthError extends Error {
   }
 }
 
+/** `POST /api/v1/auth/mfa/setup`: a fresh, unconfirmed secret for the signed-in user. */
+export interface MfaSetup {
+  secret: string;
+  otpauthUrl: string;
+  /** Server-rendered QR code as a `data:image/svg+xml` URI. */
+  qrCode: string;
+}
+
 export type SignInResult = { kind: 'mfa_required' } | { kind: 'signed_in'; me: MeResponse };
 
 /** Authentication transport. The mock implementation is replaced by `@wingora/api-client` once it exists. */
@@ -34,5 +42,10 @@ export interface AuthGateway {
   signIn(email: string, password: string): Promise<SignInResult>;
   verifyMfa(input: { code: string } | { recoveryCode: string }): Promise<MeResponse>;
   requestPasswordReset(email: string): Promise<void>;
+  /** Re-reads the session, e.g. after MFA enrolment changes what it allows. */
+  me(): Promise<MeResponse>;
+  startMfaSetup(): Promise<MfaSetup>;
+  /** Confirms the pending secret with a code and returns the one-time recovery codes. */
+  confirmMfaSetup(code: string): Promise<string[]>;
   signOut(): Promise<void>;
 }

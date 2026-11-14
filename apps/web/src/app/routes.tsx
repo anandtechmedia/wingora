@@ -6,6 +6,7 @@ import { AccessDeniedPage, NotFoundPage, RouteErrorPage } from '@/pages/error-pa
 import { ForgotPasswordPage } from '@/pages/forgot-password-page';
 import { LoginPage } from '@/pages/login-page';
 import { MfaPage } from '@/pages/mfa-page';
+import { MfaSetupPage } from '@/pages/mfa-setup-page';
 import { AppLayout } from '@/shell/app-layout';
 import { LoadingState } from '@/components/ui';
 
@@ -28,6 +29,7 @@ const screens: Partial<Record<ModuleId, ModuleComponent>> = {
   performance: lazy(() => import('@/modules/performance')),
   billing: lazy(() => import('@/modules/billing')),
   platform: lazy(() => import('@/modules/platform')),
+  settings: lazy(() => import('@/modules/settings')),
 };
 /** Public careers site: outside the signed-in shell, no session required. */
 const CareersPage = lazy(() => import('@/pages/careers-page'));
@@ -52,6 +54,7 @@ export function createRoutes({ prototypeHint = false }: { prototypeHint?: boolea
     { path: '/login', element: <PublicOnly><LoginPage prototypeHint={prototypeHint} /></PublicOnly>, errorElement: <RouteErrorPage /> },
     { path: '/forgot-password', element: <PublicOnly><ForgotPasswordPage /></PublicOnly>, errorElement: <RouteErrorPage /> },
     { path: '/mfa', element: <MfaPage />, errorElement: <RouteErrorPage /> },
+    { path: '/mfa/setup', element: <MfaSetupPage />, errorElement: <RouteErrorPage /> },
     { path: '/careers/:site', element: <Suspense fallback={<LoadingState className="py-24" />}><CareersPage /></Suspense>, errorElement: <RouteErrorPage /> },
     { path: '/careers/:site/:job', element: <Suspense fallback={<LoadingState className="py-24" />}><CareersPage /></Suspense>, errorElement: <RouteErrorPage /> },
     {

@@ -17,6 +17,7 @@ export const Permission = {
   OrganizationView: 'organization.view',
   OrganizationManage: 'organization.manage',
   OrganizationSecurityManage: 'organization.security.manage',
+  LegalEntitiesManage: 'organization.entities.manage',
   UsersView: 'users.view',
   UsersManage: 'users.manage',
   RolesAssign: 'roles.assign',
