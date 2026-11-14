@@ -78,7 +78,7 @@ describe('permission-based navigation', () => {
   it('an Employee sees only permitted modules and gets 403 on others', async () => {
     setup('/dashboard', 'employee@wingora.test');
     expect(await screen.findByRole('heading', { name: /Welcome back, Jordan/ })).toBeInTheDocument();
-    expect(navLinks()).toEqual(['Dashboard', 'Employees', 'Attendance', 'Leave', 'Payroll', 'Recruitment', 'Onboarding', 'Assets', 'Helpdesk', 'Documents']);
+    expect(navLinks()).toEqual(['Dashboard', 'Employees', 'Attendance', 'Leave', 'Payroll', 'Recruitment', 'Onboarding', 'Assets', 'Helpdesk', 'Projects', 'Documents']);
     expect(navLinks()).not.toContain('Settings');
   });
 
