@@ -178,6 +178,14 @@ describe('shell', () => {
     expect(await screen.findByRole('heading', { name: 'Sign in to Wingora' })).toBeInTheDocument();
   });
 
+  it('offers voluntary two-step setup from the account menu to users without it', async () => {
+    const { router } = setup('/employees', 'employee@wingora.test');
+    await userEvent.click(await screen.findByRole('button', { name: 'Account' }));
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Set up two-step verification' }));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/mfa/setup'));
+    expect(await screen.findByText(/Add a second step to protect your account/)).toBeInTheDocument();
+  });
+
   it('renders not found for unknown paths', async () => {
     setup('/nope', 'hr@wingora.test');
     expect(await screen.findByRole('heading', { name: 'Page not found' })).toBeInTheDocument();

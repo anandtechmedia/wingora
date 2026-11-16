@@ -54,6 +54,7 @@ export const en = {
   'shell.breadcrumb': 'Breadcrumb',
   'shell.home': 'Home',
   'shell.profile': 'My profile',
+  'shell.setUpMfa': 'Set up two-step verification',
   'shell.signOut': 'Sign out',
   'shell.signedInAs': 'Signed in as',
   'role.platform-owner': 'Platform Owner',

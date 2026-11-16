@@ -4,7 +4,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { canAccessModule, findModule, modules, navigationFor, type ModuleDefinition } from '@wingora/permissions';
 import {
   Avatar, Badge, BellIcon, Breadcrumbs, BuildingIcon, ChevronDownIcon, Drawer, Dropdown, GlobeIcon, IconButton, LoadingState,
-  LogOutIcon, MenuIcon, SearchIcon, SidebarIcon, UserIcon,
+  LogOutIcon, MenuIcon, SearchIcon, ShieldIcon, SidebarIcon, UserIcon,
 } from '@/components/ui';
 import { buttonClasses } from '@/components/ui/button';
 import { cn } from '@/lib/cn';
@@ -132,6 +132,7 @@ function ProfileMenu() {
       header={<><p className="text-2xs text-fg-muted">{t('shell.signedInAs')}</p><p className="truncate text-sm font-medium text-fg">{me.user.name}</p><p className="truncate text-xs text-fg-secondary">{me.user.email}</p>{role && <Badge tone="accent" size="sm" className="mt-2"><span className="sr-only">{t('shell.role')}: </span>{role}</Badge>}</>}
       items={[
         { id: 'profile', label: t('shell.profile'), icon: <UserIcon />, onSelect: () => navigate(canAccessModule(permissions, findModule('settings')!) ? '/settings' : '/employees') },
+        ...(me.user.mfa_enabled || me.signed_in_with_sso ? [] : [{ id: 'mfa', label: t('shell.setUpMfa'), icon: <ShieldIcon />, onSelect: () => navigate('/mfa/setup', { state: { voluntary: true, from: '/' } }) }]),
         { type: 'separator', id: 'sep' },
         { id: 'sign-out', label: t('shell.signOut'), icon: <LogOutIcon />, onSelect: () => { void signOut().then(() => navigate('/login', { replace: true })); } },
       ]} />

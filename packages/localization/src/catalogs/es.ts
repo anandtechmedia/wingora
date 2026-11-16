@@ -55,6 +55,7 @@ export const es: Messages = {
   'shell.breadcrumb': 'Ruta de navegación',
   'shell.home': 'Inicio',
   'shell.profile': 'Mi perfil',
+  'shell.setUpMfa': 'Configurar verificación en dos pasos',
   'shell.signOut': 'Cerrar sesión',
   'shell.signedInAs': 'Sesión iniciada como',
   'role.platform-owner': 'Propietario de la plataforma',
