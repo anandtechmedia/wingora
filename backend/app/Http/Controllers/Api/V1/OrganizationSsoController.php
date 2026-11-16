@@ -9,8 +9,10 @@ use App\Models\SsoConnection;
 use App\Security\Sso\OidcClient;
 use App\Security\Sso\SsoError;
 use App\Support\Tenancy;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
@@ -40,7 +42,6 @@ class OrganizationSsoController extends Controller
             'enforced' => ['required', 'boolean', 'declined_if:enabled,false'],
             'version' => [$connection ? 'required' : 'nullable', 'integer'],
         ]);
-        abort_if($connection && (int) $data['version'] !== $connection->version, 409, __('Someone else changed these settings. Reload and try again.'));
 
         if ($data['enabled']) {
             try {
@@ -50,6 +51,26 @@ class OrganizationSsoController extends Controller
             }
         }
 
+        $stale = fn () => abort(409, __('Someone else changed these settings. Reload and try again.'));
+
+        try {
+            $connection = DB::transaction(fn () => $this->save($data, $stale));
+        } catch (UniqueConstraintViolationException) {
+            $stale();
+        }
+
+        SecurityEvent::record('organization.sso_changed', 'warning', $request->user(), ['enabled' => $data['enabled'], 'enforced' => $data['enforced'], 'issuer' => $data['issuer']]);
+
+        return response()->json(['data' => $this->present($connection->fresh())]);
+    }
+
+    /** Re-reads the row under a lock so two saves of the same version cannot both succeed. */
+    private function save(array $data, callable $stale): SsoConnection
+    {
+        $connection = SsoConnection::query()->lockForUpdate()->first();
+        if ($connection ? (int) ($data['version'] ?? 0) !== $connection->version : ! filled($data['client_secret'] ?? null)) {
+            $stale();
+        }
         $connection ??= new SsoConnection;
         $connection->forceFill([
             'issuer' => $data['issuer'],
@@ -61,9 +82,7 @@ class OrganizationSsoController extends Controller
         $connection->version = $connection->exists ? $connection->version + 1 : 1;
         $connection->save();
 
-        SecurityEvent::record('organization.sso_changed', 'warning', $request->user(), ['enabled' => $data['enabled'], 'enforced' => $data['enforced'], 'issuer' => $data['issuer']]);
-
-        return response()->json(['data' => $this->present($connection->fresh())]);
+        return $connection;
     }
 
     public function destroy(Request $request): JsonResponse
