@@ -131,6 +131,33 @@ class WhiteLabelSsoTest extends SecurityTestCase
         $this->spa()->getJson('/api/v1/employees')->assertOk();
     }
 
+    public function test_entra_domain_owner_verification_counts_as_a_verified_email(): void
+    {
+        $user = $this->makeUser($this->tenant, RoleCatalog::EMPLOYEE, attributes: ['email' => 'emp@acme.test']);
+        $this->enableSso();
+        $pending = $this->startSso();
+        $this->idToken = $this->jwt(['preferred_username' => 'emp@acme.test', 'email_verified' => null, 'xms_edov' => true, 'nonce' => $pending['nonce']]);
+        $this->withSession(['sso.pending' => $pending])->get('/api/v1/auth/sso/callback?code=abc&state='.$pending['state'])
+            ->assertRedirect('http://localhost:5173/sso/complete');
+        $this->assertAuthenticatedAs($user, 'web');
+    }
+
+    public function test_branding_patch_changes_only_the_fields_sent(): void
+    {
+        $this->apiAs($this->owner, 'PATCH', '/api/v1/organization/branding', ['brand_name' => 'Acme People', 'brand_color' => '#0B5394'])->assertOk();
+        $this->apiAs($this->owner, 'PATCH', '/api/v1/organization/branding', ['brand_color' => '#14223D'])
+            ->assertOk()->assertJsonPath('data.branding.name', 'Acme People')->assertJsonPath('data.branding.color', '#14223D');
+        $this->apiAs($this->owner, 'PATCH', '/api/v1/organization/branding', ['brand_name' => null])
+            ->assertOk()->assertJsonPath('data.branding.name', null)->assertJsonPath('data.branding.color', '#14223D');
+    }
+
+    public function test_requiring_mfa_needs_the_actor_enrolled_first(): void
+    {
+        $unenrolled = $this->makeUser($this->tenant, RoleCatalog::ORGANIZATION_OWNER, mfa: false);
+        $this->apiAs($unenrolled, 'PATCH', '/api/v1/organization/security', ['mfa_required' => true])->assertUnprocessable()->assertJsonValidationErrors('mfa_required');
+        $this->apiAs($this->owner, 'PATCH', '/api/v1/organization/security', ['mfa_required' => true])->assertOk()->assertJsonPath('data.mfa_required', true);
+    }
+
     public function test_sso_rejects_forged_or_mismatched_responses(): void
     {
         $this->makeUser($this->tenant, RoleCatalog::EMPLOYEE, attributes: ['email' => 'emp@acme.test']);
@@ -146,6 +173,7 @@ class WhiteLabelSsoTest extends SecurityTestCase
             'expired' => fn ($p) => [['email' => 'emp@acme.test', 'nonce' => $p['nonce'], 'exp' => time() - 3600]],
             'forged signature' => fn ($p) => [['email' => 'emp@acme.test', 'nonce' => $p['nonce']], 'key' => $forger],
             'unverified email' => fn ($p) => [['email' => 'emp@acme.test', 'email_verified' => false, 'nonce' => $p['nonce']]],
+            'no verification claim' => fn ($p) => [['email' => 'emp@acme.test', 'email_verified' => null, 'nonce' => $p['nonce']]],
             'domain not allowed' => fn ($p) => [['email' => 'emp@evil.test', 'nonce' => $p['nonce']]],
             'other organization' => fn ($p) => [['email' => 'outsider@acme.test', 'nonce' => $p['nonce']]],
         ];
@@ -209,7 +237,7 @@ class WhiteLabelSsoTest extends SecurityTestCase
 
     private function jwt(array $claims, ?OpenSSLAsymmetricKey $key = null): string
     {
-        $claims += ['iss' => self::ISSUER, 'aud' => 'wingora-client', 'exp' => time() + 300, 'iat' => time()];
+        $claims += ['iss' => self::ISSUER, 'aud' => 'wingora-client', 'exp' => time() + 300, 'iat' => time(), 'email_verified' => true];
         $segments = OidcClient::b64url(json_encode(['alg' => 'RS256', 'kid' => 'k1'])).'.'.OidcClient::b64url(json_encode($claims));
         openssl_sign($segments, $signature, $key ?? $this->key, OPENSSL_ALGO_SHA256);
 

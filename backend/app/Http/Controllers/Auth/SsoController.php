@@ -77,7 +77,9 @@ class SsoController extends Controller
 
         $email = collect([$claims['email'] ?? null, $claims['preferred_username'] ?? null])
             ->first(fn ($v) => is_string($v) && filter_var($v, FILTER_VALIDATE_EMAIL));
-        if (! $email || in_array($claims['email_verified'] ?? true, [false, 'false'], true) || ! $connection->allowsEmail($email)) {
+        // The provider must vouch for the address: `email_verified`, or Entra ID's `xms_edov` (domain owner verified).
+        $verified = in_array($claims['email_verified'] ?? null, [true, 'true'], true) || in_array($claims['xms_edov'] ?? null, [true, 'true', 1, '1'], true);
+        if (! $email || ! $verified || ! $connection->allowsEmail($email)) {
             return $this->fail($slug, 'email_not_allowed', $tenant);
         }
 
