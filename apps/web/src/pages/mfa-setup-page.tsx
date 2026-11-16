@@ -6,7 +6,7 @@ import { safeRedirect, useSession } from '@/auth/session';
 import { useI18n } from '@/i18n/i18n';
 import { AuthLayout, FormAlert } from './auth-layout';
 
-/** First-time MFA enrolment for roles that require it: scan, confirm a code, save the recovery codes. */
+/** MFA enrolment, required by the organization or chosen from Settings: scan, confirm a code, save the recovery codes. */
 export function MfaSetupPage() {
   const { t } = useI18n();
   const { state, startMfaSetup, confirmMfaSetup, refresh, signOut } = useSession();
@@ -22,7 +22,8 @@ export function MfaSetupPage() {
   const [copied, setCopied] = useState(false);
   const started = useRef(false);
   const ref = useRef<HTMLInputElement>(null);
-  const needsSetup = state.status === 'signed-in' && state.me.mfa_enrollment_required;
+  const voluntary = Boolean((location.state as { voluntary?: unknown } | null)?.voluntary);
+  const needsSetup = state.status === 'signed-in' && (state.me.mfa_enrollment_required || (voluntary && !state.me.user.mfa_enabled));
 
   const load = () => {
     setLoadFailed(false);
@@ -112,7 +113,7 @@ export function MfaSetupPage() {
   }
 
   return (
-    <AuthLayout title={t('auth.mfaSetupTitle')} subtitle={t('auth.mfaSetupSubtitle')} footer={footer}>
+    <AuthLayout title={t('auth.mfaSetupTitle')} subtitle={t(voluntary ? 'auth.mfaSetupOptionalSubtitle' : 'auth.mfaSetupSubtitle')} footer={footer}>
       {loadFailed ? <ErrorState title={t('auth.mfaSetupFailed')} onRetry={load} />
         : !setup ? <LoadingState label={t('auth.mfaSetupLoading')} />
         : (

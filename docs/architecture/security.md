@@ -24,17 +24,17 @@ Permissions are an enum (`app/Security/Permission.php`); each is registered as a
 
 System role permissions are always resolved from `app/Security/RoleCatalog.php`, so editing the `roles.permissions` column cannot widen a system role. A role can never hold permissions outside its scope (platform vs tenant).
 
-| Role | Scope | MFA required | Summary |
+| Role | Scope | MFA required (by default) | Summary |
 | --- | --- | --- | --- |
 | Platform Owner | platform | yes | Manage tenants and platform staff. **No tenant HR data.** |
 | Platform Administrator | platform | yes | Manage tenants. **No tenant HR data.** |
-| Organization Owner | tenant | yes | All tenant permissions. |
-| HR Administrator | tenant | yes | Users, roles, departments, all employees, sensitive personal fields, audit log. No payroll. |
-| HR Manager | tenant | yes | Departments and all employees (non-sensitive). No payroll. |
-| Department Manager | tenant | no | Employees of departments they manage, plus self. |
-| Employee | tenant | no | Own record only. |
-| Payroll Administrator | tenant | yes | Compensation and sensitive pay fields. |
-| Auditor | tenant | yes | Read audit log and security events; users list. No HR records. |
+| Organization Owner | tenant | if the organization requires it | All tenant permissions. |
+| HR Administrator | tenant | if the organization requires it | Users, roles, departments, all employees, sensitive personal fields, audit log. No payroll. |
+| HR Manager | tenant | if the organization requires it | Departments and all employees (non-sensitive). No payroll. |
+| Department Manager | tenant | if the organization requires it | Employees of departments they manage, plus self. |
+| Employee | tenant | if the organization requires it | Own record only. |
+| Payroll Administrator | tenant | if the organization requires it | Compensation and sensitive pay fields. |
+| Auditor | tenant | if the organization requires it | Read audit log and security events; users list. No HR records. |
 
 Country configuration adds `platform.country-rules.manage` / `platform.country-rules.approve` (both platform roles; approval is maker-checker), `organization.entities.manage` (Organization Owner, HR Administrator) and `holidays.manage` (Organization Owner, HR Administrator, HR Manager). See `country-configuration.md`.
 
@@ -55,7 +55,11 @@ Row-level employee/department visibility is defined once in `app/Security/Employ
 
 **Login protection:** uniform error for unknown email / wrong password / locked / disabled; dummy hash check for unknown emails; account lock after 5 failures for 15 minutes; rate limits per email+IP (5/min) and per IP (20/min); separate limiters for MFA and password reset.
 
-**MFA (TOTP, RFC 6238):** mandatory for privileged roles and optionally for all users of a tenant (`organization/security`). Until enrolled, privileged users can only reach account self-service endpoints. The web app sends such users to `/mfa/setup`, which shows a server-rendered QR code (`qr_code`, an SVG data URI from `bacon/bacon-qr-code`) and the setup key, confirms a code, then shows the recovery codes once. Secrets are encrypted at rest; codes cannot be replayed (last accepted time step stored); 10 recovery codes are stored hashed and consumed on use. Privileged users cannot disable MFA, and bearer tokens for MFA users require a TOTP code.
+**MFA (TOTP, RFC 6238):** mandatory for platform staff (they can reach every organization). For organization users it is optional unless the organization turns it on (`mfa_required`, chosen when the platform console creates the organization and changeable at `organization/security`). Anyone can enrol voluntarily from Settings → My account. Until enrolled, users who need it can only reach account self-service endpoints, and the web app sends them to `/mfa/setup`, which shows a server-rendered QR code (`qr_code`, an SVG data URI from `bacon/bacon-qr-code`) and the setup key, confirms a code, then shows the recovery codes once. Secrets are encrypted at rest; codes cannot be replayed (last accepted time step stored); 10 recovery codes are stored hashed and consumed on use. Users who need MFA cannot disable it, and bearer tokens for MFA users require a TOTP code. Organization export and deletion always require a fresh TOTP code.
+
+**Single sign-on (OIDC):** one OpenID Connect connection per organization (`sso_connections`; managed at `organization/sso` with `organization.security.manage`; the client secret is encrypted and write-only). The browser flow is `GET /api/v1/auth/sso/{slug}/redirect` → identity provider → `GET /api/v1/auth/sso/callback`; these are `web`-session routes because the provider's redirect is a top-level navigation that Sanctum's same-origin detection would not treat as stateful. The flow uses state, nonce and PKCE (S256), and the ID token must be RS256-signed by a key from the provider's JWKS with matching `iss`, `aud`/`azp`, `exp` and `nonce`; no third-party library is used. The email (`email`, else `preferred_username`) must not be marked unverified, must be in the connection's allowed domains, and must belong to an existing active user of that organization; SSO never creates accounts. Calls to the provider go through `OutboundHttp`: HTTPS only, public addresses only, no redirects, and the connection is pinned to the checked address. SSO sessions skip Wingora's own TOTP step (the provider is responsible for it) and are marked `signed_in_with_sso` in `/auth/me`. When the organization requires SSO, password sign-in and token issuance are refused for everyone except the Organization Owner, who keeps a password as a break-glass account. Failures are logged as `auth.sso_failed` security events with a reason and redirect to `/login/{slug}?sso_error=1`.
+
+**White-label branding:** each organization has an optional brand name, brand color and logo (`organization/branding`, `organization/logo`; platform staff can set them at creation and upload a logo at `platform/tenants/{id}/logo`). Colors must keep white text at 4.5:1 contrast because they replace the accent color. Logos are PNG, JPG or WebP only (no SVG, which can carry scripts), up to 512 KB and 2048 × 2048, content-type checked against the extension, and stored on the private disk. `GET /api/v1/public/organizations/{slug}` (rate limited) returns only the name, branding and whether SSO is on or required, for the sign-in page `/login/{slug}`; the logo is served from `…/{slug}/logo` with `nosniff` and a `default-src 'none'` CSP.
 
 **Password reset:** enumeration-safe response, 30-minute single-use tokens (hashed by Laravel's broker), reset links point to `FRONTEND_URL`, strong password policy (12+ chars, mixed case, number, symbol, breached-password check in production). A successful reset unlocks the account and revokes all sessions and tokens.
 

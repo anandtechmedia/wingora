@@ -16,15 +16,21 @@ import { GlobalSearch } from './global-search';
 import { groupLabel, moduleIcons, moduleLabel } from './module-meta';
 import { NotificationCenter, useNotifications } from './notification-center';
 import { useRegionName, useWorkspace } from './workspace';
+import { useBrandColor } from './brand-theme';
 
 function Brand({ compact }: { compact?: boolean }) {
   const { t } = useI18n();
+  const { me } = useSession();
+  const branding = me?.organization?.branding;
+  const name = branding?.name ?? t('app.name');
   return (
     <Link to="/" className="flex items-center gap-2.5 rounded-md focus-visible:outline-nav-indicator">
-      <span aria-hidden="true" className="inline-flex size-8 shrink-0 items-center justify-center rounded-md bg-accent text-sm font-bold text-on-accent">W</span>
+      {branding?.logo_url
+        ? <img src={branding.logo_url} alt="" className="h-8 w-auto max-w-28 shrink-0 rounded-md bg-surface object-contain p-0.5" />
+        : <span aria-hidden="true" className="inline-flex size-8 shrink-0 items-center justify-center rounded-md bg-accent text-sm font-bold text-on-accent">{name.charAt(0).toUpperCase()}</span>}
       <span className={compact ? 'sr-only' : 'flex flex-col leading-none'}>
-        <span className="text-md font-semibold tracking-tight text-nav-active-fg">{t('app.name')}</span>
-        <span className="mt-1 text-2xs text-nav-fg-muted">{t('app.positioning')}</span>
+        <span className="text-md font-semibold tracking-tight text-nav-active-fg">{name}</span>
+        <span className="mt-1 text-2xs text-nav-fg-muted">{branding?.name ? t('auth.poweredBy') : t('app.positioning')}</span>
       </span>
     </Link>
   );
@@ -143,10 +149,11 @@ function currentModule(pathname: string): ModuleDefinition | undefined {
  */
 export function AppLayout() {
   const { t } = useI18n();
-  const { permissions } = useSession();
+  const { permissions, me } = useSession();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
+  useBrandColor(me?.organization?.branding?.color);
   const [searchOpen, setSearchOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const notifications = useNotifications();

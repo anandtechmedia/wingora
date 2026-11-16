@@ -21,7 +21,10 @@ export interface TenantDetail extends TenantRow {
   legal_hold: boolean;
 }
 export interface TenantQuery { search: string; status: string; plan: string; subscription_status: string }
-export interface NewTenant { name: string; slug: string; country_code: string; owner_name: string; owner_email: string }
+export interface NewTenant {
+  name: string; slug: string; country_code: string; owner_name: string; owner_email: string;
+  brand_name?: string | null; brand_color?: string | null; mfa_required?: boolean;
+}
 export type SubscriptionChange = { action: 'extend_trial'; days: number; reason: string; version: number }
   | { action: 'assign_plan'; plan: string; ends_at: string | null; reason: string; version: number };
 
@@ -72,6 +75,7 @@ export interface PlatformSource {
   tenants(query: TenantQuery, page: number, signal?: AbortSignal): Promise<Page<TenantRow>>;
   tenant(id: string, signal?: AbortSignal): Promise<TenantDetail>;
   createTenant(input: NewTenant): Promise<TenantRow>;
+  uploadTenantLogo(id: string, file: File): Promise<TenantRow>;
   setStatus(id: string, status: 'active' | 'suspended', reason: string): Promise<TenantRow>;
   changeSubscription(id: string, change: SubscriptionChange): Promise<unknown>;
   plans(signal?: AbortSignal): Promise<PlatformPlan[]>;
@@ -106,6 +110,7 @@ export const httpPlatformSource: PlatformSource = {
   })),
   tenant: tenantDetail,
   createTenant: (input) => send('POST', `${v1}/tenants`, input),
+  uploadTenantLogo: (id, file) => { const f = new FormData(); f.append('logo', file); return send('POST', `${v1}/tenants/${id}/logo`, f); },
   setStatus: (id, status, reason) => send('PATCH', `${v1}/tenants/${id}/status`, { status, reason }),
   changeSubscription: (id, change) => send('PATCH', `${v1}/tenants/${id}/subscription`, change),
   plans: (signal) => data(apiRequest('GET', `${v1}/plans`, { signal })),

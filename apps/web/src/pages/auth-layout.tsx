@@ -1,17 +1,28 @@
 import type { ReactNode } from 'react';
 import { GlobeIcon, LockIcon, ShieldIcon, UsersIcon } from '@/components/ui';
 import { useI18n } from '@/i18n/i18n';
+import { useBrandColor } from '@/shell/brand-theme';
 
-export function AuthLayout({ title, subtitle, children, footer }: { title: string; subtitle?: ReactNode; children: ReactNode; footer?: ReactNode }) {
+/** An organization's white-label branding for its own sign-in page. */
+export interface AuthBrand { name: string; logoUrl: string | null; color: string | null }
+
+function BrandMark({ brand, className }: { brand?: AuthBrand; className: string }) {
+  if (brand?.logoUrl) return <img src={brand.logoUrl} alt="" className="h-9 w-auto max-w-40 rounded-md bg-surface object-contain p-1" />;
+  return <span aria-hidden="true" className={className}>{(brand?.name ?? 'W').charAt(0).toUpperCase()}</span>;
+}
+
+export function AuthLayout({ title, subtitle, children, footer, brand }: { title: string; subtitle?: ReactNode; children: ReactNode; footer?: ReactNode; brand?: AuthBrand }) {
   const { t } = useI18n();
+  useBrandColor(brand?.color);
+  const name = brand?.name ?? t('app.name');
   return (
     <div className="grid min-h-dvh bg-canvas lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
       <aside className="relative hidden flex-col justify-between overflow-hidden bg-nav-bg p-10 text-nav-fg lg:flex xl:p-14">
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,var(--color-accent)_0%,transparent_60%)] opacity-30" />
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[linear-gradient(var(--color-nav-fg)_1px,transparent_1px),linear-gradient(90deg,var(--color-nav-fg)_1px,transparent_1px)] bg-size-[calc(var(--spacing)*12)_calc(var(--spacing)*12)] opacity-[0.05]" />
         <div className="relative flex items-center gap-2.5">
-          <span aria-hidden="true" className="inline-flex size-9 items-center justify-center rounded-md bg-accent text-md font-bold text-on-accent">W</span>
-          <span className="text-lg font-semibold tracking-tight text-nav-active-fg">{t('app.name')}</span>
+          <BrandMark brand={brand} className="inline-flex size-9 items-center justify-center rounded-md bg-accent text-md font-bold text-on-accent" />
+          <span className="text-lg font-semibold tracking-tight text-nav-active-fg">{name}</span>
         </div>
         <div className="relative max-w-(--container-form)">
           <p className="text-xs font-semibold tracking-wide text-nav-fg-muted uppercase">{t('app.positioning')}</p>
@@ -26,16 +37,16 @@ export function AuthLayout({ title, subtitle, children, footer }: { title: strin
           </ul>
         </div>
         <div className="relative flex items-center justify-between gap-4 border-t border-nav-hover-bg pt-6 text-xs text-nav-fg-muted">
-          <p className="flex items-center gap-2"><ShieldIcon size={14} />{t('auth.securedBy')}</p>
+          <p className="flex items-center gap-2"><ShieldIcon size={14} />{brand ? t('auth.poweredBy') : t('auth.securedBy')}</p>
           <p>{t('auth.copyright')}</p>
         </div>
       </aside>
       <main className="flex flex-col items-center justify-center px-4 py-10 sm:px-8">
         <div className="mb-8 flex items-center gap-2.5 lg:hidden">
-          <span aria-hidden="true" className="inline-flex size-9 items-center justify-center rounded-md bg-primary text-md font-bold text-on-primary">W</span>
+          <BrandMark brand={brand} className="inline-flex size-9 items-center justify-center rounded-md bg-primary text-md font-bold text-on-primary" />
           <span className="flex flex-col leading-none">
-            <span className="text-lg font-semibold tracking-tight text-fg">{t('app.name')}</span>
-            <span className="mt-1 text-2xs text-fg-muted">{t('app.tagline')}</span>
+            <span className="text-lg font-semibold tracking-tight text-fg">{name}</span>
+            <span className="mt-1 text-2xs text-fg-muted">{brand ? t('auth.poweredBy') : t('app.tagline')}</span>
           </span>
         </div>
         <div className="w-full max-w-(--container-modal-sm)">

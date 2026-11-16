@@ -7,7 +7,7 @@ import {
   usePlatformSource, type AuditEntry, type AuditQuery, type CheckStatus, type HealthReport, type SupportOverview, type SupportSection,
   type TenantDetail, type TenantRow, type UsageRow, type UsageSort,
 } from '@/api/platform';
-import { Badge, Button, Card, DataTable, Drawer, EmptyState, Input, Modal, Select, Tabs, useToast, type DataTableColumn } from '@/components/ui';
+import { Badge, Button, Card, Checkbox, DataTable, Drawer, EmptyState, Input, Modal, Select, Tabs, useToast, type DataTableColumn } from '@/components/ui';
 import { PageHeader } from '@/shell/page-header';
 import { useI18n } from '@/i18n/i18n';
 import { errorMessage, FormError, formError, ResourceView, useResource, validationErrors } from '@/modules/employees/shared';
@@ -231,14 +231,21 @@ function NewTenantDialog({ onClose, onDone }: { onClose: () => void; onDone: () 
   const { pt, t } = usePlatformT();
   const source = usePlatformSource();
   const { toast } = useToast();
-  const [form, setForm] = useState({ name: '', slug: '', country_code: 'US', owner_name: '', owner_email: '' });
+  const [form, setForm] = useState({ name: '', slug: '', country_code: 'US', owner_name: '', owner_email: '', brand_name: '', brand_color: '' });
+  const [mfaRequired, setMfaRequired] = useState(false);
+  const [logo, setLogo] = useState<File | null>(null);
+  const colorOk = form.brand_color.trim() === '' || /^#[0-9a-f]{6}$/i.test(form.brand_color.trim());
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setForm((f) => ({ ...f, [k]: e.target.value }));
   const { error, busy, save } = useSave();
   const fields = validationErrors(error);
-  const ready = form.name.trim() !== '' && form.slug.trim() !== '' && form.owner_name.trim() !== '' && form.owner_email.trim() !== '';
+  const ready = form.name.trim() !== '' && form.slug.trim() !== '' && form.owner_name.trim() !== '' && form.owner_email.trim() !== '' && colorOk;
   const submit = () => save(async () => {
-    await source.createTenant({ ...form, name: form.name.trim(), slug: form.slug.trim().toLowerCase(), owner_name: form.owner_name.trim(), owner_email: form.owner_email.trim() });
+    const row = await source.createTenant({
+      ...form, name: form.name.trim(), slug: form.slug.trim().toLowerCase(), owner_name: form.owner_name.trim(), owner_email: form.owner_email.trim(),
+      brand_name: form.brand_name.trim() || null, brand_color: form.brand_color.trim() || null, mfa_required: mfaRequired,
+    });
     toast({ title: pt('tenantCreated'), tone: 'success' });
+    if (logo) await source.uploadTenantLogo(row.id, logo).catch(() => toast({ title: pt('logoFailed'), tone: 'danger' }));
     onDone();
   });
   return (
@@ -250,6 +257,15 @@ function NewTenantDialog({ onClose, onDone }: { onClose: () => void; onDone: () 
         <Select label={pt('country')} value={form.country_code} error={fields.country_code} onChange={set('country_code')} options={COUNTRIES.map((c) => ({ value: c, label: c }))} />
         <Input label={pt('ownerName')} required maxLength={160} value={form.owner_name} error={fields.owner_name} onChange={set('owner_name')} />
         <Input label={pt('ownerEmail')} type="email" required maxLength={255} value={form.owner_email} error={fields.owner_email} hint={pt('ownerEmailHint')} onChange={set('owner_email')} />
+        <Input label={pt('brandName')} maxLength={80} value={form.brand_name} error={fields.brand_name} onChange={set('brand_name')} />
+        <Input label={pt('brandColor')} placeholder="#0B5394" maxLength={7} value={form.brand_color} hint={pt('brandColorHint')}
+          error={fields.brand_color ?? (colorOk ? undefined : pt('brandColorHint'))} onChange={set('brand_color')}
+          leading={<span aria-hidden="true" className="block size-4 rounded-sm border border-line" style={{ backgroundColor: colorOk && form.brand_color.trim() ? form.brand_color.trim() : 'transparent' }} />} />
+        <label className="text-sm font-medium text-fg">{pt('logo')}
+          <input type="file" accept="image/png,image/jpeg,image/webp" className="mt-1 block w-full text-sm" onChange={(e) => setLogo(e.target.files?.[0] ?? null)} />
+          <span className="mt-1 block text-xs font-normal text-fg-muted">{pt('logoHint')}</span>
+        </label>
+        <Checkbox label={pt('mfaRequired')} description={pt('mfaRequiredHint')} checked={mfaRequired} onChange={(e) => setMfaRequired(e.target.checked)} />
         <FormError message={error ? formError(error, pt('saveFailed')) : null} />
       </div>
     </Modal>

@@ -3,8 +3,9 @@ import { Permission as P } from '@wingora/permissions';
 import type { MessageKey } from '@wingora/localization';
 import { ApiNotConnectedError } from '@/api/dashboard';
 import {
-  useSettingsSource, type ApiToken, type LegalEntity, type LegalEntityInput, type TenantUser, type WorkLocation, type WorkLocationInput,
+  useSettingsSource, type ApiToken, type LegalEntity, type LegalEntityInput, type Organization, type SsoSettings, type TenantUser, type WorkLocation, type WorkLocationInput,
 } from '@/api/settings';
+import { useNavigate } from 'react-router';
 import { Badge, Button, Card, Checkbox, ConfirmationDialog, DataTable, EmptyState, Input, Modal, Select, Tabs, useToast, type DataTableColumn } from '@/components/ui';
 import { PageHeader } from '@/shell/page-header';
 import { useSession } from '@/auth/session';
@@ -84,13 +85,130 @@ function OrganizationTab() {
               <div><dt className="text-fg-muted">{st('status')}</dt><dd className="text-fg">{o.status}</dd></div>
             </dl>
           </Card>
+          <BrandingCard org={o} onSaved={async () => { org.reload(); await refresh().catch(() => undefined); }} />
           <Card title={st('security')} headingLevel={2} description={st('securityHint')}>
             <Checkbox label={st('mfaRequired')} description={st('mfaRequiredHint')} checked={o.mfa_required} disabled={!can(P.OrganizationSecurityManage) || security.busy !== null}
               onChange={(e) => { const on = e.target.checked; void security.run('mfa', () => source.updateSecurity(on), st('saved')).then(() => org.reload()); }} />
           </Card>
+          {can(P.OrganizationSecurityManage) && <SsoCard />}
         </div>
       )}
     </ResourceView>
+  );
+}
+
+const HEX_COLOR = /^#[0-9a-f]{6}$/i;
+
+function BrandingCard({ org, onSaved }: { org: Organization; onSaved: () => Promise<void> }) {
+  const { st } = useSettingsT();
+  const source = useSettingsSource();
+  const can = useCan();
+  const { toast } = useToast();
+  const editable = can(P.OrganizationManage);
+  const [brandName, setBrandName] = useState(org.branding?.name ?? '');
+  const [color, setColor] = useState(org.branding?.color ?? '');
+  const [removing, setRemoving] = useState(false);
+  const { error, busy, save } = useSave();
+  const logo = useAction();
+  const colorOk = color.trim() === '' || HEX_COLOR.test(color.trim());
+  const fields = validationErrors(error);
+  const signInUrl = org.slug ? `${window.location.origin}/login/${org.slug}` : null;
+  return (
+    <Card title={st('branding')} headingLevel={2} description={st('brandingHint')}>
+      <form className="grid gap-4 sm:grid-cols-2" onSubmit={(e) => {
+        e.preventDefault();
+        void save(async () => {
+          await source.updateBranding({ brand_name: brandName.trim() || null, brand_color: color.trim() || null });
+          toast({ title: st('saved'), tone: 'success' });
+          await onSaved();
+        });
+      }}>
+        <Input label={st('brandName')} hint={st('brandNameHint')} maxLength={80} value={brandName} disabled={!editable} error={fields.brand_name} onChange={(e) => setBrandName(e.target.value)} />
+        <Input label={st('brandColor')} hint={st('brandColorHint')} placeholder="#0B5394" maxLength={7} value={color} disabled={!editable}
+          error={fields.brand_color ?? (colorOk ? undefined : st('brandColorInvalid'))} onChange={(e) => setColor(e.target.value)}
+          leading={<span aria-hidden="true" className="block size-4 rounded-sm border border-line" style={{ backgroundColor: colorOk && color.trim() ? color.trim() : 'transparent' }} />} />
+        {editable && <div className="sm:col-span-2"><Button type="submit" loading={busy} disabled={!colorOk}>{st('saveBranding')}</Button></div>}
+        <FormError message={error ? formError(error, st('saveFailed')) : null} />
+      </form>
+      <div className="mt-5 flex flex-wrap items-center gap-4 border-t border-line pt-4">
+        {org.branding?.logo_url
+          ? <img src={org.branding.logo_url} alt={st('currentLogo')} className="h-12 w-auto max-w-48 rounded-md border border-line bg-surface object-contain p-1" />
+          : <p className="text-sm text-fg-muted">{st('noLogo')}</p>}
+        {editable && (
+          <label className="text-sm font-medium text-fg">{st('uploadLogo')}
+            <input type="file" accept="image/png,image/jpeg,image/webp" className="mt-1 block text-sm" disabled={logo.busy !== null} onChange={(e) => {
+              const file = e.target.files?.[0];
+              e.target.value = '';
+              if (file) void logo.run('upload', () => source.uploadLogo(file), st('saved')).then((ok) => { if (ok) return onSaved(); });
+            }} />
+          </label>
+        )}
+        {editable && org.branding?.logo_url && <Button size="sm" variant="tertiary" loading={logo.busy === 'remove'} onClick={() => setRemoving(true)}>{st('removeLogo')}</Button>}
+        <p className="basis-full text-xs text-fg-muted">{st('logoHint')}</p>
+      </div>
+      {signInUrl && (
+        <dl className="mt-4 text-sm"><dt className="text-fg-muted">{st('signInPage')}</dt><dd className="mt-1 font-mono break-all text-fg">{signInUrl}</dd></dl>
+      )}
+      <ConfirmationDialog open={removing} title={st('removeLogoTitle')} description={st('removeLogoConfirm')} confirmLabel={st('removeLogo')}
+        onCancel={() => setRemoving(false)} onConfirm={async () => { setRemoving(false); if (await logo.run('remove', () => source.deleteLogo(), st('saved'))) await onSaved(); }} />
+    </Card>
+  );
+}
+
+function SsoCard() {
+  const { st } = useSettingsT();
+  const source = useSettingsSource();
+  const sso = useResource(useCallback((signal: AbortSignal) => source.sso(signal), [source]));
+  return (
+    <Card title={st('sso')} headingLevel={2} description={st('ssoHint')}>
+      <ResourceView resource={sso} empty="" isEmpty={() => false} errorLabel={st('loadError')}>
+        {(s) => <SsoForm key={s.connection?.version ?? 0} settings={s} onSaved={sso.reload} />}
+      </ResourceView>
+    </Card>
+  );
+}
+
+function SsoForm({ settings, onSaved }: { settings: SsoSettings; onSaved: () => void }) {
+  const { st } = useSettingsT();
+  const source = useSettingsSource();
+  const { toast } = useToast();
+  const c = settings.connection;
+  const [form, setForm] = useState({ issuer: c?.issuer ?? '', client_id: c?.client_id ?? '', client_secret: '', domains: c?.allowed_domains.join(', ') ?? '', enabled: c?.enabled ?? false, enforced: c?.enforced ?? false });
+  const [removing, setRemoving] = useState(false);
+  const { error, busy, save } = useSave();
+  const remove = useAction();
+  const fields = validationErrors(error);
+  const domains = form.domains.split(/[\s,]+/).map((d) => d.trim().toLowerCase()).filter(Boolean);
+  const ready = form.issuer.trim() !== '' && form.client_id.trim() !== '' && domains.length > 0 && (Boolean(c?.has_client_secret) || form.client_secret !== '');
+  const set = (k: 'issuer' | 'client_id' | 'client_secret' | 'domains') => (e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  return (
+    <form className="grid gap-4" onSubmit={(e) => {
+      e.preventDefault();
+      void save(async () => {
+        await source.saveSso({ issuer: form.issuer.trim(), client_id: form.client_id.trim(), client_secret: form.client_secret || null, allowed_domains: domains,
+          enabled: form.enabled, enforced: form.enabled && form.enforced, version: c?.version ?? null });
+        toast({ title: st('saved'), tone: 'success' });
+        onSaved();
+      });
+    }}>
+      <dl className="text-sm"><dt className="text-fg-muted">{st('ssoRedirectUri')}</dt><dd className="mt-1 font-mono break-all text-fg">{settings.redirect_uri}</dd></dl>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Input label={st('ssoIssuer')} hint={st('ssoIssuerHint')} required type="url" maxLength={255} value={form.issuer} error={fields.issuer} onChange={set('issuer')} />
+        <Input label={st('ssoClientId')} required maxLength={255} value={form.client_id} error={fields.client_id} onChange={set('client_id')} />
+        <Input label={st('ssoClientSecret')} type="password" autoComplete="off" required={!c?.has_client_secret} maxLength={2000} value={form.client_secret}
+          hint={c?.has_client_secret ? st('ssoSecretKeep') : undefined} error={fields.client_secret} onChange={set('client_secret')} />
+        <Input label={st('ssoDomains')} hint={st('ssoDomainsHint')} required value={form.domains} error={fields.allowed_domains ?? fields['allowed_domains.0']} onChange={set('domains')} />
+      </div>
+      <Checkbox label={st('ssoEnabled')} checked={form.enabled} onChange={(e) => { const on = e.target.checked; setForm((f) => ({ ...f, enabled: on, enforced: on && f.enforced })); }} />
+      <Checkbox label={st('ssoEnforced')} description={st('ssoEnforcedHint')} checked={form.enforced} disabled={!form.enabled} onChange={(e) => { const on = e.target.checked; setForm((f) => ({ ...f, enforced: on })); }} />
+      <div className="flex flex-wrap gap-3">
+        <Button type="submit" loading={busy} disabled={!ready}>{st('saveSso')}</Button>
+        {c && <Button variant="tertiary" loading={remove.busy !== null} onClick={() => setRemoving(true)}>{st('ssoRemove')}</Button>}
+      </div>
+      <FormError message={error ? formError(error, st('saveFailed')) : null} />
+      <ConfirmationDialog open={removing} title={st('ssoRemoveTitle')} description={st('ssoRemoveConfirm')} confirmLabel={st('ssoRemove')}
+        onCancel={() => setRemoving(false)} onConfirm={async () => { setRemoving(false); if (await remove.run('sso', () => source.deleteSso(), st('saved'))) onSaved(); }} />
+    </form>
   );
 }
 
@@ -385,6 +503,7 @@ function MfaCard() {
   const { st } = useSettingsT();
   const source = useSettingsSource();
   const { me } = useSession();
+  const navigate = useNavigate();
   const [code, setCode] = useState('');
   const [codes, setCodes] = useState<string[] | null>(null);
   const { error, busy, save } = useSave();
@@ -392,6 +511,7 @@ function MfaCard() {
   return (
     <Card title={st('mfaTitle')} headingLevel={2} description={st(enabled ? 'mfaOnHint' : 'mfaOffHint')}
       actions={<Badge tone={enabled ? 'success' : 'neutral'}>{st(enabled ? 'on' : 'off')}</Badge>}>
+      {!enabled && <Button variant="secondary" onClick={() => navigate('/mfa/setup', { state: { voluntary: true, from: '/settings' } })}>{st('mfaSetUp')}</Button>}
       {enabled && (codes ? (
         <div>
           <p className="text-sm text-fg-secondary">{st('newCodesHint')}</p>

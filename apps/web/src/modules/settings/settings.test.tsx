@@ -46,6 +46,39 @@ function setup(persona: keyof typeof personas, source: SettingsSource) {
 }
 
 describe('Settings', { timeout: 20_000 }, () => {
+  it('saves branding, refuses unreadable colors and uploads a logo', async () => {
+    const source = fakeSource({
+      organization: vi.fn(async () => ({ ...org, slug: 'demo', branding: { name: null, color: null, logo_url: null } })),
+      updateBranding: vi.fn(async () => ({ ...org, branding: { name: 'Demo People', color: '#0B5394', logo_url: null } })),
+      uploadLogo: vi.fn(async () => org),
+    });
+    setup('owner@wingora.test', source);
+    await userEvent.type(await screen.findByLabelText(/Brand name/), 'Demo People');
+    await userEvent.type(screen.getByLabelText(/Brand color/), '#0B53');
+    expect(screen.getByText('Enter # followed by 6 hex digits.')).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText(/Brand color/), '94');
+    await userEvent.click(screen.getByRole('button', { name: 'Save branding' }));
+    await waitFor(() => expect(source.updateBranding).toHaveBeenCalledWith({ brand_name: 'Demo People', brand_color: '#0B5394' }));
+    expect(screen.getByText(/\/login\/demo$/)).toBeInTheDocument();
+    await userEvent.upload(screen.getByLabelText(/Upload logo/), new File(['png'], 'logo.png', { type: 'image/png' }));
+    await waitFor(() => expect(source.uploadLogo).toHaveBeenCalled());
+  });
+
+  it('configures single sign-on without ever showing the saved secret', async () => {
+    const saved = { redirect_uri: 'https://app.example/api/v1/auth/sso/callback', connection: { issuer: 'https://idp.example.com', client_id: 'cid', has_client_secret: true, allowed_domains: ['example.com'], enabled: true, enforced: false, version: 3, updated_at: null } };
+    const source = fakeSource({ sso: vi.fn(async () => saved), saveSso: vi.fn(async () => saved), deleteSso: vi.fn(async () => ({ ...saved, connection: null })) });
+    setup('owner@wingora.test', source);
+    expect(await screen.findByText(saved.redirect_uri)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Client secret/)).toHaveValue('');
+    await userEvent.click(screen.getByRole('checkbox', { name: /Require single sign-on/ }));
+    const form = screen.getByLabelText(/Issuer URL/).closest('form') as HTMLElement;
+    await userEvent.click(within(form).getByRole('button', { name: 'Save connection' }));
+    await waitFor(() => expect(source.saveSso).toHaveBeenCalledWith({ issuer: 'https://idp.example.com', client_id: 'cid', client_secret: null, allowed_domains: ['example.com'], enabled: true, enforced: true, version: 3 }));
+    await userEvent.click(within(form).getByRole('button', { name: 'Remove connection' }));
+    await userEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Remove connection' }));
+    await waitFor(() => expect(source.deleteSso).toHaveBeenCalled());
+  });
+
   it('renames the organization and turns on organization-wide two-step verification', async () => {
     const source = fakeSource();
     const { container } = setup('owner@wingora.test', source);

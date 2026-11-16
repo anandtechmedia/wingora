@@ -1,5 +1,5 @@
-import { ApiError, apiRequest, ensureCsrfCookie } from '@/api/http';
-import { AuthError, type AuthErrorCode, type AuthGateway, type MeResponse } from './types';
+import { ApiError, apiPath, apiRequest, ensureCsrfCookie } from '@/api/http';
+import { AuthError, type AuthErrorCode, type AuthGateway, type MeResponse, type OrgSignIn } from './types';
 
 interface MfaSetupResponse { secret: string; otpauth_url: string; qr_code: string }
 
@@ -14,7 +14,10 @@ export function createLiveGateway(): AuthGateway {
     async signIn(email, password) {
       await ensureCsrfCookie();
       const result = await apiRequest<{ mfa_required?: boolean } | null>('POST', '/api/v1/auth/login', { body: { email, password } })
-        .catch((e: unknown) => fail(e, 'invalid_credentials'));
+        .catch((e: unknown) => {
+          const ssoRequired = e instanceof ApiError && e.status === 422 && Boolean((e.body as { errors?: { sso?: unknown } } | null)?.errors?.sso);
+          return fail(e, ssoRequired ? 'sso_required' : 'invalid_credentials');
+        });
       if (result?.mfa_required) return { kind: 'mfa_required' };
       return { kind: 'signed_in', me: await me() };
     },
@@ -39,5 +42,11 @@ export function createLiveGateway(): AuthGateway {
     async signOut() {
       await apiRequest('POST', '/api/v1/auth/logout').catch(() => undefined);
     },
+    async organizationSignIn(slug) {
+      const r = await apiRequest<{ data: OrgSignIn }>('GET', `/api/v1/public/organizations/${encodeURIComponent(slug)}`)
+        .catch((e: unknown) => { throw new AuthError(e instanceof ApiError && e.status === 404 ? 'not_found' : 'unknown'); });
+      return r.data;
+    },
+    ssoUrl: (slug) => apiPath(`/api/v1/auth/sso/${encodeURIComponent(slug)}/redirect`),
   };
 }
