@@ -85,6 +85,8 @@ class AppServiceProvider extends ServiceProvider
             Limit::perMinute(3)->by('apply:'.$request->ip()),
             Limit::perDay(20)->by('apply-day:'.$request->ip()),
         ]);
+        RateLimiter::for('public-org', fn (Request $request) => Limit::perMinute(60)->by('public-org:'.$request->ip()));
+        RateLimiter::for('sso', fn (Request $request) => Limit::perMinute(20)->by('sso:'.$request->ip()));
         RateLimiter::for('uploads', fn (Request $request) => Limit::perMinute(20)->by($request->user()?->id ?: $request->ip()));
     }
 }

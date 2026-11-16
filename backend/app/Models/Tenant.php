@@ -15,13 +15,13 @@ class Tenant extends Model
 
     protected $attributes = ['status' => 'active', 'mfa_required' => false, 'audit_legal_hold' => false];
 
-    protected $fillable = ['name', 'slug', 'country_code'];
+    protected $fillable = ['name', 'slug', 'country_code', 'brand_name', 'brand_color'];
 
-    protected $hidden = ['id'];
+    protected $hidden = ['id', 'logo_path'];
 
     protected function casts(): array
     {
-        return ['mfa_required' => 'boolean', 'audit_legal_hold' => 'boolean'];
+        return ['mfa_required' => 'boolean', 'audit_legal_hold' => 'boolean', 'logo_updated_at' => 'datetime'];
     }
 
     protected static function booted(): void
@@ -34,6 +34,12 @@ class Tenant extends Model
     {
         // Keyed by tenant_id, so it is safe to load outside a tenant context (platform console).
         return $this->hasOne(Subscription::class)->withoutGlobalScopes();
+    }
+
+    public function ssoConnection(): HasOne
+    {
+        // Keyed by tenant_id, so it is safe to load outside a tenant context (sign-in pages).
+        return $this->hasOne(SsoConnection::class)->withoutGlobalScopes();
     }
 
     public function isActive(): bool

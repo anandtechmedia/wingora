@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Auth;
 
+use App\Branding\Branding;
 use App\Http\Controllers\Api\V1\Billing\BillingController;
 use App\Http\Controllers\Controller;
 use App\Models\Subscription;
@@ -17,7 +18,8 @@ class MeController extends Controller
         $user = $request->user();
 
         return response()->json($this->sessionPayload($user) + [
-            'organization' => $user->tenant ? ['id' => $user->tenant->public_id, 'name' => $user->tenant->name, 'country_code' => $user->tenant->country_code] : null,
+            'organization' => $user->tenant ? ['id' => $user->tenant->public_id, 'name' => $user->tenant->name, 'country_code' => $user->tenant->country_code,
+                'slug' => $user->tenant->slug, 'branding' => Branding::present($user->tenant)] : null,
             'permissions' => array_map(fn ($p) => $p->value, $user->permissions()),
             'billing' => ($s = $user->tenant ? Subscription::forTenant($user->tenant) : null) ? BillingController::summary($s) : null,
         ]);

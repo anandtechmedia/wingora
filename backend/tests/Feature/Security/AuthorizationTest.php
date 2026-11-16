@@ -116,15 +116,18 @@ class AuthorizationTest extends SecurityTestCase
         $this->assertDatabaseHas('security_events', ['type' => 'authz.role_escalation_blocked']);
     }
 
-    public function test_privileged_roles_must_enrol_mfa_before_accessing_data(): void
+    public function test_platform_staff_must_enrol_mfa_but_organization_roles_only_when_the_organization_requires_it(): void
     {
-        $hr = $this->makeUser($this->tenant, RoleCatalog::HR_ADMIN, mfa: false);
-        $this->apiAs($hr, 'GET', '/api/v1/employees')->assertForbidden()->assertJsonPath('title', 'MFA enrollment required');
-        $this->apiAs($hr, 'GET', '/api/v1/auth/me')->assertOk()->assertJsonPath('mfa_enrollment_required', true);
+        $staff = $this->makeUser(null, RoleCatalog::PLATFORM_ADMIN, mfa: false);
+        $this->apiAs($staff, 'GET', '/api/v1/platform/tenants')->assertForbidden()->assertJsonPath('title', 'MFA enrollment required');
+        $this->apiAs($staff, 'GET', '/api/v1/auth/me')->assertOk()->assertJsonPath('mfa_enrollment_required', true);
 
-        $employee = $this->makeUser($this->tenant, RoleCatalog::EMPLOYEE, mfa: false);
-        $this->makeEmployee($this->tenant, null, $employee);
-        $this->apiAs($employee, 'GET', '/api/v1/employees')->assertOk();
+        $hr = $this->makeUser($this->tenant, RoleCatalog::HR_ADMIN, mfa: false);
+        $this->apiAs($hr, 'GET', '/api/v1/employees')->assertOk();
+        $this->apiAs($hr, 'GET', '/api/v1/auth/me')->assertOk()->assertJsonPath('mfa_enrollment_required', false);
+
+        $this->tenant->forceFill(['mfa_required' => true])->save();
+        $this->apiAs($hr, 'GET', '/api/v1/employees')->assertForbidden()->assertJsonPath('title', 'MFA enrollment required');
     }
 
     public function test_tenant_can_require_mfa_for_every_user(): void

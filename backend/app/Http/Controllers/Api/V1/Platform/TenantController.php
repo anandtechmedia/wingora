@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Platform;
 
 use App\Audit\AuditEvents;
 use App\Billing\Entitlements;
+use App\Branding\Branding;
 use App\Http\Controllers\Api\V1\Billing\BillingController;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
@@ -120,10 +121,13 @@ class TenantController extends Controller
             'country_code' => ['required', 'string', Rule::in(config('security.countries'))],
             'owner_name' => ['required', 'string', 'max:160'],
             'owner_email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-        ]);
+            'mfa_required' => ['sometimes', 'boolean'],
+        ] + Branding::rules());
 
         $tenant = DB::transaction(function () use ($data) {
-            $tenant = Tenant::create(['name' => $data['name'], 'slug' => $data['slug'], 'country_code' => $data['country_code']]);
+            $tenant = Tenant::create(['name' => $data['name'], 'slug' => $data['slug'], 'country_code' => $data['country_code'],
+                'brand_name' => filled($data['brand_name'] ?? null) ? trim($data['brand_name']) : null, 'brand_color' => isset($data['brand_color']) ? strtoupper($data['brand_color']) : null]);
+            $tenant->forceFill(['mfa_required' => (bool) ($data['mfa_required'] ?? false)])->save();
             RoleCatalog::syncTenantRoles($tenant);
 
             Tenancy::run($tenant, function () use ($data) {
@@ -138,6 +142,16 @@ class TenantController extends Controller
         SecurityEvent::record('platform.tenant_created', 'warning', request()->user(), ['tenant' => $tenant->public_id], $tenant->id);
 
         return response()->json(['data' => $this->present($tenant)], 201);
+    }
+
+    public function uploadLogo(Request $request, Tenant $tenant): JsonResponse
+    {
+        Gate::authorize('update', $tenant);
+        $request->validate(['logo' => Branding::logoRule()]);
+        Branding::storeLogo($tenant, $request->file('logo'));
+        SecurityEvent::record('platform.tenant_logo_changed', 'info', $request->user(), ['tenant' => $tenant->public_id], $tenant->id);
+
+        return response()->json(['data' => $this->present($tenant)]);
     }
 
     public function updateStatus(Request $request, Tenant $tenant, LoginService $logins): JsonResponse
@@ -167,6 +181,8 @@ class TenantController extends Controller
             'slug' => $tenant->slug,
             'country_code' => $tenant->country_code,
             'status' => $tenant->status,
+            'mfa_required' => (bool) $tenant->mfa_required,
+            'branding' => Branding::present($tenant),
             'subscription' => ($sub = $tenant->subscription) ? ['plan' => $sub->plan?->code, 'status' => $sub->status, 'provider' => $sub->provider,
                 'access' => $sub->access()['mode'], 'trial_ends_at' => $sub->trial_ends_at?->toIso8601String()] : null,
             'created_at' => $tenant->created_at?->toIso8601String(),
