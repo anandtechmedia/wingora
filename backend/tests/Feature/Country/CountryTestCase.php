@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Models\WorkLocation;
 use App\Support\Tenancy;
 use Database\Seeders\ReferenceDataSeeder;
+use Illuminate\Support\Facades\DB;
 use Tests\Feature\Security\SecurityTestCase;
 
 abstract class CountryTestCase extends SecurityTestCase
@@ -19,6 +20,14 @@ abstract class CountryTestCase extends SecurityTestCase
     protected bool $seed = true;
 
     protected string $seeder = ReferenceDataSeeder::class;
+
+    /** `$seed` only applies when this process migrates; seed here too when another test class migrated first. */
+    protected function afterRefreshingDatabase(): void
+    {
+        if (! DB::table('countries')->exists()) {
+            $this->seed(ReferenceDataSeeder::class);
+        }
+    }
 
     /** Creates and approves a rule version through the real workflow (author and approver differ). */
     protected function approvedRule(string $country, ?string $subdivision, RuleCategory $category, array $payload, string $from = '2027-01-01', ?string $to = null, string $key = 'baseline'): RuleVersion

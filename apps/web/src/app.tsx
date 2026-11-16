@@ -10,6 +10,8 @@ import { disconnectedPayrollSource, httpPayrollSource, PayrollSourceProvider } f
 import { CareersSourceProvider, disconnectedCareersSource, disconnectedRecruitmentSource, httpCareersSource, httpRecruitmentSource, RecruitmentSourceProvider } from '@/api/recruitment';
 import { disconnectedHelpdeskSource, HelpdeskSourceProvider, httpHelpdeskSource } from '@/api/helpdesk';
 import { DocumentsSourceProvider, disconnectedDocumentsSource, httpDocumentsSource } from '@/api/documents';
+import { AssetsSourceProvider, disconnectedAssetsSource, httpAssetsSource } from '@/api/assets';
+import { disconnectedProjectsSource, httpProjectsSource, ProjectsSourceProvider } from '@/api/projects';
 import { PerformanceSourceProvider, disconnectedPerformanceSource, httpPerformanceSource } from '@/api/performance';
 import { BillingSourceProvider, disconnectedBillingSource, httpBillingSource } from '@/api/billing';
 import { disconnectedPlatformSource, httpPlatformSource, PlatformSourceProvider } from '@/api/platform';
@@ -33,6 +35,8 @@ const recruitmentSource = live ? httpRecruitmentSource : disconnectedRecruitment
 const careersSource = live ? httpCareersSource : disconnectedCareersSource;
 const helpdeskSource = live ? httpHelpdeskSource : disconnectedHelpdeskSource;
 const documentsSource = live ? httpDocumentsSource : disconnectedDocumentsSource;
+const assetsSource = live ? httpAssetsSource : disconnectedAssetsSource;
+const projectsSource = live ? httpProjectsSource : disconnectedProjectsSource;
 const performanceSource = live ? httpPerformanceSource : disconnectedPerformanceSource;
 const billingSource = live ? httpBillingSource : disconnectedBillingSource;
 const platformSource = live ? httpPlatformSource : disconnectedPlatformSource;
@@ -53,6 +57,8 @@ export function App() {
                     <CareersSourceProvider value={careersSource}>
                       <HelpdeskSourceProvider value={helpdeskSource}>
                         <DocumentsSourceProvider value={documentsSource}>
+                        <AssetsSourceProvider value={assetsSource}>
+<ProjectsSourceProvider value={projectsSource}>
                         <PerformanceSourceProvider value={performanceSource}>
                           <BillingSourceProvider value={billingSource}>
                             <PlatformSourceProvider value={platformSource}>
@@ -64,6 +70,8 @@ export function App() {
                             </PlatformSourceProvider>
                           </BillingSourceProvider>
                         </PerformanceSourceProvider>
+                        </ProjectsSourceProvider>
+</AssetsSourceProvider>
                         </DocumentsSourceProvider>
                       </HelpdeskSourceProvider>
                     </CareersSourceProvider>

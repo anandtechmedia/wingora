@@ -15,6 +15,8 @@ enum Feature: string
     case Onboarding = 'onboarding';
     case Helpdesk = 'helpdesk';
     case Documents = 'documents';
+    case Assets = 'assets';
+    case Projects = 'projects';
     case Performance = 'performance';
 
     /** @return list<string> path patterns, `*` matches one segment */
@@ -28,6 +30,8 @@ enum Feature: string
             self::Onboarding => ['onboarding'],
             self::Helpdesk => ['helpdesk'],
             self::Documents => ['document-templates', 'document-requests'],
+            self::Assets => ['assets'],
+            self::Projects => ['projects', 'timesheets'],
             self::Performance => ['performance'],
         };
     }

@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\Controllers\Api\V1\Account\AccountController;
+use App\Http\Controllers\Api\V1\Assets\AssetCategoryController;
+use App\Http\Controllers\Api\V1\Assets\AssetController;
+use App\Http\Controllers\Api\V1\Assets\AssetMaintenanceController;
 use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\AttendanceRequestController;
 use App\Http\Controllers\Api\V1\AuditLogController;
@@ -55,6 +58,9 @@ use App\Http\Controllers\Api\V1\Platform\RuleVersionController;
 use App\Http\Controllers\Api\V1\Platform\SupportController;
 use App\Http\Controllers\Api\V1\Platform\TenantController;
 use App\Http\Controllers\Api\V1\PolicyController;
+use App\Http\Controllers\Api\V1\Projects\ProjectController;
+use App\Http\Controllers\Api\V1\Projects\ProjectTaskController;
+use App\Http\Controllers\Api\V1\Projects\TimesheetController;
 use App\Http\Controllers\Api\V1\Recruitment\AiAssistController;
 use App\Http\Controllers\Api\V1\Recruitment\ApplicationController;
 use App\Http\Controllers\Api\V1\Recruitment\InterviewController;
@@ -248,6 +254,40 @@ Route::prefix('v1')->name('v1.')->group(function () {
                 Route::patch('performance/meetings/{meeting}', [PerformanceMeetingController::class, 'update']);
                 Route::get('performance/history', [PerformanceHistoryController::class, 'mine']);
                 Route::get('performance/employees/{employee}/history', [PerformanceHistoryController::class, 'show']);
+
+                Route::get('assets/mine', [AssetController::class, 'mine']);
+                Route::get('assets/categories', [AssetCategoryController::class, 'index']);
+                Route::post('assets/categories', [AssetCategoryController::class, 'store']);
+                Route::patch('assets/categories/{category}', [AssetCategoryController::class, 'update']);
+                Route::patch('assets/maintenance/{record}', [AssetMaintenanceController::class, 'update']);
+                Route::get('assets', [AssetController::class, 'index']);
+                Route::post('assets', [AssetController::class, 'store']);
+                Route::get('assets/{asset}', [AssetController::class, 'show']);
+                Route::patch('assets/{asset}', [AssetController::class, 'update']);
+                Route::post('assets/{asset}/assign', [AssetController::class, 'assign']);
+                Route::post('assets/{asset}/return', [AssetController::class, 'return']);
+                Route::get('assets/{asset}/history', [AssetController::class, 'history']);
+                Route::get('assets/{asset}/maintenance', [AssetMaintenanceController::class, 'index']);
+                Route::post('assets/{asset}/maintenance', [AssetMaintenanceController::class, 'store']);
+                Route::get('projects/tasks/mine', [ProjectTaskController::class, 'mine']);
+                Route::patch('projects/tasks/{task}', [ProjectTaskController::class, 'update']);
+                Route::get('projects', [ProjectController::class, 'index']);
+                Route::post('projects', [ProjectController::class, 'store']);
+                Route::get('projects/{project}', [ProjectController::class, 'show']);
+                Route::patch('projects/{project}', [ProjectController::class, 'update']);
+                Route::post('projects/{project}/members', [ProjectController::class, 'addMember']);
+                Route::delete('projects/{project}/members/{employee}', [ProjectController::class, 'removeMember']);
+                Route::get('projects/{project}/report', [ProjectController::class, 'report']);
+                Route::get('projects/{project}/tasks', [ProjectTaskController::class, 'index']);
+                Route::post('projects/{project}/tasks', [ProjectTaskController::class, 'store']);
+                Route::get('timesheets', [TimesheetController::class, 'index']);
+                Route::get('timesheets/mine', [TimesheetController::class, 'mine']);
+                Route::put('timesheets/mine/{week}', [TimesheetController::class, 'save']);
+                Route::get('timesheets/approvals', [TimesheetController::class, 'approvals']);
+                Route::get('timesheets/{timesheet}', [TimesheetController::class, 'show']);
+                Route::post('timesheets/{timesheet}/submit', [TimesheetController::class, 'submit']);
+                Route::post('timesheets/{timesheet}/approve', [TimesheetController::class, 'approve']);
+                Route::post('timesheets/{timesheet}/reject', [TimesheetController::class, 'reject']);
 
                 Route::get('organization', [OrganizationController::class, 'show']);
                 Route::patch('organization', [OrganizationController::class, 'update']);
