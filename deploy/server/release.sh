@@ -25,6 +25,12 @@ php artisan migrate --force --no-interaction
 php artisan db:seed --force --no-interaction
 php artisan optimize
 
+# Asset file names change on every build. Carry over the last week of the previous release's assets so browser
+# tabs opened before this release can still load screens (cp -a keeps mtimes, so old files age out).
+if [ -d "$BASE/current/web/assets" ] && [ -d "$RELEASE/web/assets" ]; then
+  find "$BASE/current/web/assets" -maxdepth 1 -type f -mtime -7 -exec cp -an {} "$RELEASE/web/assets/" \;
+fi
+
 ln -sfn "$RELEASE" "$BASE/current.next"
 mv -Tf "$BASE/current.next" "$BASE/current"
 

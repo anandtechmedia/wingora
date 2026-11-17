@@ -94,8 +94,9 @@ A release (`deploy/server/release.sh`, run as `wingora-<env>`):
 1. Unpacks to `releases/<utc-time>-<sha>`; links the shared `.env` and `storage`.
 2. Production only: runs `wingora-backup production` first.
 3. `migrate --force`, idempotent reference-data `db:seed --force`, `optimize`.
-4. Switches `current` atomically, reloads PHP-FPM, restarts the queue worker.
-5. Keeps the last five releases. The workflow then checks `https://<host>/up`.
+4. Copies the previous release's web assets from the last 7 days into the new release (without overwriting), so browser tabs opened before the release can still load screens whose file names changed.
+5. Switches `current` atomically, reloads PHP-FPM, restarts the queue worker.
+6. Keeps the last five releases. The workflow then checks `https://<host>/up`.
 
 Production web builds ship without source maps.
 

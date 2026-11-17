@@ -335,6 +335,8 @@ export const en = {
   'error.appDescription': 'An unexpected error stopped this page from loading. Try again, or return to the dashboard.',
   'error.code': 'Error {code}',
   'error.goToDashboard': 'Go to home',
+  'error.updatedTitle': "Wingora has been updated",
+  'error.updatedDescription': "Reload the page to get the latest version. You'll need to sign in again.",
   'error.reload': 'Reload page',
   'error.goBack': 'Go back',
   'error.reference': 'Reference: {id}',

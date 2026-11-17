@@ -336,6 +336,8 @@ export const es: Messages = {
   'error.appDescription': 'Un error inesperado impidió cargar esta página. Inténtalo de nuevo o vuelve al panel.',
   'error.code': 'Error {code}',
   'error.goToDashboard': 'Ir al inicio',
+  'error.updatedTitle': "Wingora se actualizó",
+  'error.updatedDescription': "Recarga la página para obtener la versión más reciente. Tendrás que volver a iniciar sesión.",
   'error.reload': 'Recargar página',
   'error.goBack': 'Volver',
   'error.reference': 'Referencia: {id}',
