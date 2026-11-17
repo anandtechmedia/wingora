@@ -16,6 +16,8 @@ interface SessionValue {
   /** Reloads the session after enrolment so the app sees the new MFA state. */
   refresh: () => Promise<void>;
   signOut: () => Promise<void>;
+  organizationSignIn: AuthGateway['organizationSignIn'];
+  ssoUrl: AuthGateway['ssoUrl'];
 }
 
 const SessionContext = createContext<SessionValue | null>(null);
@@ -56,6 +58,7 @@ export function SessionProvider({ gateway, initial, children }: { gateway: AuthG
       state, me, permissions: me ? new Set(me.permissions) : noPermissions,
       signIn, verifyMfa, signOut, refresh, requestPasswordReset: (email) => gateway.requestPasswordReset(email),
       startMfaSetup: () => gateway.startMfaSetup(), confirmMfaSetup: (code) => gateway.confirmMfaSetup(code),
+      organizationSignIn: (slug) => gateway.organizationSignIn(slug), ssoUrl: (slug) => gateway.ssoUrl(slug),
     };
   }, [state, signIn, verifyMfa, signOut, refresh, gateway]);
 

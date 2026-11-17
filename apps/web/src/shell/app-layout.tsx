@@ -4,7 +4,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { canAccessModule, findModule, modules, navigationFor, type ModuleDefinition } from '@wingora/permissions';
 import {
   Avatar, Badge, BellIcon, Breadcrumbs, BuildingIcon, ChevronDownIcon, Drawer, Dropdown, GlobeIcon, IconButton, LoadingState,
-  LogOutIcon, MenuIcon, SearchIcon, SidebarIcon, UserIcon,
+  LogOutIcon, MenuIcon, SearchIcon, ShieldIcon, SidebarIcon, UserIcon,
 } from '@/components/ui';
 import { buttonClasses } from '@/components/ui/button';
 import { cn } from '@/lib/cn';
@@ -16,15 +16,21 @@ import { GlobalSearch } from './global-search';
 import { groupLabel, moduleIcons, moduleLabel } from './module-meta';
 import { NotificationCenter, useNotifications } from './notification-center';
 import { useRegionName, useWorkspace } from './workspace';
+import { useBrandColor } from './brand-theme';
 
 function Brand({ compact }: { compact?: boolean }) {
   const { t } = useI18n();
+  const { me } = useSession();
+  const branding = me?.organization?.branding;
+  const name = branding?.name ?? t('app.name');
   return (
     <Link to="/" className="flex items-center gap-2.5 rounded-md focus-visible:outline-nav-indicator">
-      <span aria-hidden="true" className="inline-flex size-8 shrink-0 items-center justify-center rounded-md bg-accent text-sm font-bold text-on-accent">W</span>
+      {branding?.logo_url
+        ? <img src={branding.logo_url} alt="" className="h-8 w-auto max-w-28 shrink-0 rounded-md bg-surface object-contain p-0.5" />
+        : <span aria-hidden="true" className="inline-flex size-8 shrink-0 items-center justify-center rounded-md bg-accent text-sm font-bold text-on-accent">{name.charAt(0).toUpperCase()}</span>}
       <span className={compact ? 'sr-only' : 'flex flex-col leading-none'}>
-        <span className="text-md font-semibold tracking-tight text-nav-active-fg">{t('app.name')}</span>
-        <span className="mt-1 text-2xs text-nav-fg-muted">{t('app.positioning')}</span>
+        <span className="text-md font-semibold tracking-tight text-nav-active-fg">{name}</span>
+        <span className="mt-1 text-2xs text-nav-fg-muted">{branding?.name ? t('auth.poweredBy') : t('app.positioning')}</span>
       </span>
     </Link>
   );
@@ -126,6 +132,7 @@ function ProfileMenu() {
       header={<><p className="text-2xs text-fg-muted">{t('shell.signedInAs')}</p><p className="truncate text-sm font-medium text-fg">{me.user.name}</p><p className="truncate text-xs text-fg-secondary">{me.user.email}</p>{role && <Badge tone="accent" size="sm" className="mt-2"><span className="sr-only">{t('shell.role')}: </span>{role}</Badge>}</>}
       items={[
         { id: 'profile', label: t('shell.profile'), icon: <UserIcon />, onSelect: () => navigate(canAccessModule(permissions, findModule('settings')!) ? '/settings' : '/employees') },
+        ...(me.user.mfa_enabled || me.signed_in_with_sso ? [] : [{ id: 'mfa', label: t('shell.setUpMfa'), icon: <ShieldIcon />, onSelect: () => navigate('/mfa/setup', { state: { voluntary: true, from: '/' } }) }]),
         { type: 'separator', id: 'sep' },
         { id: 'sign-out', label: t('shell.signOut'), icon: <LogOutIcon />, onSelect: () => { void signOut().then(() => navigate('/login', { replace: true })); } },
       ]} />
@@ -143,10 +150,11 @@ function currentModule(pathname: string): ModuleDefinition | undefined {
  */
 export function AppLayout() {
   const { t } = useI18n();
-  const { permissions } = useSession();
+  const { permissions, me } = useSession();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileNav, setMobileNav] = useState(false);
+  useBrandColor(me?.organization?.branding?.color);
   const [searchOpen, setSearchOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const notifications = useNotifications();

@@ -60,6 +60,24 @@ const openTenant = async () => {
 };
 
 describe('Platform console', { timeout: 20_000 }, () => {
+  it('creates a branded organization with its own two-step policy and logo', async () => {
+    const source = fakeSource({ createTenant: vi.fn(async () => ({ ...row, id: 'new1' })), uploadTenantLogo: vi.fn(async () => row) });
+    setup(source);
+    await userEvent.click(await screen.findByRole('button', { name: 'New organization' }));
+    const dialog = await screen.findByRole('dialog', { name: 'New organization' });
+    await userEvent.type(within(dialog).getByLabelText(/Organization name/), 'Globex');
+    await userEvent.type(within(dialog).getByLabelText(/Short name/), 'globex');
+    await userEvent.type(within(dialog).getByLabelText(/Owner name|Owner's name/i), 'Gina');
+    await userEvent.type(within(dialog).getByLabelText(/Owner email|Owner's email/i), 'gina@globex.test');
+    await userEvent.type(within(dialog).getByLabelText(/Brand name/), 'Globex HR');
+    await userEvent.type(within(dialog).getByLabelText(/Brand color/), '#7A1F5C');
+    await userEvent.upload(within(dialog).getByLabelText(/Logo/), new File(['png'], 'logo.png', { type: 'image/png' }));
+    await userEvent.click(within(dialog).getByRole('checkbox', { name: /Require two-step verification/ }));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Create' }));
+    await waitFor(() => expect(source.createTenant).toHaveBeenCalledWith(expect.objectContaining({ slug: 'globex', brand_name: 'Globex HR', brand_color: '#7A1F5C', mfa_required: true })));
+    await waitFor(() => expect(source.uploadTenantLogo).toHaveBeenCalledWith('new1', expect.any(File)));
+  });
+
   it('lands platform staff on the console with no organization switcher, and has no axe violations', async () => {
     const { container, router } = setup(fakeSource(), undefined, '/');
     expect(await screen.findByRole('heading', { level: 1, name: 'Platform console' })).toBeInTheDocument();

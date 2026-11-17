@@ -101,7 +101,8 @@ class User extends Authenticatable
 
     public function requiresMfa(): bool
     {
-        return $this->isPrivileged() || (bool) $this->tenant?->mfa_required;
+        // Platform staff can reach every organization, so they always need it; organizations decide for their own users.
+        return $this->tenant_id === null ? $this->isPrivileged() : (bool) $this->tenant?->mfa_required;
     }
 
     public function hasMfaEnabled(): bool

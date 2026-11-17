@@ -41,6 +41,13 @@ class LoginService
             $this->fail();
         }
 
+        // Organizations that enforce SSO keep the Organization Owner on passwords as a break-glass account.
+        $sso = $user->tenant_id !== null ? $user->tenant?->ssoConnection : null;
+        if ($sso?->enabled && $sso->enforced && ! $user->effectiveRoles()->contains('key', RoleCatalog::ORGANIZATION_OWNER)) {
+            SecurityEvent::record('auth.login_blocked_sso', 'info', $user);
+            throw ValidationException::withMessages(['sso' => __('Your organization signs in with single sign-on.')]);
+        }
+
         if (Hash::needsRehash($user->password)) {
             $user->forceFill(['password' => $password])->saveQuietly();
         }

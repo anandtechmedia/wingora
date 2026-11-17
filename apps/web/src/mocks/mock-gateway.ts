@@ -56,5 +56,11 @@ export function createMockGateway(delayMs = 400): AuthGateway {
       pending = null;
       current = null;
     },
+    async organizationSignIn(slug) {
+      await wait();
+      if (slug !== 'demo') throw new AuthError('not_found');
+      return { slug, name: 'Demo Company', branding: { name: null, color: null, logo_url: null }, sso: { enabled: true, enforced: false } };
+    },
+    ssoUrl: (slug) => `#sso-${slug}`,
   };
 }

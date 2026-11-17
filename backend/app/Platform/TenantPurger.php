@@ -71,6 +71,9 @@ final class TenantPurger
         $files = StoredFile::query()->withoutGlobalScopes()->withTrashed()->where('tenant_id', $tenant->id)->get(['disk', 'path'])
             ->concat(DataExport::query()->withoutGlobalScopes()->where('tenant_id', $tenant->id)->whereNotNull('path')->get(['disk', 'path']));
         // Files go first, while their records still exist, so a failed delete is retried on the next run.
+        if ($tenant->logo_path) {
+            $files->push((object) ['disk' => config('security.files.disk'), 'path' => $tenant->logo_path]);
+        }
         $failed = $files->reject(fn ($file) => rescue(fn () => Storage::disk($file->disk)->delete($file->path), false, false) === true);
         if ($failed->isNotEmpty()) {
             Log::warning('tenant.purge_files_failed', ['tenant' => $tenant->public_id, 'files' => $failed->count()]);
@@ -94,7 +97,8 @@ final class TenantPurger
             }
             // The organization's audit entries are gone; anchor its chains at their head so verification still passes.
             DB::table('audit_chains')->where('tenant_id', $tenant->id)->update(['anchor_sequence' => DB::raw('last_sequence'), 'anchor_hash' => DB::raw('last_hash'), 'updated_at' => now()]);
-            $tenant->forceFill(['name' => 'Deleted organization', 'slug' => 'deleted-'.Str::lower($tenant->public_id), 'status' => 'deleted'])->saveQuietly();
+            $tenant->forceFill(['name' => 'Deleted organization', 'slug' => 'deleted-'.Str::lower($tenant->public_id), 'status' => 'deleted',
+                'brand_name' => null, 'brand_color' => null, 'logo_path' => null, 'logo_mime' => null, 'logo_updated_at' => null])->saveQuietly();
         }));
         DeletionRequest::query()->withoutGlobalScopes()->whereKey($request->id)->update(['status' => 'completed', 'completed_at' => now(), 'requested_by' => null, 'canceled_by' => null]);
         AuditLog::record(AuditEvents::DELETION_COMPLETED, metadata: ['tenant' => $tenant->public_id, 'rows' => array_sum($counts), 'files' => $files->count()], category: null, tenantId: null);

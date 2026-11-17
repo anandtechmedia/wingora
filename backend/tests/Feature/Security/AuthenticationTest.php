@@ -115,6 +115,8 @@ class AuthenticationTest extends SecurityTestCase
 
     public function test_mfa_enrolment_issues_hashed_single_use_recovery_codes(): void
     {
+        // The organization requires two-step verification, so it cannot be switched off once enrolled.
+        $this->tenant->forceFill(['mfa_required' => true])->save();
         $hr = $this->makeUser($this->tenant, RoleCatalog::HR_MANAGER, mfa: false);
         $token = $this->tokenFor($hr);
 

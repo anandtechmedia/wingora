@@ -180,6 +180,8 @@ class PlatformTest extends SecurityTestCase
         $this->apiAs($this->owner, 'POST', '/api/v1/account/deletion/cancel')->assertOk()->assertJsonPath('data.status', 'canceled');
         $this->apiAs($this->owner, 'POST', '/api/v1/account/deletion', ['confirm_name' => 'Acme Corp'] + $this->code($this->owner))->assertCreated();
         $this->apiAs($this->owner, 'GET', '/api/v1/account/deletion')->assertOk()->assertJsonPath('data.request.status', 'scheduled');
+        $this->tenant->forceFill(['brand_name' => 'Acme People', 'brand_color' => '#0B5394', 'logo_path' => 'tenants/x/branding/logo.png', 'logo_mime' => 'image/png'])->save();
+        Storage::disk('private')->put('tenants/x/branding/logo.png', 'png');
         $token = $this->tokenFor($this->owner);
 
         $this->travel(29)->days();
@@ -190,6 +192,8 @@ class PlatformTest extends SecurityTestCase
         $this->artisan('wingora:tenants:purge-deleted')->assertSuccessful();
         $tenant = $this->tenant->fresh();
         $this->assertSame(['deleted', 'Deleted organization'], [$tenant->status, $tenant->name]);
+        $this->assertSame([null, null, null], [$tenant->brand_name, $tenant->brand_color, $tenant->logo_path]);
+        Storage::disk('private')->assertMissing('tenants/x/branding/logo.png');
         $this->assertSame(0, Employee::query()->withoutGlobalScopes()->where('tenant_id', $tenant->id)->count());
         $this->assertSame(0, User::query()->withoutGlobalScopes()->where('tenant_id', $tenant->id)->count());
         $this->assertSame(1, Employee::query()->withoutGlobalScopes()->where('tenant_id', $this->other->id)->count());

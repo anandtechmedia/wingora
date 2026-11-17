@@ -41,6 +41,7 @@ use App\Http\Controllers\Api\V1\LogController;
 use App\Http\Controllers\Api\V1\Onboarding\OnboardingPlanController;
 use App\Http\Controllers\Api\V1\Onboarding\OnboardingTemplateController;
 use App\Http\Controllers\Api\V1\OrganizationController;
+use App\Http\Controllers\Api\V1\OrganizationSsoController;
 use App\Http\Controllers\Api\V1\PayrollRunController;
 use App\Http\Controllers\Api\V1\PayrollSetupController;
 use App\Http\Controllers\Api\V1\PayslipController;
@@ -61,6 +62,7 @@ use App\Http\Controllers\Api\V1\PolicyController;
 use App\Http\Controllers\Api\V1\Projects\ProjectController;
 use App\Http\Controllers\Api\V1\Projects\ProjectTaskController;
 use App\Http\Controllers\Api\V1\Projects\TimesheetController;
+use App\Http\Controllers\Api\V1\PublicOrganizationController;
 use App\Http\Controllers\Api\V1\Recruitment\AiAssistController;
 use App\Http\Controllers\Api\V1\Recruitment\ApplicationController;
 use App\Http\Controllers\Api\V1\Recruitment\InterviewController;
@@ -81,6 +83,11 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::get('/', [PublicCareersController::class, 'show']);
         Route::get('jobs/{opening}', [PublicCareersController::class, 'opening']);
         Route::post('jobs/{opening}/apply', [PublicCareersController::class, 'apply'])->middleware('throttle:careers-apply');
+    });
+    // Organization sign-in pages: name, branding and sign-in options for a slug. Nothing about users.
+    Route::prefix('public/organizations/{slug}')->middleware('throttle:public-org')->group(function () {
+        Route::get('/', [PublicOrganizationController::class, 'show']);
+        Route::get('logo', [PublicOrganizationController::class, 'logo']);
     });
     // Payment provider webhooks: no session or token; authenticity comes only from the verified signature.
     Route::post('webhooks/stripe', StripeWebhookController::class)->middleware('throttle:webhooks');
@@ -292,6 +299,12 @@ Route::prefix('v1')->name('v1.')->group(function () {
                 Route::get('organization', [OrganizationController::class, 'show']);
                 Route::patch('organization', [OrganizationController::class, 'update']);
                 Route::patch('organization/security', [OrganizationController::class, 'updateSecurity']);
+                Route::patch('organization/branding', [OrganizationController::class, 'updateBranding']);
+                Route::post('organization/logo', [OrganizationController::class, 'uploadLogo'])->middleware('throttle:uploads');
+                Route::delete('organization/logo', [OrganizationController::class, 'deleteLogo']);
+                Route::get('organization/sso', [OrganizationSsoController::class, 'show']);
+                Route::put('organization/sso', [OrganizationSsoController::class, 'update']);
+                Route::delete('organization/sso', [OrganizationSsoController::class, 'destroy']);
 
                 Route::get('users', [UserController::class, 'index']);
                 Route::post('users', [UserController::class, 'store']);
@@ -457,6 +470,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
                 Route::get('tenants', [TenantController::class, 'index']);
                 Route::post('tenants', [TenantController::class, 'store']);
                 Route::get('tenants/{tenant}', [TenantController::class, 'show']);
+                Route::post('tenants/{tenant}/logo', [TenantController::class, 'uploadLogo'])->middleware('throttle:uploads');
                 Route::patch('tenants/{tenant}/status', [TenantController::class, 'updateStatus']);
                 Route::patch('tenants/{tenant}/subscription', [TenantController::class, 'updateSubscription']);
                 Route::get('tenants/{tenant}/support', [SupportController::class, 'status']);

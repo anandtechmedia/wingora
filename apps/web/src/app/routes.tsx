@@ -7,6 +7,7 @@ import { ForgotPasswordPage } from '@/pages/forgot-password-page';
 import { LoginPage } from '@/pages/login-page';
 import { MfaPage } from '@/pages/mfa-page';
 import { MfaSetupPage } from '@/pages/mfa-setup-page';
+import { SsoCompletePage } from '@/pages/sso-complete-page';
 import { AppLayout } from '@/shell/app-layout';
 import { LoadingState } from '@/components/ui';
 
@@ -52,6 +53,8 @@ function ModuleRoute({ module }: { module: ModuleDefinition }) {
 export function createRoutes({ prototypeHint = false }: { prototypeHint?: boolean } = {}): RouteObject[] {
   return [
     { path: '/login', element: <PublicOnly><LoginPage prototypeHint={prototypeHint} /></PublicOnly>, errorElement: <RouteErrorPage /> },
+    { path: '/login/:org', element: <PublicOnly><LoginPage prototypeHint={prototypeHint} /></PublicOnly>, errorElement: <RouteErrorPage /> },
+    { path: '/sso/complete', element: <SsoCompletePage />, errorElement: <RouteErrorPage /> },
     { path: '/forgot-password', element: <PublicOnly><ForgotPasswordPage /></PublicOnly>, errorElement: <RouteErrorPage /> },
     { path: '/mfa', element: <MfaPage />, errorElement: <RouteErrorPage /> },
     { path: '/mfa/setup', element: <MfaSetupPage />, errorElement: <RouteErrorPage /> },

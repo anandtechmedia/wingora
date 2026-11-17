@@ -131,7 +131,10 @@ class TokenTest extends SecurityTestCase
         $this->postJson('/api/v1/auth/tokens', $payload + ['mfa_code' => '000000'])->assertUnprocessable();
         $this->postJson('/api/v1/auth/tokens', $payload + ['mfa_code' => $this->totp($hr)])->assertCreated();
 
+        // An organization that requires two-step verification blocks tokens until it is set up; others do not.
         $unenrolled = $this->makeUser($this->tenant, RoleCatalog::PAYROLL_ADMIN, mfa: false);
+        $this->postJson('/api/v1/auth/tokens', ['email' => $unenrolled->email, 'password' => self::PASSWORD, 'device_name' => 'cli'])->assertCreated();
+        $this->tenant->forceFill(['mfa_required' => true])->save();
         $this->postJson('/api/v1/auth/tokens', ['email' => $unenrolled->email, 'password' => self::PASSWORD, 'device_name' => 'cli'])->assertForbidden();
     }
 

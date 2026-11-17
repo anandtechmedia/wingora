@@ -1,10 +1,14 @@
 import { createContext, useContext } from 'react';
 import { ApiNotConnectedError } from './dashboard';
 import { apiRequest, ensureCsrfCookie } from './http';
+import type { OrgBranding } from '@/auth/types';
 import type { Page } from './employees';
 
 /** Mirrors the organization, user, legal entity, work location and account endpoints (docs/architecture/security.md). */
-export interface Organization { id: string; name: string; country_code: string; status: string; mfa_required: boolean }
+export interface Organization { id: string; name: string; country_code: string; status: string; mfa_required: boolean; slug?: string; branding?: OrgBranding }
+export interface SsoConnection { issuer: string; client_id: string; has_client_secret: boolean; allowed_domains: string[]; enabled: boolean; enforced: boolean; version: number; updated_at: string | null }
+export interface SsoSettings { redirect_uri: string; connection: SsoConnection | null }
+export interface SsoInput { issuer: string; client_id: string; client_secret: string | null; allowed_domains: string[]; enabled: boolean; enforced: boolean; version: number | null }
 export interface TenantUser { id: string; name: string; email: string; status: 'active' | 'disabled' | string; roles: string[]; mfa_enabled: boolean; last_login_at: string | null }
 export interface LegalEntity {
   id: string; name: string; legal_name: string; country_code: string; subdivision_code: string | null; currency_code: string; default_language_code: string;
@@ -25,6 +29,12 @@ export interface SettingsSource {
   organization(signal?: AbortSignal): Promise<Organization>;
   updateOrganization(name: string): Promise<Organization>;
   updateSecurity(mfaRequired: boolean): Promise<Organization>;
+  updateBranding(input: { brand_name: string | null; brand_color: string | null }): Promise<Organization>;
+  uploadLogo(file: File): Promise<Organization>;
+  deleteLogo(): Promise<Organization>;
+  sso(signal?: AbortSignal): Promise<SsoSettings>;
+  saveSso(input: SsoInput): Promise<SsoSettings>;
+  deleteSso(): Promise<SsoSettings>;
   users(page: number, signal?: AbortSignal): Promise<Page<TenantUser>>;
   inviteUser(input: { name: string; email: string; roles: string[] }): Promise<TenantUser>;
   updateRoles(id: string, roles: string[]): Promise<TenantUser>;
@@ -62,6 +72,12 @@ export const httpSettingsSource: SettingsSource = {
   organization: (signal) => data(apiRequest('GET', `${v1}/organization`, { signal })),
   updateOrganization: (name) => data(write('PATCH', `${v1}/organization`, { name })),
   updateSecurity: (mfa_required) => data(write('PATCH', `${v1}/organization/security`, { mfa_required })),
+  updateBranding: (input) => data(write('PATCH', `${v1}/organization/branding`, input)),
+  uploadLogo: (file) => { const f = new FormData(); f.append('logo', file); return data(write('POST', `${v1}/organization/logo`, f)); },
+  deleteLogo: () => data(write('DELETE', `${v1}/organization/logo`)),
+  sso: (signal) => data(apiRequest('GET', `${v1}/organization/sso`, { signal })),
+  saveSso: (input) => data(write('PUT', `${v1}/organization/sso`, input)),
+  deleteSso: () => data(write('DELETE', `${v1}/organization/sso`)),
   users: (page, signal) => apiRequest('GET', `${v1}/users`, { query: { page: String(page) }, signal }),
   inviteUser: (input) => data(write('POST', `${v1}/users`, input)),
   updateRoles: (id, roles) => data(write('PUT', `${v1}/users/${id}/roles`, { roles })),

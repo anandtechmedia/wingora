@@ -8,6 +8,9 @@ export class ApiError extends Error {
 
 const baseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '') ?? '';
 
+/** Absolute API path for full-page navigations (e.g. single sign-on redirects). */
+export const apiPath = (path: string) => baseUrl + path;
+
 function xsrfToken(): string | undefined {
   const match = /(?:^|;\s*)XSRF-TOKEN=([^;]+)/.exec(document.cookie);
   return match ? decodeURIComponent(match[1]!) : undefined;
