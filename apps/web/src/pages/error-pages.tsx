@@ -37,9 +37,21 @@ export function NotFoundPage({ fullPage }: { fullPage?: boolean }) {
   );
 }
 
+/** A screen file from an earlier release is gone: the tab is running an old build and must reload. */
+export function isStaleBuildError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : typeof error === 'string' ? error : '';
+  return /dynamically imported module|Importing a module script failed|Unable to preload CSS|ChunkLoadError/i.test(message);
+}
+
 /** Never renders error details: they can leak internals. */
-export function AppErrorPage({ onRetry, fullPage }: { onRetry?: () => void; fullPage?: boolean }) {
+export function AppErrorPage({ onRetry, fullPage, error }: { onRetry?: () => void; fullPage?: boolean; error?: unknown }) {
   const { t } = useI18n();
+  if (isStaleBuildError(error)) {
+    return (
+      <ErrorPage fullPage={fullPage} code={409} icon={<AlertTriangleIcon size={22} />} title={t('error.updatedTitle')} description={t('error.updatedDescription')}
+        actions={<Button onClick={() => window.location.reload()}>{t('error.reload')}</Button>} />
+    );
+  }
   return (
     <ErrorPage fullPage={fullPage} code={500} icon={<AlertTriangleIcon size={22} />} title={t('error.appTitle')} description={t('error.appDescription')}
       actions={<><Button variant="secondary" onClick={onRetry ?? (() => window.location.reload())}>{onRetry ? t('ui.retry') : t('error.reload')}</Button><DashboardLink variant="primary" /></>} />
@@ -51,5 +63,5 @@ export function RouteErrorPage() {
   const error = useRouteError();
   if (import.meta.env.DEV) console.error(error);
   if (isRouteErrorResponse(error) && error.status === 404) return <NotFoundPage fullPage />;
-  return <AppErrorPage fullPage />;
+  return <AppErrorPage fullPage error={error} />;
 }

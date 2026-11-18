@@ -236,7 +236,7 @@ export function AppLayout() {
             </div>
             <BillingBanner />
             {crumbs.length > 0 && <div className="mb-4"><Breadcrumbs items={crumbs} /></div>}
-            <ErrorBoundary key={location.pathname} fallback={(reset) => <AppErrorPage onRetry={reset} />}>
+            <ErrorBoundary key={location.pathname} fallback={(reset, error) => <AppErrorPage onRetry={reset} error={error} />}>
               <Suspense fallback={<LoadingState label={t('shell.loadingModule')} className="py-24" />}>
                 <Outlet />
               </Suspense>
